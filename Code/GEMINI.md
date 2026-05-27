@@ -26,6 +26,8 @@ This uses React and Semantic UI.
 * Code should be tested thoroughly
 * Never use `==` or `!=`; instead use `==*` or `!=*` from the `univeq` library
 * Implicit instances of `UnivEq` should always be `def`s and not `val`s
+* Avoid calling .asInstanceOf where possible
+* Avoid calling `==*` or `!=*` when dealing with `IsoBool`s; instead call `.is`
 
 * When you grep, ignore the .metals directory
 
