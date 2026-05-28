@@ -358,9 +358,36 @@ object IssuesPageTest extends TestSuite {
       runActions(p2)(
         *.emptyAction
         +> issueCategories.assert.equal(Some("User-defined (3)"), None, None)
-        +> issueClasses.assert.equal(Some("#TBD (3)"), None, None)
-        +> ids.assert.equal(Some("CO-1"), None, Some("CO-2"))
-        +> fieldNames.assert.equal(Some("Notes"), Some("Notes"), Some("Notes"))
+        +> issueClasses   .assert.equal(Some("#TBD (3)"), None, None)
+        +> ids            .assert.equal(Some("CO-1"), None, Some("CO-2"))
+        +> fieldNames     .assert.equal(Some("Notes"), Some("Notes"), Some("Notes"))
+        +> fieldEditors   .assert.equal(Some("#TBD #TBD"), Some("#TBD #TBD"), Some("#TBD"))
+        +> actions        .assert.equal(Some("–"), Some("–"), Some("–"))
+      )
+    }
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    "doubleManual" - {
+      import shipreq.webapp.member.project.text.Text
+      import shipreq.webapp.member.test.WebappTestUtil
+      import shipreq.webapp.member.project.event.Event.ManualIssueCreate
+      import shipreq.webapp.member.project.data.ManualIssueId
+
+      val p0 = SampleProject.project
+      val txt = Text.ManualIssue.parseNonEmpty(p0, None)("Test").get
+      val p = WebappTestUtil.applyEventsSuccessfully(p0,
+        ManualIssueCreate(ManualIssueId(1), txt),
+        ManualIssueCreate(ManualIssueId(2), txt)
+      )
+
+      runActions(p)(
+        *.emptyAction
+        +> issueCategories.assert.equal(Some("User-defined (2)"), None)
+        +> issueClasses   .assert.equal(Some("Manual (2)"), None)
+        +> ids            .assert.equal(Some("–"), Some("–"))
+        +> fieldNames     .assert.equal(Some("–"), Some("–"))
+        +> fieldEditors   .assert.equal(Some("Test"), Some("Test"))
+        +> actions        .assert.equal(Some("Delete issue"), Some("Delete issue"))
       )
     }
 
