@@ -67,9 +67,9 @@ object ConsolidatedSeq {
       val values        = Array.newBuilder[Option[B]]
       val groups        = Array.newBuilder[Int]
 
-      def commit(): Unit = {
-        val size = buffer.length
-        val g = Group(NonEmptyVector force buffer, srcIndexStart, group)
+      def commit(nev: NonEmptyVector[A]): Unit = {
+        val size = nev.length
+        val g = Group(nev, srcIndexStart, group)
         values += Some(groupHead(g))
         groups += group
         if (size > 1) {
@@ -90,13 +90,13 @@ object ConsolidatedSeq {
         for (nev <- NonEmptyVector.option(buffer)) {
           val c = Candidate(nev, cur, srcIndexStart, group)
           if (!doConsolidate(c))
-            commit()
+            commit(nev)
         }
         buffer :+= cur
       }
 
-      if (buffer.nonEmpty)
-        commit()
+      for (nev <- NonEmptyVector.option(buffer))
+        commit(nev)
 
       new ConsolidatedSeq(values.result(), groups.result())
     }
