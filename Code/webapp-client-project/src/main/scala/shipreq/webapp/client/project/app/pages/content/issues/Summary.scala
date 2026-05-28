@@ -21,8 +21,6 @@ object Summary {
       Reusability.byRefOrUnivEq
   }
 
-  private val iconReappearances = SummaryIcon.reappearances("having multiple issues")
-
   def render(p: Props): VdomElement = {
     val s = p.stats
     val b = new SummaryUI
@@ -39,11 +37,6 @@ object Summary {
 
     b.addUnlessZero(s.inConfig, SummaryIcon.config)
     b.addUnlessZero(s.inReq, SummaryIcon.reqs)
-    if (s.reqReappearances > 0) {
-      b.add(" (", s.reqsUnique)
-      b.addUnlessZero(s.reqReappearances, iconReappearances)
-      b.add(")")
-    }
     b.addUnlessZero(s.inRcg, SummaryIcon.rcgs)
     b.addUnlessZero(s.manual, SummaryIcon.loose)
 
