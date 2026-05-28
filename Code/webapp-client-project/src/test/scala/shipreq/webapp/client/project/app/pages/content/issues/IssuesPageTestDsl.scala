@@ -17,6 +17,12 @@ object IssuesPageTestDsl {
 
   val ids = *.focus("IDs").collection(_.obs.columnTexts(Column.Id))
 
+  val fieldNames = *.focus("Field names").collection(_.obs.columnTexts(Column.FieldName))
+
+  val fieldEditors = *.focus("Field editors").collection(_.obs.columnTexts(Column.FieldEditor))
+
+  val actions = *.focus("Actions").collection(_.obs.columnTexts(Column.Actions))
+
   val filterValue = *.focus("Filter value").value(_.obs.filter.value)
 
   val editorCount =

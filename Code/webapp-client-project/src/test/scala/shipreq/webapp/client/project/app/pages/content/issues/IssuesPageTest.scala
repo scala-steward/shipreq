@@ -5,12 +5,14 @@ import shipreq.webapp.client.project.app.ProjectSpaTestDsl
 import shipreq.webapp.client.project.app.pages.root.Routes.Page
 import shipreq.webapp.client.project.test.PrepareEnv
 import shipreq.webapp.member.project.data.Project
-import shipreq.webapp.member.test.project.SampleProject6
+import shipreq.webapp.member.test.project.{ProjectDsl, SampleProject, SampleProject6}
+import shipreq.webapp.member.test.project.UnsafeTypes._
 import utest._
 import utest.framework.TestPath
 
 object IssuesPageTest extends TestSuite {
   import IssuesPageTestDsl._
+  import ProjectDsl._
 
   PrepareEnv()
 
@@ -72,7 +74,7 @@ object IssuesPageTest extends TestSuite {
         Some("FR-2"),
         Some("FR-1"))
 
-      >> row(1).col(Column.FieldEditor).edit("[UC-1.0.X.1] and [UC-1.E.X.1] are dead. [UC-1.0.2.a] and [UC-1.E.1] are not." -> "#TODO", 2)
+      >> row(1).col(Column.FieldEditor).edit("[UC-1.0.X.1] and [UC-1.E.X.1] are dead. [UC-1.0.2.a] and [UC-1.E.1] are not." -> "#TODO", 1)
       +> rowCount.assert.equal(10)
       +> issueCategories.assert.equal(
         Some("Bad data"),
@@ -338,6 +340,56 @@ object IssuesPageTest extends TestSuite {
       +> issueClasses.assert.equal(Some("Manual"))
       +> ids.assert.equal(Some("–"))
     )
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // When there are two tags in the same field in the same req, the results should be consolidated so that the view
+    // and editor for that field isn't displayed twice in a row.
+    "doubleFields" - {
+      import shipreq.webapp.member.project.text.Text
+      import SampleProject.Values._
+      val p0 = SampleProject.project
+
+      val t1 = Text.CustomTextField.parseNonEmpty(p0, None)("#TBD #TBD").get
+      val p1 = GReq(reqType = co, title = "Double tag").tag(priHigh).cftext(notesField, t1) ! p0
+
+      val t2 = Text.CustomTextField.parseNonEmpty(p1, None)("#TBD").get
+      val p2 = GReq(reqType = co, title = "Single tag").tag(priHigh).cftext(notesField, t2) ! p1
+
+      runActions(p2)(
+        *.emptyAction
+        +> issueCategories.assert.equal(Some("User-defined (3)"), None, None)
+        +> issueClasses   .assert.equal(Some("#TBD (3)"), None, None)
+        +> ids            .assert.equal(Some("CO-1"), None, Some("CO-2"))
+        +> fieldNames     .assert.equal(Some("Notes (2)"), None, Some("Notes"))
+        +> fieldEditors   .assert.equal(Some("#TBD #TBD"), None, Some("#TBD"))
+        +> actions        .assert.equal(Some("–"), None, Some("–"))
+      )
+    }
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    "doubleManual" - {
+      import shipreq.webapp.member.project.text.Text
+      import shipreq.webapp.member.test.WebappTestUtil
+      import shipreq.webapp.member.project.event.Event.ManualIssueCreate
+      import shipreq.webapp.member.project.data.ManualIssueId
+
+      val p0 = SampleProject.project
+      val txt = Text.ManualIssue.parseNonEmpty(p0, None)("Test").get
+      val p = WebappTestUtil.applyEventsSuccessfully(p0,
+        ManualIssueCreate(ManualIssueId(1), txt),
+        ManualIssueCreate(ManualIssueId(2), txt)
+      )
+
+      runActions(p)(
+        *.emptyAction
+        +> issueCategories.assert.equal(Some("User-defined (2)"), None)
+        +> issueClasses   .assert.equal(Some("Manual (2)"), None)
+        +> ids            .assert.equal(Some("–"), Some("–"))
+        +> fieldNames     .assert.equal(Some("–"), Some("–"))
+        +> fieldEditors   .assert.equal(Some("Test"), Some("Test"))
+        +> actions        .assert.equal(Some("Delete issue"), Some("Delete issue"))
+      )
+    }
 
   }
 }
