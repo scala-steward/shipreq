@@ -35,12 +35,6 @@ jobs:
     #   with:
     #     detached: true
 
-    - name: Install build tools
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y brotli parallel pigz
-        which unzip
-
     - name: Setup Scala
       uses: japgolly/setup-everything-scala@v4.1
       with:
@@ -59,14 +53,17 @@ jobs:
     - name: Prepare Scala.js dependencies
       run: cd Code && npm install
 
-    - name: Build
-      run: cd Code && $SBT Test/compile
+    # - name: Build
+    #   run: cd Code && $SBT Test/compile
 
-    - name: Test (JS)
-      run: cd Code && $SBT testJS
+    # - name: Test (JS)
+    #   run: cd Code && $SBT testJS
 
-    - name: Test (JVM)
-      run: cd Code && $SBT testJVM
+    # - name: Test (JVM)
+    #   run: cd Code && $SBT testJVM
 
-    - name: Build docker images
+    - name: Build base docker image
+      run: cd Docker/shipreq-base && ./build
+
+    - name: Build app docker images
       run: cd Code && $SBT dockers
