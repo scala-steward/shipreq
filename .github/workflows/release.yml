@@ -10,6 +10,11 @@ jobs:
   release:
     runs-on: ubuntu-latest
 
+    # Required for GHCR
+    permissions:
+      contents: read
+      packages: write
+
     env:
       CI: 1
       MODE: release
@@ -34,6 +39,25 @@ jobs:
     #   uses: mxschmitt/action-tmate@v3
     #   with:
     #     detached: true
+
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Pull existing images for cache
+      run: |
+        docker pull ghcr.io/shipreq/base:latest    || true
+        docker pull ghcr.io/shipreq/taskman:latest || true
+        docker pull ghcr.io/shipreq/webapp:latest  || true
+        docker tag ghcr.io/shipreq/base:latest    shipreq/base:latest    || true
+        docker tag ghcr.io/shipreq/webapp:latest  shipreq/webapp:latest  || true
+        docker tag ghcr.io/shipreq/taskman:latest shipreq/taskman:latest || true
+
+    - name: Build base image
+      run: cd Docker/shipreq-base && ./build
 
     - name: Setup Scala
       uses: japgolly/setup-everything-scala@v4.1
@@ -62,14 +86,30 @@ jobs:
     - name: Test (JVM)
       run: cd Code && $SBT testJVM
 
-    - name: Build base docker image
-      run: cd Docker/shipreq-base && ./build
-
-    - name: Build app docker images
+    - name: Build app images
       run: cd Code && $SBT dockers
 
-    - name: Temp
+    - name: Tag images
       run: |
-        env | sort
-        echo
-        docker images
+        docker tag shipreq/base:latest    ghcr.io/shipreq/base:latest
+        docker tag shipreq/webapp:latest  ghcr.io/shipreq/webapp:latest
+        docker tag shipreq/taskman:latest ghcr.io/shipreq/taskman:latest
+
+        tag=git-$(git rev-parse HEAD)
+        docker tag shipreq/base:latest    ghcr.io/shipreq/base:$tag
+        docker tag shipreq/webapp:latest  ghcr.io/shipreq/webapp:$tag
+        docker tag shipreq/taskman:latest ghcr.io/shipreq/taskman:$tag
+
+    - name: Tag images with git tag
+      if: startsWith(github.ref, 'refs/tags/')
+      run: |
+        tag=${{ github.ref_name }}
+        docker tag shipreq/base:latest    ghcr.io/shipreq/base:$tag
+        docker tag shipreq/webapp:latest  ghcr.io/shipreq/webapp:$tag
+        docker tag shipreq/taskman:latest ghcr.io/shipreq/taskman:$tag
+
+    - name: Publish images
+      run: |
+        docker push --all-tags ghcr.io/shipreq/base
+        docker push --all-tags ghcr.io/shipreq/webapp
+        docker push --all-tags ghcr.io/shipreq/taskman
