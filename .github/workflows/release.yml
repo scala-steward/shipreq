@@ -5,6 +5,8 @@ on:
   push:
     branches:
       - topic/releases
+    tags:
+      - v*.*.*
 
 jobs:
   release:
