@@ -1,3 +1,9 @@
+# Contents
+
+- [Building and Running Locally (via sbt)](#building-and-running-locally-via-sbt)
+- [Building and Running Locally (via docker)](#building-and-running-locally-via-docker)
+- [Running Locally (via prebuilt docker images)](#running-locally-via-prebuilt-docker-images)
+
 # Building and Running Locally (via sbt)
 
 ### Setup: system
