@@ -6,7 +6,7 @@ import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.html_<^._
 import monocle.macros.Lenses
 import scalacss.ScalaCssReact._
-import shipreq.base.util.{ErrorMsg, Permission}
+import shipreq.base.util.{ErrorMsg, Permission, Valid}
 import shipreq.webapp.base.feature.AsyncFeature
 import shipreq.webapp.client.project.app.Style.{issues => *}
 import shipreq.webapp.client.project.app.pages.root.Routes
@@ -60,7 +60,13 @@ object IssuesPage {
   @Lenses
   final case class State(newIssue    : NewIssue.State,
                          filterEditor: FilterEditor.State,
-                         filterValue : Option[Filter.Valid])
+                         filterValue : Option[Filter.Valid]) {
+
+    def updateFilterText(project: Project): State = {
+      val txt = filterValue.fold("")(Filter.Valid.toText(project.config, _))
+      copy(filterEditor = FilterEditor.State(txt, Valid))
+    }
+  }
 
   object State {
     def init = apply(

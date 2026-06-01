@@ -2,10 +2,17 @@ package shipreq.webapp.client.project.app.pages.content.issues
 
 import japgolly.scalajs.react.test._
 import shipreq.webapp.base.test.TestState._
+import shipreq.webapp.client.project.test.TestGlobal
+import shipreq.webapp.member.project.event.Event
 
 object IssuesPageTestDsl {
 
-  val * = Dsl[Unit, IssuesPageObs, Unit]
+  val * = Dsl[TestGlobal, IssuesPageObs, Unit]
+
+  val global = new TestGlobal.TestDslWithObs(*)(identity, _.global)
+
+  def receiveExternalEvent(e: Event): *.Actions =
+    global.receiveExternalEvent(e)
 
   object OptionalEditorDsl extends OptionalEditorDslBase(*, editorCount)
 

@@ -80,7 +80,7 @@ object ProjectSpaTestDsl {
         case Page.CfgTags      => base.copy(cfgTags     = Try(new TagConfigObs(inner)))
         case Page.ReqTable     => base.copy(reqTable    = Try(new ReqTableObs(inner, base.global, base.confirmJs)))
         case Page.ReqDetail(_) => base.copy(reqDetail   = Try(new ReqDetailObs(inner, nav, base.global)))
-        case Page.Issues       => base.copy(issues      = Try(new IssuesPageObs(inner)))
+        case Page.Issues       => base.copy(issues      = Try(new IssuesPageObs(inner, base.global)))
         case Page.ReqGraph     => base.copy(reqGraph    = Try(new ReqGraphObs(inner, base.global)))
         case Page.Access       => base.copy(access      = Try(new AccessPageObs(inner, base.global, base.confirmJs)))
       }
@@ -177,7 +177,7 @@ object ProjectSpaTestDsl {
 
   implicit lazy val transformIP =
     IP.*.transformer
-      .mapR[Ref](_ => ())
+      .mapR[Ref](_.global)
       .pmapO[Obs](_.issues)
       .mapS[TestState](_ => ())((s, _) => s)
 

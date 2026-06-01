@@ -397,5 +397,17 @@ object IssuesPageTest extends TestSuite {
       +> row(1).col(Column.FieldEditor).previewVisible.assert.equal(true)
     )
 
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    "tagRename" - {
+      import shipreq.webapp.member.test.project.SampleProject.Values._
+      import shipreq.webapp.member.test.project.{SampleProject3, TestEvent}
+
+      runActions(SampleProject3.project)(
+        setFilter("#WIP")
+          +> filterValue.assert.equal("#WIP")
+          >> receiveExternalEvent(TestEvent.applicableTagUpdate(wip, key = "DONE"))
+          +> filterValue.assert.equal("#DONE")
+      )
+    }
   }
 }

@@ -662,11 +662,16 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitDataWithoutE
       if (access.isEmpty)
         accessHandler.onRevoke
       else
-        $.modState { s =>
-          if (s.savedViews.filter.validity ==* Valid)
-            s.copy(savedViews = s.savedViews.updateFilterText(project))
-          else
-            s
+        $.modState { s0 =>
+          var s = s0
+
+          if (s.savedViews.filter.validity is Valid)
+            s = s.copy(savedViews = s.savedViews.updateFilterText(project))
+
+          if (s.issuesPage.filterEditor.validity is Valid)
+            s = s.copy(issuesPage = s.issuesPage.updateFilterText(project))
+
+          s
         }
     }
 

@@ -4,6 +4,7 @@ import org.scalajs.dom.html
 import shipreq.webapp.base.feature.tablenav.{VirtualLoc, VirtualTable}
 import shipreq.webapp.base.test.TestState._
 import shipreq.webapp.client.project.app.Style
+import shipreq.webapp.client.project.test.TestGlobal
 
 object IssuesPageObs {
   val SummaryRegex = ".*Showing (\\d+) issue.*".r
@@ -40,16 +41,23 @@ object IssuesPageObs {
   }
 }
 
-final class IssuesPageObs($: DomZipperJs) {
+final class IssuesPageObs($: DomZipperJs, val global: TestGlobal.Obs) {
   import IssuesPageObs._
 
   val editables = $.editables0n.doms
 
-  private val tbody = $.child("table").child("tbody").domAsHtml
+  private val tbodyZipper = $.child("table").child("tbody")
+  private val tbody       = tbodyZipper.domAsHtml
 
   private val vtable = VirtualTable.from($.child("table").domAs[html.Table])
 
-  val rowCount = tbody.childElementCount
+  val rowCount = {
+    val c = tbody.childElementCount
+    if (c == 1 && tbodyZipper.exists(".ui.message"))
+      0
+    else
+      c
+  }
 
   val colCount = if (rowCount == 0) 0 else tbody.firstChild.childNodes.length
 
