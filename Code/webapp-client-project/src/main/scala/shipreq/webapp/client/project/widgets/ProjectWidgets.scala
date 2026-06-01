@@ -438,13 +438,13 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
           case a: ListMarkup      # UnorderedList  => list(ul, a)
           case _: NewLine         # BlankLine      => <.div(*.blankLine)
           case a: PlainTextMarkup # Bold           => wrapped(bold, a.inner)
-          case a: PlainTextMarkup # EmailAddress   => <.a(^.href := "mailto:" ~ a.value, a.value)
+          case a: PlainTextMarkup # EmailAddress   => <.a.toNewWindow("mailto:" ~ a.value)(a.value)
           case a: PlainTextMarkup # Italic         => wrapped(italic, a.inner)
           case a: PlainTextMarkup # Monospace      => <.pre(*.monospace, a.value)
           case a: PlainTextMarkup # Strikethrough  => wrapped(strikethrough, a.inner)
           case a: PlainTextMarkup # TeX            => katex(a)
           case a: PlainTextMarkup # Underline      => wrapped(underline, a.inner)
-          case a: PlainTextMarkup # WebAddress     => <.a(^.href := a.value, a.value)
+          case a: PlainTextMarkup # WebAddress     => <.a.toNewWindow(a.value)(a.value)
           case a: TagRef          # TagRef         => tagRef(a)
         }
 
