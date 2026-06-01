@@ -115,6 +115,16 @@ Navigate to http://localhost:14080
 
 *(Note: this only works for x64 architecture)*
 
+Either do this once or modify `Code/envs/dev/docker-compose.yml` not to use a `fake_cdn`:
+
+```sh
+# Create a fake CDN for serving the webapp's static assets
+cd Docker/dev-fake_cdn
+make build
+```
+
+Now you can download and use the prebuilt images:
+
 ```sh
 docker pull ghcr.io/shipreq/taskman:latest
 docker pull ghcr.io/shipreq/webapp:latest
