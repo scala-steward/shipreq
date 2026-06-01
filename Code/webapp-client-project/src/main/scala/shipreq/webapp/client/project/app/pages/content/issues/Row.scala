@@ -140,8 +140,9 @@ object Row {
                                                            pw    : Reusable[Px[ProjectWidgets.NoCtx]]): Reusable[IfApplicable[TagMod => EditorNavParent.Props]] = {
     render(fk.forRender) match {
       case \/-(view) =>
+        val rArgs = Reusable.byRef(args)
         val e = editor(fk, pw, HideDead)
-        Reusable.implicitly(e).map { e =>
+        Reusable.implicitly(e).tuple(rArgs).map { case (e, args) =>
           \/-(TableRow.renderEditor(Column.FieldEditor, view, e, args))
         }
       case e@ -\/(_) =>

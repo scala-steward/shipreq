@@ -391,5 +391,11 @@ object IssuesPageTest extends TestSuite {
       )
     }
 
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    "preview" - runActions(SampleProject6.project)(
+      row(1).col(Column.FieldEditor).openEditor
+      +> row(1).col(Column.FieldEditor).previewVisible.assert.equal(true)
+    )
+
   }
 }

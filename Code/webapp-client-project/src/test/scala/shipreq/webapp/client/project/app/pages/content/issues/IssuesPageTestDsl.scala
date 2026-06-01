@@ -50,6 +50,9 @@ object IssuesPageTestDsl {
     def text =
       *.focus(label + " text").value(x => f(x.obs).text)
 
+    def previewVisible =
+      *.focus(label + " preview visible").value(x => f(x.obs).preview.nonEmpty)
+
     def clickAction: *.Actions =
       *.action(NameFn {
         case None    => "Click action"

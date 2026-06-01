@@ -29,8 +29,9 @@ object IssuesPageObs {
       else
         raw
     }
-    val editor     = new OptionalEditorObs($)
-    val actions    = $.collect0n("button").map(new Action(_))
+    val editor  = new OptionalEditorObs($)
+    val preview = $.collect01(".ui.segments.raised").doms
+    val actions = $.collect0n("button").map(new Action(_))
   }
 
   final class Action($: DomZipperJs) {
