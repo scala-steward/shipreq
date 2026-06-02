@@ -117,67 +117,46 @@
     -# =============================================================================================
     .ui.container{style: "max-width: 723px! important"}
 
-      -# %div(style="margin-top:6rem")
-        %h1.ui.header.dividing
-          CardBoard
+      .ui.message.icon.huge.black(style="margin-top:6rem")
+        %i.icon.trash
+        .content
+          .header
+            ="You are about to delete the project:"
+            %div(style="margin-top:0.25em") CardBoard
 
-      %table.ui.definition.table#info(style="margin-top:6rem")
-        %tbody
-          %tr
-            %td Created
-            %td
-              %time{datetime: "2015-12-17T09:24:17Z", title: "December 17, 2015"} 4 months ago
-              =" by @japgolly"
-          %tr
-            %td Last updated
-            %td
-              %time{datetime: "2015-12-17T09:24:17Z", title: "December 17, 2015"} 2 months ago
-              =" by @japgolly"
-          %tr
-            %td Changes
-            %td 1504
-          %tr
-            %td Reqs
-            %td
-              %span(style="margin-right:1ex") 320
-              = "( +24"
-              %i.icon.trash.outline(style="margin:0")
-              = " = 344 )"
-          -# %tr
-            %td Active<br>Connections
-            %td
-              -# %div 5: you (2), @matt (1), @tyzz (2)
-              -# %div 5: you (2), @matt (1), @tyzz (2)
-              %ul(style="margin:0 0 0 -24px")
-                %li You — 2
-                %li
-                  %a(href="#") @matt
-                  -# : 1
-                  = " — 1"
-              -# %div = "= 3"
-
-      .ui.segments#menu(style="width:100%")
-
-        .ui.segment
-          .left
-            %h4.ui.header Delete
-            %p Mark this project as deleted and read-only. It can be restored at any time.
-          .right
-            %a(href="project-status-delete.html")
-              %button.ui.button.negative.basic(style="white-space: nowrap;")
-                %i.icon.trash
-                Delete
-
-        -# .ui.segment
-          .left
-            %h4.ui.header Permanently Delete
-            %p Delete this project forever. You won't be able to view or restore this project.
-          .right
-            %button.ui.button.negative(style="white-space: nowrap; margin-right:2em")
-              %i.icon.trash
-              Permanently Delete
+      .content
+        %p(style="font-size:15px")
+          %strong Deletion Reason:
+        %textarea.texteditor(rows=3 autofocus=1)
+          -# ="This, [fr3], is an item being edited.\n\nIt has multiple lines."
+        .edit-notes
+          %span enter for new line,
+          %span ctrl-enter to <a>save</a>,
+          %span esc to <a>cancel</a>.
+          %i.icon.help.circle.blueHover(style="cursor:pointer" onclick="$('#richTextEditor-help').modal('show')")
+        .ui.segments.preview-cont.raised
+          .ui.segment.preview-header.inverted.green
+            Preview
+          .ui.segment.preview-body
+            %br
+            -# = "This, "
+            -# %a{href:"#"} FR-3
+            -# , is an item being edited.
+            -# %br
+            -# %br
+            -# It has multiple lines.
+      .buttons(style="margin-top:2rem; text-align:right")
+        %a(href="project-status-live.html")
+          %button.ui.button.basic.black(style="margin-right:1rem")
+            %i.icon.remove
+            Cancel
+        %a(href="project-status-dead.html")
+          %button.ui.button.negative.basic
+            %i.icon.trash
+            Delete
 
 
   :javascript
     $('.ui.dropdown').dropdown();
     $('.omg-dimmable').dimmer({on: 'hover'});
+    // $('.ui.modal').modal();
