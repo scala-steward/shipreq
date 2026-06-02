@@ -121,7 +121,7 @@ object DockerEnv {
         .add("db.port"            , postgresPort)
         .add("redis.url"          , s"redis://localhost:$redisPort")
         .add("run.mode"           , runMode)
-        .add("shipreq.ssr.enabled", "false")
+      //.add("shipreq.ssr.enabled", "false")
         .add("shipreq.url"        , s"http://localhost:$port")
         .asList
     }
