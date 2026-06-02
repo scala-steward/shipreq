@@ -2,10 +2,10 @@
 
 ### Server-side
 
-* [ ] Add deletion reason & liveness to project
+* [x] Add deletion reason & liveness to project
 * [ ] Add new events to delete/restore project
 * [ ] Add new commands to delete/restore project
-* [ ] Upgrade protocols
+* [ ] Upgrade protocols (and add protocol tests)
 * [ ] Update random data (don't generate normal events when dead in RandomEventStream)
 * [ ] Prevent updating of dead projects (ProjectSpaLogic & TestGlobal)
 * [ ] DB: Add live field to project table and update it on delete/restore

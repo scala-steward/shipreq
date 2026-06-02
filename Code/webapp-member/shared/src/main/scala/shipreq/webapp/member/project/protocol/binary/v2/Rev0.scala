@@ -10,11 +10,9 @@ import shipreq.webapp.member.project.event._
 object Rev0 {
   import boopickle.DefaultBasic._
   import shipreq.webapp.base.protocol.binary.v1.BaseData._
-  import shipreq.webapp.member.project.protocol.binary.v1.BaseMemberData2._
   import shipreq.webapp.member.project.protocol.binary.v1.Rev1._
   import shipreq.webapp.member.project.protocol.binary.v1.Rev6._
   import shipreq.webapp.member.project.protocol.binary.v1.Rev7._
-  import shipreq.webapp.member.project.protocol.binary.v1.Rev7.SavedViewPicklers._
   import shipreq.webapp.member.project.protocol.binary.v1.Events._
   import shipreq.webapp.member.project.protocol.binary.v1.PostEvents._
 
@@ -338,33 +336,6 @@ object Rev0 {
   implicit lazy val picklerProjectAccess: Pickler[ProjectAccess] =
     pickleMap[UserId, ProjectRole].xmap(ProjectAccess.apply)(_.asMap)
 
-  implicit lazy val picklerProject: Pickler[Project] =
-    new Pickler[Project] {
-      override def pickle(p: Project)(implicit state: PickleState): Unit = {
-        state.pickle(p.name)
-        state.pickle(p.config)
-        state.pickle(p.content)
-        state.pickle(p.manualIssues)
-        state.pickle(p.savedViews)
-        state.pickle(p.access)
-        state.pickle(p.history)
-        state.pickle(p.idCeilings)
-      }
-      override def unpickle(implicit state: UnpickleState): Project = {
-        val name          = state.unpickle[Project.Name]
-        val config        = state.unpickle[ProjectConfig]
-        val content       = state.unpickle[ProjectContent]
-        val manualIssues  = state.unpickle[ManualIssues]
-        val savedViews    = state.unpickle[savedview.SavedViews.Optional]
-        val access        = state.unpickle[ProjectAccess]
-        val history       = state.unpickle[ProjectEvents]
-        val idCeilings    = state.unpickle[IdCeilings]
-        Project(name, config, content, manualIssues, savedViews, access, history, idCeilings)
-      }
-    }
-
-  implicit lazy val picklerProjectOrEvents: Pickler[Project \/ VerifiedEvent.Seq] =
-    pickleDisj
 
   implicit lazy val picklerProjectMetaData: Pickler[ProjectMetaData] =
     new Pickler[ProjectMetaData] {

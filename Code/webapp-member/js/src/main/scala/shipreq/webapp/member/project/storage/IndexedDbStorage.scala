@@ -137,8 +137,8 @@ object IndexedDbStorage {
 
     object project {
 
-      val ver = Version.fromInts(1, 0) // Bump this when any of following imports change
-      import shipreq.webapp.member.project.protocol.binary.v2.Rev0.picklerProject
+      val ver = Version.fromInts(1, 1) // Bump this when any of following imports change
+      import shipreq.webapp.member.project.protocol.binary.v2.Rev1.picklerProject
 
       implicit val pickler: SafePickler[Project] =
         picklerProject

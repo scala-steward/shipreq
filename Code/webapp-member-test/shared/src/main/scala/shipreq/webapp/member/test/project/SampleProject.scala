@@ -122,6 +122,7 @@ object SampleProject {
       ManualIssues.empty,
       savedview.SavedViews.empty,
       ProjectAccess.init(UserId1),
+      None,
       ProjectEvents.empty,
       _))
 

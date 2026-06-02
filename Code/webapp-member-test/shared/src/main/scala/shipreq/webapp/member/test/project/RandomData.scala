@@ -1709,8 +1709,18 @@ object RandomData {
     def ucStepIds       = reqsWithoutText.useCases.stepIterator.map(_.id)
     val ucStepIdG       = Gen tryGenChoose ucStepIds.toIndexedSeq
     val rcgTitleText    = TextGen.codeGroupTitleAtom(reqIdG, ucStepIdG, activeCodeIdG, cissueIdG).text
+    val delReasonText0  = TextGen.deletionReasonAtom(reqIdG, ucStepIdG, activeCodeIdG, atagIdG).text
     val delReasonText   = TextGen.deletionReasonAtom(reqIdG, ucStepIdG, activeCodeIdG, atagIdG).text1(Text.DeletionReason)
     val manualIssueText = TextGen.manualIssueAtom(reqIdG, ucStepIdG, activeCodeIdG, atagIdG).text1(Text.ManualIssue)
+
+    val projectDelReason =
+      Gen.chooseInt(64).flatMap { i =>
+        if (i == 0)
+          delReasonText0.map(Some(_))
+        else
+          Gen pure None
+      }
+
     for {
       name       <- projectName
       reqText    <- reqFieldDataText2(reqIdSet, textColIds, ucStepIdG, activeCodeIdG, cissueIdG, atagIdG)
@@ -1719,6 +1729,7 @@ object RandomData {
       dr         <- deletionReasons(reqIdG, delReasonText)
       mis        <- genManualIssues(manualIssueText)
       access     <- projectAccess
+      delReason  <- projectDelReason
       p1         = Project(
                      name,
                      cfg,
@@ -1732,6 +1743,7 @@ object RandomData {
                      mis,
                      savedview.SavedViews.empty,
                      access,
+                     delReason,
                      ProjectEvents.empty,
                      IdCeilings.zero)
       savedViews <- savedViews.savedViewsForProject(p1)

@@ -11,10 +11,10 @@ object RedisProtocol {
 
   val picklerProjectSnapshot: SafePickler[ProjectSnapshot] = {
 
-    val ver = Version.fromInts(2, 0) // Bump this when any of following imports change
+    val ver = Version.fromInts(2, 1) // Bump this when any of following imports change
     import boopickle.DefaultBasic._
     import shipreq.webapp.member.project.protocol.binary.v1.PostEvents.picklerEventOrdLatest
-    import shipreq.webapp.member.project.protocol.binary.v2.Rev0.picklerProject
+    import shipreq.webapp.member.project.protocol.binary.v2.Rev1.picklerProject
 
     val pickler: Pickler[ProjectSnapshot] =
       new Pickler[ProjectSnapshot] {

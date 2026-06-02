@@ -156,8 +156,9 @@ object ProjectSpaProtocols {
     }
 
     object Responses {
-      protected val responseVersion = Version.fromInts(2, 0) // Bump this when any of following imports change
+      protected val responseVersion = Version.fromInts(2, 1) // Bump this when any of following imports change
       import shipreq.webapp.member.project.protocol.binary.v2.Rev0._
+      import shipreq.webapp.member.project.protocol.binary.v2.Rev1._
       @inline private implicit def picklerSupp = picklerSupplimentary_v10
       @inline private implicit def picklerStateUpdate = picklerStateUpdate_v10
 

@@ -13,6 +13,8 @@ import shipreq.webapp.member.project.data.derivation._
 import shipreq.webapp.member.project.event.{ApplyEvent, Event, EventOrd, ProjectEvents, VerifiedEvent}
 import shipreq.webapp.member.project.issue.IssueTracker
 import shipreq.webapp.member.project.text.PlainText
+import shipreq.webapp.member.project.text.Text.DeletionReason
+import shipreq.webapp.member.project.text.Text.Equality._
 
 object Project {
   type Name = String
@@ -64,14 +66,15 @@ object Project {
 
   private def _init(access: ProjectAccess): Project =
     Project(
-      name         = emptyProjectName,
-      config       = ProjectConfig.empty,
-      content      = ProjectContent.empty,
-      manualIssues = ManualIssues.empty,
-      savedViews   = savedview.SavedViews.empty,
-      access       = access,
-      history      = ProjectEvents.empty,
-      idCeilings   = IdCeilings.zero,
+      name           = emptyProjectName,
+      config         = ProjectConfig.empty,
+      content        = ProjectContent.empty,
+      manualIssues   = ManualIssues.empty,
+      savedViews     = savedview.SavedViews.empty,
+      access         = access,
+      deletionReason = None,
+      history        = ProjectEvents.empty,
+      idCeilings     = IdCeilings.zero,
     )
 
   def reqIdsSortedByPubId(reqs: Requirements, reqTypes: ReqTypes): ArraySeq[ReqId] =
@@ -110,18 +113,22 @@ object Project {
 // =====================================================================================================================
 
 @Lenses
-final case class Project(name        : Project.Name,
-                         config      : ProjectConfig,
-                         content     : ProjectContent,
-                         manualIssues: ManualIssues,
-                         savedViews  : savedview.SavedViews.Optional,
-                         access      : ProjectAccess,
-                         history     : ProjectEvents,
-                         idCeilings  : IdCeilings) extends EventOrd.CmpOps {
+final case class Project(name          : Project.Name,
+                         config        : ProjectConfig,
+                         content       : ProjectContent,
+                         manualIssues  : ManualIssues,
+                         savedViews    : savedview.SavedViews.Optional,
+                         access        : ProjectAccess,
+                         deletionReason: Option[DeletionReason.OptionalText],
+                         history       : ProjectEvents,
+                         idCeilings    : IdCeilings) extends EventOrd.CmpOps {
 
   override def toString =
     s"Project{v${history.ordAsInt}}"
     //ShowSize(this).showTree
+
+  def live: Live =
+    Live when deletionReason.isEmpty
 
   @inline def update(ves: VerifiedEvent.NonEmptySeq): ErrorMsg \/ Project =
     update(ves.values)
