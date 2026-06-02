@@ -9,7 +9,7 @@ import shipreq.webapp.base.feature.AsyncFeature
 import shipreq.webapp.base.protocol.ServerSideProcInvoker
 import shipreq.webapp.base.ui.semantic.{Button, Icon}
 import shipreq.webapp.client.project.app.Style.reqtable.{page => *}
-import shipreq.webapp.client.project.feature.{DeletionFeature, Modal}
+import shipreq.webapp.client.project.feature.{DeletionFeature, FakeModal}
 import shipreq.webapp.client.project.util.DataReusability._
 import shipreq.webapp.client.project.widgets.ProjectWidgets
 import shipreq.webapp.member.UiText
@@ -28,7 +28,7 @@ object SelectionCtrls {
 
   final case class Props(sel       : RowSelectionVisible,
                          rows      : Vector[Row],
-                         setModal  : Modal.SetFn,
+                         setModal  : FakeModal.SetFn,
                          project   : Project,
                          widgets   : ProjectWidgets.NoCtx,
                          textSearch: TextSearch,
@@ -96,7 +96,7 @@ object SelectionCtrls {
     }
 
     private val clearModal: Callback =
-      $.props.flatMap(_.setModal(None))
+      $.props.flatMap(_.setModal(FakeModal.none))
 
     private object deleteReqs {
       def action(p: Props, reqs: Vector[Req]): Option[ActionInfo] =
@@ -107,10 +107,10 @@ object SelectionCtrls {
           ActionInfo(affects, action)
         }
 
-      private def modal(p: Props, reqs: NonEmptySet[ReqId]): Modal = {
+      private def modal(p: Props, reqs: NonEmptySet[ReqId]): FakeModal = {
         val data = DeletionFeature.deletionData(p.project, reqs)
         val props = DeletionFeature.DeletionFormProps(data, p.widgets, p.textSearch, io, clearModal)
-        Modal(props.render)
+        FakeModal(props.render)
       }
 
       private def io(cmd: UpdateContentCmd.DeleteReqs): Callback = {
@@ -131,10 +131,10 @@ object SelectionCtrls {
           ActionInfo(affects, action)
         }
 
-      private def modal(p: Props, reqs: NonEmptySet[ReqId]): Modal = {
+      private def modal(p: Props, reqs: NonEmptySet[ReqId]): FakeModal = {
         val data = DeletionFeature.restorationData(p.project, reqs)
         val props = DeletionFeature.RestorationFormProps(data, p.widgets, io, clearModal)
-        Modal(props.render)
+        FakeModal(props.render)
       }
 
       private def io(cmd: UpdateContentCmd.RestoreContent): Callback = {

@@ -60,14 +60,14 @@ object ReqTablePage {
   @Lenses
   final case class State(selection: RowSelection,
                          newStuff : NewStuff.State,
-                         modal    : Modal.State)
+                         modal    : FakeModal.State)
 
   object State {
     def init: State =
       State(
         Selection.empty,
         NewStuff.State.init,
-        Modal.none)
+        FakeModal.none)
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -85,9 +85,9 @@ object ReqTablePage {
     import sp._
     import savedViewStatic.{stateAccess => _, _}
 
-    val modNewStuff : ModFn[NewStuff.State] = Reusable.fn.state(stateAccess zoomStateL State.newStuff).modStateFn
-    val setSelection: SetFn[RowSelection  ] = Reusable.fn.state(stateAccess zoomStateL State.selection).setStateFn
-    val setModal    : SetFn[Modal.State   ] = Reusable.fn.state(stateAccess zoomStateL State.modal).setStateFn
+    val modNewStuff : ModFn[NewStuff.State ] = Reusable.fn.state(stateAccess zoomStateL State.newStuff).modStateFn
+    val setSelection: SetFn[RowSelection   ] = Reusable.fn.state(stateAccess zoomStateL State.selection).setStateFn
+    val setModal    : SetFn[FakeModal.State] = Reusable.fn.state(stateAccess zoomStateL State.modal).setStateFn
 
     private val manualPxs = Px.ManualCollection()
 

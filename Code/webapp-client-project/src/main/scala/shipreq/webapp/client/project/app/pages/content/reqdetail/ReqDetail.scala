@@ -73,11 +73,11 @@ object ReqDetail {
                             editability: Permission)
 
   @Lenses
-  final case class State(modal: Modal.State, graph: ReqImplicationGraph.State)
+  final case class State(modal: FakeModal.State, graph: ReqImplicationGraph.State)
 
   object State {
     def init: State =
-      apply(Modal.none, ReqImplicationGraph.State.init)
+      apply(FakeModal.none, ReqImplicationGraph.State.init)
 
     implicit val reusability: Reusability[State] =
       Reusability.derive
@@ -233,11 +233,11 @@ object ReqDetail {
         _         <- CallbackOption.optionCallback(component.backend.startEdit(editor))
       } yield ()
 
-    private def setModal(modal: Modal.State): Callback =
+    private def setModal(modal: FakeModal.State): Callback =
       $.props.flatMap(_.state.zoomStateL(State.modal) setState modal)
 
     private def clearModal: Callback =
-      setModal(Modal.none)
+      setModal(FakeModal.none)
 
     private def renderNotFound(ep: ExternalPubid): VdomElement = {
       val projectName: String = pxProject.value().name
@@ -576,7 +576,7 @@ object ReqDetail {
         import Px.AutoValue._
         val data = DeletionFeature.deletionData(pxProject, NonEmptySet one id)
         val props = DeletionFeature.DeletionFormProps(data, pxProjectWidgetsNoCtx, pxTextSearch, run, clearModal)
-        Some(Modal(props.render))
+        Some(FakeModal(props.render))
       } >>= setModal
 
     private def restore(id: ReqId): Callback =
@@ -585,7 +585,7 @@ object ReqDetail {
         import Px.AutoValue._
         val data = DeletionFeature.restorationData(pxProject, NonEmptySet one id)
         val props = DeletionFeature.RestorationFormProps(data, pxProjectWidgetsNoCtx, run, clearModal)
-        Some(Modal(props.render))
+        Some(FakeModal(props.render))
       } >>= setModal
 
     private val deleteFn = Reusable.fn(delete _)
