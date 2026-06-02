@@ -58,12 +58,11 @@ object HelpModal {
 
   // ===================================================================================================================
 
-  def apply(modalHeader: VdomNode, groups: Groups): Modal = {
+  def apply(modalHeader: VdomNode, groups: Groups): Modal.Static = {
     val tbody = <.tbody(groups.iterator.flatMap(_.vdom).toSeq: _*)
     val table = <.table(*.table, tbody)
-    Modal(modalHeader, table)
+    Modal.static(modalHeader, table)
   }
 
   val code = <.code(*.code)
 }
-

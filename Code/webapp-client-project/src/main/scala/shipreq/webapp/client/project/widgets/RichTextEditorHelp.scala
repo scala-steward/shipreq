@@ -209,7 +209,7 @@ object RichTextEditorHelp {
       )(
         s"<$texTag>{1 \\over n} + x^2</$texTag>"))
 
-  private def create(t: Text.Generic): Modal = {
+  private def create(t: Text.Generic): Modal.Static = {
 
     def customise(group: Group, criteria: Text.Generic => Boolean): Group = {
       if (criteria(t))
@@ -248,12 +248,12 @@ object RichTextEditorHelp {
 
 
 
-  private val lookup: Map[Text.Generic, Modal] =
+  private val lookup: Map[Text.Generic, Modal.Static] =
     Text.values.iterator.map(t => t -> create(t)).toMap
 
   val allRendered: TagMod =
     TagMod(lookup.valuesIterator.map(_.render).toList: _*)
 
-  def modalFor(text: Text.Generic): Modal =
+  def modalFor(text: Text.Generic): Modal.Static =
     lookup(text)
 }
