@@ -319,5 +319,27 @@ object MakeEventTest extends TestSuite {
         "mod"   - test(UserId1, Some(Admin))
       }
     }
+
+    "UpdateLiveness" - {
+      import UpdateLivenessCmd._
+
+      "delete" - {
+        val reason: Text.DeletionReason.OptionalText = "Too many bugs"
+        val e = assertMakeEvent(_.updateLiveness(Delete(reason), _), { case e: ProjectDelete => e })
+        assertEq(e.reason, reason)
+
+        assertApplies(e)
+        assertMakeEventFails(_.updateLiveness(Delete(reason), _))
+      }
+
+      "restore" - {
+        "alreadyLive" - assertNoChange(_.updateLiveness(Restore, _))
+
+        "fromDead" - {
+          assertApplies(ProjectDelete(∅))
+          assertMakeEvent[ProjectRestore.type](_.updateLiveness(Restore, _), { case ProjectRestore => ProjectRestore })
+        }
+      }
+    }
   }
 }

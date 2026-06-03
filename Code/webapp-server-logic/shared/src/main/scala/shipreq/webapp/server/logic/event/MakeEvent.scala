@@ -43,6 +43,22 @@ object MakeEvent {
 
   // ===================================================================================================================
 
+  def updateLiveness(cmd: UpdateLivenessCmd, project: Project): Result =
+    cmd match {
+
+      case UpdateLivenessCmd.Delete(reason) =>
+        if (project.live is Dead)
+          fail("Project already deleted.")
+        else
+          Event.ProjectDelete(reason)
+
+      case UpdateLivenessCmd.Restore =>
+        if (project.live is Live)
+          Unchanged
+        else
+          Event.ProjectRestore
+    }
+
   def updateAccess(cmd: UpdateAccessCmd.Modify, project: Project): Result = {
     if (project.access(cmd.userId) ==* cmd.newRole)
       Unchanged

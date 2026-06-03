@@ -67,7 +67,7 @@ object ProjectSpaProtocols {
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   // Bump when *any* codec changes happen
-  private val wsrrVersion = Version.fromInts(2, 0)
+  private val wsrrVersion = Version.fromInts(2, 1)
 
   // When any of the following change, bump wsrrVersion
   import boopickle.DefaultBasic._
@@ -78,6 +78,7 @@ object ProjectSpaProtocols {
   import UpdateAccessCmd.CodecsV1._
   import UpdateConfigCmd.CodecsV2._
   import UpdateContentCmd.CodecsV4._
+  import UpdateLivenessCmd.CodecsV1._
 
   private object Codecs {
 
@@ -300,6 +301,10 @@ object ProjectSpaProtocols {
       override def fold[F[_ <: WsReqRes], G[_ <: WsReqRes]](f: WsReqRes.Fold[F, G])(r: F[this.type]) = f.onUpdateAccess(r)
     }
 
+    case object UpdateLiveness extends Base[UpdateLivenessCmd, EventResult](12) {
+      override def fold[F[_ <: WsReqRes], G[_ <: WsReqRes]](f: WsReqRes.Fold[F, G])(r: F[this.type]) = f.onUpdateLiveness(r)
+    }
+
     implicit def univEq: UnivEq[WsReqRes] = UnivEq.derive
     val values = AdtMacros.adtValues[WsReqRes]
     val byKey = StaticLookupFn.useArrayBy(values.whole)(_.key).toOption
@@ -317,6 +322,7 @@ object ProjectSpaProtocols {
         onFieldMandatorinessMod: F[FieldMandatorinessMod.type] => G[FieldMandatorinessMod.type],
         onReqTypeImplicationMod: F[ReqTypeImplicationMod.type] => G[ReqTypeImplicationMod.type],
         onUpdateAccess         : F[UpdateAccess         .type] => G[UpdateAccess         .type],
+        onUpdateLiveness       : F[UpdateLiveness       .type] => G[UpdateLiveness       .type],
         ) { self =>
       @inline def apply(r: WsReqRes)(f: F[r.type]) = r.fold(this)(f)
       def compose[H[_ <: WsReqRes]](h: Fold[G, H]): Fold[F, H] =
@@ -333,6 +339,7 @@ object ProjectSpaProtocols {
           onFieldMandatorinessMod = f => h.onFieldMandatorinessMod(self.onFieldMandatorinessMod(f)),
           onReqTypeImplicationMod = f => h.onReqTypeImplicationMod(self.onReqTypeImplicationMod(f)),
           onUpdateAccess          = f => h.onUpdateAccess         (self.onUpdateAccess         (f)),
+          onUpdateLiveness        = f => h.onUpdateLiveness       (self.onUpdateLiveness       (f)),
         )
     }
 

@@ -4,7 +4,7 @@
 
 * [x] Add deletion reason & liveness to project
 * [x] Add new events to delete/restore project
-* [ ] Add new commands to delete/restore project
+* [x] Add new commands to delete/restore project
 * [x] Upgrade protocols (and add protocol tests)
 * [x] Update random data (don't generate normal events when dead in RandomEventStream)
 * [ ] Prevent updating of dead projects (ProjectSpaLogic & TestGlobal)

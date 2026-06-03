@@ -105,6 +105,7 @@ final class TestGlobal(initialProjectLibrary: ProjectLibrary.WithMetaData,
         onFieldMandatorinessMod = _ => (),
         onReqTypeImplicationMod = failLeft,
         onUpdateAccess          = failLeft,
+        onUpdateLiveness        = failLeft,
       )
       def reqReq = req.req
       val res = msgFold(req.reqRes)(reqReq)
@@ -259,6 +260,7 @@ final class TestGlobal(initialProjectLibrary: ProjectLibrary.WithMetaData,
       onUpdateSavedViews      = updateProject (MakeEvent.updateSavedViews),
       onUpdateManualIssues    = updateProject (MakeEvent.updateManualIssues),
       onReqTypeImplicationMod = updateProjectI(MakeEvent.reqTypeImplicationMod),
+      onUpdateLiveness        = updateProject (MakeEvent.updateLiveness),
       onUpdateAccess          = cmd =>
         UpdateAccessCmd.resolve[CallbackTo, MsgFoldOut[WsReqRes.UpdateAccess.type]](cmd)(
           userId     = userId,

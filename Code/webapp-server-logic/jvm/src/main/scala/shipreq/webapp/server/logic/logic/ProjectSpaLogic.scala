@@ -461,6 +461,7 @@ object ProjectSpaLogic extends StrictLogging {
         onUpdateSavedViews      = updateProject (MakeEvent.updateSavedViews),
         onUpdateManualIssues    = updateProject (MakeEvent.updateManualIssues),
         onReqTypeImplicationMod = updateProjectI(MakeEvent.reqTypeImplicationMod),
+        onUpdateLiveness        = updateProject (MakeEvent.updateLiveness),
         onUpdateAccess          = onUpdateAccess,
         onFieldMandatorinessMod = _ => F.pure(-\/(MsgError.FunctionNoLongerSupported("fieldMandatorinessMod"))),
       )
