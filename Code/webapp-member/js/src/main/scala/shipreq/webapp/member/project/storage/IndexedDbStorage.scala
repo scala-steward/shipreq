@@ -127,7 +127,6 @@ object IndexedDbStorage {
   // ===================================================================================================================
 
   private[IndexedDbStorage] final class Schema(ctx: ClientSideStorage.Context, encryption: Encryption, dbNamePrefix: String) {
-    import SafePickler.ConstructionHelperImplicits._
 
     val dbName = IndexedDb.DatabaseName(dbNamePrefix + ctx.namespace)
     val dbVer  = 1
@@ -141,9 +140,7 @@ object IndexedDbStorage {
       import shipreq.webapp.member.project.protocol.binary.v2.Rev1.picklerProject
 
       implicit val pickler: SafePickler[Project] =
-        picklerProject
-          .asVersion(ver)
-          .withMagicNumbers(0x8CF0655B, 0x5A8218EB)
+        SafePickler.of(ver, picklerProject).withMagicNumbers(0x8CF0655B, 0x5A8218EB)
 
       val format: BinaryFormat[Project] =
         BinaryFormat.versioned(

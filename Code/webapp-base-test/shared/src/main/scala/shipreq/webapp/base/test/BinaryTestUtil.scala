@@ -5,8 +5,8 @@ import cats.Eq
 import nyaya.gen.Gen
 import shipreq.base.test.BaseTestUtil._
 import shipreq.base.util.BinaryData
+import shipreq.webapp.base.protocol.Version
 import shipreq.webapp.base.protocol.binary.SafePickler
-import shipreq.webapp.base.protocol.binary.SafePickler.ConstructionHelperImplicits._
 import sourcecode.Line
 
 object BinaryTestUtil {
@@ -143,17 +143,17 @@ object BinaryTestUtil {
   // Pickler testing
 
   def assertRoundTripP[A](a: A)(implicit p: Pickler[A], e: Eq[A], l: Line): Unit = {
-    val sp = p.asV1(0)
+    val sp = SafePickler.of(Version.v1(0), _ => p)
     assertDecodeOk(sp)(sp.encode(a), a)
   }
 
   def propTestRoundTripP[A](g: Gen[A])(implicit p: Pickler[A], e: Eq[A], l: Line): Unit = {
-    val sp = p.asV1(0)
+    val sp = SafePickler.of(Version.v1(0), _ => p)
     g.samples().take(propTestSize).foreach(assertRoundTrip(sp)(_))
   }
 
   def assertRoundTripsP[A](as: Iterable[A])(implicit p: Pickler[A], e: Eq[A], l: Line): Unit = {
-    val sp = p.asV1(0)
+    val sp = SafePickler.of(Version.v1(0), _ => p)
     var i = 0
     for (a <- as) {
       i += 1

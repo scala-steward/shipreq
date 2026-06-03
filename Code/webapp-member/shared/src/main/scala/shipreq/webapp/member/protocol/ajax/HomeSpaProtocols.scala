@@ -2,8 +2,7 @@ package shipreq.webapp.member.protocol.ajax
 
 import boopickle.DefaultBasic._
 import shipreq.webapp.base.config.Urls
-import shipreq.webapp.base.protocol.Protocol
-import shipreq.webapp.base.protocol.binary.SafePickler.ConstructionHelperImplicits._
+import shipreq.webapp.base.protocol._
 import shipreq.webapp.base.protocol.binary._
 import shipreq.webapp.member.project.data._
 
@@ -29,10 +28,10 @@ object HomeSpaProtocols {
       val picklerResponse: Pickler[Response] = implicitly
 
       implicit val safePicklerRequest: SafePickler[Request] =
-        picklerRequest.asV1(0).withMagicNumbers(0x42A63E36, 0x0C1B2566)
+        SafePickler.of(Version.v1(0), _ => picklerRequest).withMagicNumbers(0x42A63E36, 0x0C1B2566)
 
       implicit val safePicklerResponse: SafePickler[Response] =
-        picklerResponse.asV2(0).withMagicNumbers(0xB27B40C3, 0x004A70E7)
+        SafePickler.of(Version.v2(0), _ => picklerResponse).withMagicNumbers(0xB27B40C3, 0x004A70E7)
 
       defAjax[Request, Response]("cp")
     }

@@ -15,7 +15,7 @@ import shipreq.webapp.base.protocol.Version.ordering.mkOrderingOps
 final case class SafePickler[A](header : Option[MagicNumber],
                                 footer : Option[MagicNumber],
                                 version: Version,
-                                body   : Pickler[A]) {
+                                body   : Version.Minor => Pickler[A]) {
 
   type Data = A
 
@@ -30,7 +30,7 @@ final case class SafePickler[A](header : Option[MagicNumber],
     copy(footer = Some(MagicNumber(footer)))
 
   def map[B](f: Pickler[A] => Pickler[B]): SafePickler[B] =
-    copy(body = f(body))
+    copy(body = v => f(body(v)))
 
   private val picklerHeader  = header.map(pickleMagicNumber(version, _))
   private val picklerFooter  = footer.map(pickleMagicNumber(version, _))
@@ -42,7 +42,7 @@ final case class SafePickler[A](header : Option[MagicNumber],
       override def pickle(a: A)(implicit state: PickleState): Unit = {
         picklerHeader.foreach(_.pickle(()))
         picklerVersion.pickle(version)
-        body.pickle(a)
+        body(version.minor).pickle(a)
         picklerFooter.foreach(_.pickle(()))
       }
 
@@ -52,7 +52,7 @@ final case class SafePickler[A](header : Option[MagicNumber],
         if (v.major !=* version.major)
           throw DecodingFailure.UnsupportedMajorVer(localVer = version, actual = v)
         try {
-          val a = body.unpickle
+          val a = body(v.minor).unpickle
           picklerFooter.foreach(_.unpickle)
           a
         } catch {
@@ -196,15 +196,8 @@ object SafePickler {
       }
     }
 
-  object ConstructionHelperImplicits {
-    implicit class SafePickler_PicklerExt[A](private val self: Pickler[A]) extends AnyVal {
-      @inline def asVersion(major: Int, minor: Int): SafePickler[A] = asVersion(Version.fromInts(major, minor))
-      def asVersion(v: Version): SafePickler[A] = SafePickler(None, None, v, self)
-      def asV1(minorVer: Int)  : SafePickler[A] = asVersion(Version.v1(minorVer))
-      def asV2(minorVer: Int)  : SafePickler[A] = asVersion(Version.v2(minorVer))
-    }
-
-  }
+  def of[A](v: Version, body: Version.Minor => Pickler[A]): SafePickler[A] =
+    SafePickler(None, None, v, body)
 }
 
 final case class MagicNumber(value: Int) {

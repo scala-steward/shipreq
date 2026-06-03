@@ -7,7 +7,7 @@ package shipreq.webapp.member.project.protocol.binary
 object Latest {
 
   @inline implicit def picklerEvent                    = v2.Rev0.picklerEvent
-  @inline implicit def picklerProject                  = v2.Rev1.picklerProject
+  @inline implicit def picklerProject                  = v2.Rev1.picklerProject(v2.Rev1.latestMinorVersion)
   @inline implicit def picklerVerifiedEvent            = v2.Rev0.picklerVerifiedEvent
   @inline implicit def picklerVerifiedEventSeq         = v2.Rev0.picklerVerifiedEventSeq
   @inline implicit def picklerVerifiedEventNonEmptySeq = v2.Rev0.picklerVerifiedEventNonEmptySeq

@@ -9,7 +9,6 @@ import shipreq.webapp.base.config.Urls
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.protocol._
 import shipreq.webapp.base.protocol.binary.SafePickler
-import shipreq.webapp.base.protocol.binary.SafePickler.ConstructionHelperImplicits._
 import shipreq.webapp.base.protocol.websocket.WebSocketShared
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.event.{EventOrd, VerifiedEvent}
@@ -130,8 +129,7 @@ object ProjectSpaProtocols {
           }
         }
 
-      pickler
-        .asVersion(wsrrVersion)
+      SafePickler.of(wsrrVersion, _ => pickler)
         .withMagicNumbers(0x1DB44559, 0x53562938)
     }
 
@@ -162,8 +160,9 @@ object ProjectSpaProtocols {
       @inline private implicit def picklerSupp = picklerSupplimentary_v10
       @inline private implicit def picklerStateUpdate = picklerStateUpdate_v10
 
-      private implicit val picklerInitAppData: Pickler[InitAppData] =
+      private def picklerInitAppData(v: Version.Minor): Pickler[InitAppData] =
         new Pickler[InitAppData] {
+          private implicit val picklerProjectV = picklerProject(v)
           override def pickle(a: InitAppData)(implicit state: PickleState): Unit = {
             state.pickle(a.projectData)
             state.pickle(a.projectMetaData)
@@ -177,8 +176,10 @@ object ProjectSpaProtocols {
           }
         }
 
-      private implicit val picklerInitAppRes: Pickler[ErrorMsg \/ InitAppData] =
+      private def picklerInitAppRes(v: Version.Minor): Pickler[ErrorMsg \/ InitAppData] = {
+        implicit val x = picklerInitAppData(v)
         pickleDisj
+      }
 
       private implicit val picklerEventResult: Pickler[WsReqRes.EventResult] =
         pickleDisj
@@ -188,22 +189,16 @@ object ProjectSpaProtocols {
       // We're keeping a magic footer just in case.
 
       implicit val safePicklerUnit: SafePickler[Unit] =
-        unitPickler.asV1(0) // no magic numbers because no data
+        SafePickler.of(Version.v1(0), _ => unitPickler) // no magic numbers because no data
 
       implicit val safePicklerInitAppRes: SafePickler[ErrorMsg \/ InitAppData] =
-        picklerInitAppRes
-          .asVersion(responseVersion)
-          .withMagicNumberFooter(0x8819303B)
+        SafePickler.of(responseVersion, picklerInitAppRes).withMagicNumberFooter(0x8819303B)
 
       implicit val safePicklerEventResult: SafePickler[WsReqRes.EventResult] =
-        picklerEventResult
-          .asVersion(responseVersion)
-          .withMagicNumberFooter(0x86DA8677)
+        SafePickler.of(responseVersion, _ => picklerEventResult).withMagicNumberFooter(0x86DA8677)
 
       implicit val safePicklerStateUpdate: SafePickler[StateUpdate] =
-        picklerStateUpdate
-          .asVersion(responseVersion)
-          .withMagicNumberFooter(0x8473B8AD)
+        SafePickler.of(responseVersion, _ => picklerStateUpdate).withMagicNumberFooter(0x8473B8AD)
     }
 
     object Push {
@@ -214,9 +209,7 @@ object ProjectSpaProtocols {
         picklerStateUpdate
 
       val safePickler: SafePickler[WebSocket.Push] =
-        pickler
-          .asVersion(version)
-          .withMagicNumberFooter(0x06F60C06)
+        SafePickler.of(version, _ => pickler).withMagicNumberFooter(0x06F60C06)
     }
   }
 

@@ -69,8 +69,10 @@ object WebWorkerCmd {
       i => Option.when(i > 0)(EventOrd.Latest(i)))(
       _.fold(0)(_.value))
 
-  implicit val picklerUpdateProject: Pickler[UpdateProject] =
+  implicit val picklerUpdateProject: Pickler[UpdateProject] = {
+    implicit val x = picklerProjectOrEvents(latestMinorVersion)
     transformPickler(UpdateProject.apply)(_.data)
+  }
 
   implicit val picklerErrorMsgOrSvg: Pickler[ErrorMsg \/ Svg] =
     pickleDisj
