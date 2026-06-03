@@ -16,6 +16,12 @@ trait ApplyOtherEvent {
     def applyProjectNameSet(e: ProjectNameSet): Eval[Unit] =
       validateProjectName(e.name).flatMap(name =>
         Eval.mod(Project.name.replace(name)))
+
+    def applyProjectDelete(e: ProjectDelete): Eval[Unit] =
+      Eval.mod(Project.deletionReason.replace(Some(e.reason)))
+
+    def applyProjectRestore(e: ProjectRestore.type): Eval[Unit] =
+      Eval.mod(Project.deletionReason.replace(None))
   }
 
   // ===================================================================================================================

@@ -2889,6 +2889,12 @@ object RandomData {
     val genProjectNameSet: Gen[ProjectNameSet] =
       projectName map ProjectNameSet
 
+    val genProjectDelete: Gen[ProjectDelete] =
+      deletionReason map ProjectDelete
+
+    val genProjectRestore: Gen[ProjectRestore.type] =
+      Gen pure ProjectRestore
+
     val manualIssueId = id map ManualIssueId
 
     val genManualIssueCreate = Gen.apply2(ManualIssueCreate)(manualIssueId, manualIssueText)
@@ -2900,6 +2906,9 @@ object RandomData {
         case _: AccessUpdate            => genAccessUpdate
         case _: ApplicableTagCreate     => genApplicableTagCreate
         case _: ApplicableTagUpdate     => genApplicableTagUpdate
+        case _: CodeGroupCreate         => genCodeGroupCreate
+        case _: CodeGroupsDelete        => genCodeGroupsDelete
+        case _: CodeGroupUpdate         => genCodeGroupUpdate
         case _: ContentRestore          => genContentRestore
         case _: CustomIssueTypeCreate   => genCustomIssueTypeCreate
         case _: CustomIssueTypeDelete   => genCustomIssueTypeDelete
@@ -2927,11 +2936,10 @@ object RandomData {
         case _: ManualIssueCreate       => genManualIssueCreate
         case _: ManualIssueDelete       => genManualIssueDelete
         case _: ManualIssueUpdate       => genManualIssueUpdate
+        case _: ProjectDelete           => genProjectDelete
         case _: ProjectNameSet          => genProjectNameSet
+        case _: ProjectRestore.type     => genProjectRestore
         case _: ProjectTemplateApply    => genProjectTemplateApply
-        case _: CodeGroupCreate         => genCodeGroupCreate
-        case _: CodeGroupsDelete        => genCodeGroupsDelete
-        case _: CodeGroupUpdate         => genCodeGroupUpdate
         case _: ReqCodesPatch           => genReqCodesPatch
         case _: ReqFieldCustomTextSet   => genReqFieldCustomTextSet
         case _: ReqImplicationsPatch    => genReqImplicationsPatch

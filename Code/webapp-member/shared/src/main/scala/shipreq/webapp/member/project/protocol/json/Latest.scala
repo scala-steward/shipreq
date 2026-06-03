@@ -5,12 +5,11 @@ package shipreq.webapp.member.project.protocol.json
   * object rather than all uses that don't care and just need the latest.
   */
 object Latest {
-  import v2.{Rev0 => L}
 
-  @inline implicit def decoderEvent         = L.decoderEvent
-  @inline implicit def encoderEvent         = L.encoderEvent
-  @inline implicit def decoderVerifiedEvent = L.decoderVerifiedEvent
-  @inline implicit def encoderVerifiedEvent = L.encoderVerifiedEvent
+  @inline implicit def decoderEvent         = v2.Rev1.decoderEvent
+  @inline implicit def encoderEvent         = v2.Rev1.encoderEvent
+  @inline implicit def decoderVerifiedEvent = v2.Rev1.decoderVerifiedEvent
+  @inline implicit def encoderVerifiedEvent = v2.Rev1.encoderVerifiedEvent
   @inline implicit def codecValidFilter     = v1.Rev7.codecValidFilter
 
   val AtomCodecs      = v1.Rev6.AtomCodecs

@@ -1106,12 +1106,24 @@ final class ApplicableEventGen(emptyState: State, curState: State, config: Rando
     Option.when(gens.nonEmpty)(Gen.chooseGen_!(gens))
   }
 
+  val genProjectDelete: Gen[ProjectDelete] =
+    // liveness is checked for all events in `possibleEventGensWithNames`
+    deletionReason.map(ProjectDelete)
+
+  val genProjectRestore: Option[Gen[ProjectRestore.type]] =
+    Option.when(p.live is Dead) {
+      Gen pure ProjectRestore
+    }
+
   private val possibleActiveEventGensWithNames: NonEmptyVector[(EventName, Option[Gen[ActiveEvent]])] =
     valuesForAdt[ActiveEvent, (EventName, Option[Gen[ActiveEvent]])] {
       // Note: not using [case e: Xxx => EventName(e) -> xxx] here because the valuesForAdt doesn't like it
       case _: AccessUpdate            => EventName("AccessUpdate"           ) -> genAccessUpdate
       case _: ApplicableTagCreate     => EventName("ApplicableTagCreate"    ) -> genApplicableTagCreate
       case _: ApplicableTagUpdate     => EventName("ApplicableTagUpdate"    ) -> genApplicableTagUpdate
+      case _: CodeGroupCreate         => EventName("CodeGroupCreate"        ) -> genCodeGroupCreate
+      case _: CodeGroupsDelete        => EventName("CodeGroupsDelete"       ) -> genCodeGroupsDelete
+      case _: CodeGroupUpdate         => EventName("CodeGroupUpdate"        ) -> genCodeGroupUpdate
       case _: ContentRestore          => EventName("ContentRestore"         ) -> genContentRestore
       case _: CustomIssueTypeCreate   => EventName("CustomIssueTypeCreate"  ) -> genCustomIssueTypeCreate
       case _: CustomIssueTypeDelete   => EventName("CustomIssueTypeDelete"  ) -> genCustomIssueTypeDelete
@@ -1139,11 +1151,10 @@ final class ApplicableEventGen(emptyState: State, curState: State, config: Rando
       case _: ManualIssueCreate       => EventName("ManualIssueCreate"      ) -> genManualIssueCreate
       case _: ManualIssueDelete       => EventName("ManualIssueDelete"      ) -> genManualIssueDelete
       case _: ManualIssueUpdate       => EventName("ManualIssueUpdate"      ) -> genManualIssueUpdate
+      case _: ProjectDelete           => EventName("ProjectDelete"          ) -> genProjectDelete
       case _: ProjectNameSet          => EventName("ProjectNameSet"         ) -> genProjectNameSet
+      case _: ProjectRestore.type     => EventName("ProjectRestore"         ) -> genProjectRestore
       case _: ProjectTemplateApply    => EventName("ProjectTemplateApply"   ) -> genProjectTemplateApply
-      case _: CodeGroupCreate         => EventName("CodeGroupCreate"        ) -> genCodeGroupCreate
-      case _: CodeGroupsDelete        => EventName("CodeGroupsDelete"       ) -> genCodeGroupsDelete
-      case _: CodeGroupUpdate         => EventName("CodeGroupUpdate"        ) -> genCodeGroupUpdate
       case _: ReqCodesPatch           => EventName("ReqCodesPatch"          ) -> genReqCodesPatch
       case _: ReqFieldCustomTextSet   => EventName("ReqFieldCustomTextSet"  ) -> genReqFieldCustomTextSet
       case _: ReqImplicationsPatch    => EventName("ReqImplicationsPatch"   ) -> genReqImplicationsPatch
@@ -1185,16 +1196,19 @@ final class ApplicableEventGen(emptyState: State, curState: State, config: Rando
       case _: SavedViewUpdateV1       => EventName("SavedViewUpdateV1"      ) -> genSavedViewUpdateV1
     }
 
-  private val possibleEventGensWithNames: NonEmptyVector[(EventName, Option[Gen[Event]])] = {
-    var es =
-      if (config.retiredEvents)
-        possibleActiveEventGensWithNames ++ possibleRetiredEventGensWithNames
-      else
-        possibleActiveEventGensWithNames
-    if (!config.reqCodeEvents)
-      es = NonEmptyVector.force(es.whole.filterNot(_._1.value.contains("Code")))
-    es
-  }
+  private val possibleEventGensWithNames: NonEmptyVector[(EventName, Option[Gen[Event]])] =
+    if (p.live is Dead)
+      NonEmptyVector.one(EventName("ProjectRestore") -> genProjectRestore)
+    else {
+      var es =
+        if (config.retiredEvents)
+          possibleActiveEventGensWithNames ++ possibleRetiredEventGensWithNames
+        else
+          possibleActiveEventGensWithNames
+      if (!config.reqCodeEvents)
+        es = NonEmptyVector.force(es.whole.filterNot(_._1.value.contains("Code")))
+      es
+    }
 
   private val possibleEventGens: NonEmptyVector[Option[Gen[Event]]] =
     possibleEventGensWithNames.map(_._2)

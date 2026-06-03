@@ -88,6 +88,8 @@ object ProjectEventTypes {
   // =====
 
   final val TypeProjectNameSet          = 3000
+  final val TypeProjectDelete           = 3001
+  final val TypeProjectRestore          = 3002
 
   final val TypeManualIssueCreate       = 3010
   final val TypeManualIssueUpdate       = 3011
@@ -106,10 +108,10 @@ object ProjectEventTypes {
 
   private def allTypes = AdtMacros.valuesForAdt[Event, Short] {
     case _: AccessUpdate            => TypeAccessUpdate
-    case _: ApplicableTagCreateV1   => TypeApplicableTagCreateV1
     case _: ApplicableTagCreate     => TypeApplicableTagCreateV2
-    case _: ApplicableTagUpdateV1   => TypeApplicableTagUpdateV1
+    case _: ApplicableTagCreateV1   => TypeApplicableTagCreateV1
     case _: ApplicableTagUpdate     => TypeApplicableTagUpdateV2
+    case _: ApplicableTagUpdateV1   => TypeApplicableTagUpdateV1
     case _: CodeGroupCreate         => TypeCodeGroupCreate
     case _: CodeGroupsDelete        => TypeCodeGroupsDelete
     case _: CodeGroupUpdate         => TypeCodeGroupUpdate
@@ -118,28 +120,28 @@ object ProjectEventTypes {
     case _: CustomIssueTypeDelete   => TypeCustomIssueTypeDelete
     case _: CustomIssueTypeRestore  => TypeCustomIssueTypeRestore
     case _: CustomIssueTypeUpdate   => TypeCustomIssueTypeUpdate
-    case _: CustomReqTypeCreateV1   => TypeCustomReqTypeCreateV1
     case _: CustomReqTypeCreate     => TypeCustomReqTypeCreateV2
+    case _: CustomReqTypeCreateV1   => TypeCustomReqTypeCreateV1
     case _: CustomReqTypeDelete     => TypeCustomReqTypeDelete
     case _: CustomReqTypeDeleteHard => TypeCustomReqTypeDeleteHard
     case _: CustomReqTypeDeleteSoft => TypeCustomReqTypeDeleteSoft
     case _: CustomReqTypeRestore    => TypeCustomReqTypeRestore
-    case _: CustomReqTypeUpdateV1   => TypeCustomReqTypeUpdateV1
     case _: CustomReqTypeUpdate     => TypeCustomReqTypeUpdateV2
+    case _: CustomReqTypeUpdateV1   => TypeCustomReqTypeUpdateV1
     case _: FieldCustomDelete       => TypeFieldCustomDelete
-    case _: FieldCustomImpCreateV1  => TypeFieldCustomImpCreateV1
     case _: FieldCustomImpCreate    => TypeFieldCustomImpCreateV2
-    case _: FieldCustomImpUpdateV1  => TypeFieldCustomImpUpdateV1
+    case _: FieldCustomImpCreateV1  => TypeFieldCustomImpCreateV1
     case _: FieldCustomImpUpdate    => TypeFieldCustomImpUpdateV2
+    case _: FieldCustomImpUpdateV1  => TypeFieldCustomImpUpdateV1
     case _: FieldCustomRestore      => TypeFieldCustomRestore
-    case _: FieldCustomTagCreateV1  => TypeFieldCustomTagCreateV1
     case _: FieldCustomTagCreate    => TypeFieldCustomTagCreateV2
-    case _: FieldCustomTagUpdateV1  => TypeFieldCustomTagUpdateV1
+    case _: FieldCustomTagCreateV1  => TypeFieldCustomTagCreateV1
     case _: FieldCustomTagUpdate    => TypeFieldCustomTagUpdateV2
-    case _: FieldCustomTextCreateV1 => TypeFieldCustomTextCreateV1
+    case _: FieldCustomTagUpdateV1  => TypeFieldCustomTagUpdateV1
     case _: FieldCustomTextCreate   => TypeFieldCustomTextCreateV2
-    case _: FieldCustomTextUpdateV1 => TypeFieldCustomTextUpdateV1
+    case _: FieldCustomTextCreateV1 => TypeFieldCustomTextCreateV1
     case _: FieldCustomTextUpdate   => TypeFieldCustomTextUpdateV2
+    case _: FieldCustomTextUpdateV1 => TypeFieldCustomTextUpdateV1
     case _: FieldReposition         => TypeFieldReposition
     case _: FieldStaticAdd          => TypeFieldStaticAdd
     case _: FieldStaticRemove       => TypeFieldStaticRemove
@@ -149,19 +151,21 @@ object ProjectEventTypes {
     case _: ManualIssueCreate       => TypeManualIssueCreate
     case _: ManualIssueDelete       => TypeManualIssueDelete
     case _: ManualIssueUpdate       => TypeManualIssueUpdate
+    case _: ProjectDelete           => TypeProjectDelete
     case _: ProjectNameSet          => TypeProjectNameSet
+    case _: ProjectRestore.type     => TypeProjectRestore
     case _: ProjectTemplateApply    => TypeProjectTemplateApply
     case _: ReqCodesPatch           => TypeReqCodesPatch
     case _: ReqFieldCustomTextSet   => TypeReqFieldCustomTextSet
     case _: ReqImplicationsPatch    => TypeReqImplicationsPatch
     case _: ReqsDelete              => TypeReqsDelete
     case _: ReqTagsPatch            => TypeReqTagsPatch
-    case _: SavedViewCreateV1       => TypeSavedViewCreateV1
     case _: SavedViewCreate         => TypeSavedViewCreate
+    case _: SavedViewCreateV1       => TypeSavedViewCreateV1
     case _: SavedViewDefaultSet     => TypeSavedViewDefaultSet
     case _: SavedViewDelete         => TypeSavedViewDelete
-    case _: SavedViewUpdateV1       => TypeSavedViewUpdateV1
     case _: SavedViewUpdate         => TypeSavedViewUpdate
+    case _: SavedViewUpdateV1       => TypeSavedViewUpdateV1
     case _: TagDelete               => TypeTagDelete
     case _: TagGroupCreate          => TypeTagGroupCreate
     case _: TagGroupUpdate          => TypeTagGroupUpdate

@@ -180,7 +180,9 @@ final class ApplyEvent(implicit val trust: Trust)
       case e: ManualIssueCreate       => ManualIssueEvents       applyCreate                e
       case e: ManualIssueDelete       => ManualIssueEvents       applyDelete                e
       case e: ManualIssueUpdate       => ManualIssueEvents       applyUpdate                e
+      case e: ProjectDelete           => OtherEvents             applyProjectDelete         e
       case e: ProjectNameSet          => OtherEvents             applyProjectNameSet        e
+      case e: ProjectRestore.type     => OtherEvents             applyProjectRestore        e
       case e: ReqCodesPatch           => ReqCodeLogic            applyReqCodesPatch         e
       case e: ReqFieldCustomTextSet   => ContentCommon           applyReqFieldCustomTextSet e
       case e: ReqImplicationsPatch    => ContentCommon           applyReqImplicationsPatch  e

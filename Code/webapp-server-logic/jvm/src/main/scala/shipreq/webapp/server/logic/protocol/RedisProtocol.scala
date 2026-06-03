@@ -36,10 +36,11 @@ object RedisProtocol {
   // ===================================================================================================================
 
   val picklerEvent: SafePickler[VerifiedEvent] = {
-    val ver = Version.fromInts(2, 0) // Bump this when any of following imports change
-    import shipreq.webapp.member.project.protocol.binary.v2.Rev0.picklerVerifiedEvent
+    val ver = Version.fromInts(2, 1) // Bump this when any of following imports change
+    import shipreq.webapp.member.project.protocol.binary.v2.Rev1.picklerVerifiedEvent
 
-    // no magic numbers - overhead to high proportional to the event size, too frequent
+    // - no magic numbers - overhead to high proportional to the event size, too frequent
+    // - picklerVerifiedEvent is already backwards-compatible - no need to inspect version
     SafePickler.of(ver, _ => picklerVerifiedEvent)
   }
 

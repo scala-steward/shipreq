@@ -265,4 +265,11 @@ object Event {
   // Access
 
   final case class AccessUpdate(userId: UserId, newRole: Option[ProjectRole]) extends ActiveEvent
+
+  // ===================================================================================================================
+  // Liveness
+
+  final case class ProjectDelete(reason: Text.DeletionReason.OptionalText) extends ActiveEvent
+
+  case object ProjectRestore extends ActiveEvent
 }

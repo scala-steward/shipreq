@@ -13,6 +13,8 @@ object EventPermission {
 
       case _: ProjectNameSet
          | _: ProjectTemplateApply
+         | _: ProjectDelete
+         |    ProjectRestore
          =>
           ProjectRole.Admin
 
