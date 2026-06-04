@@ -9,8 +9,8 @@ import scalacss.ScalaCssReact._
 import shipreq.base.util.ErrorMsg
 import shipreq.webapp.base.data.Rolodex
 import shipreq.webapp.base.feature.AsyncFeature
-import shipreq.webapp.base.ui.semantic.{Colour, Icon, Message, Size}
 import shipreq.webapp.base.protocol.ServerSideProcInvoker
+import shipreq.webapp.base.ui.semantic.{Colour, Icon, Message, Size}
 import shipreq.webapp.client.project.app.Style.{statusPage => *}
 import shipreq.webapp.client.project.widgets.ProjectWidgets
 import shipreq.webapp.member.project.data._
@@ -77,6 +77,11 @@ object StatusPage {
       async             = p.async,
     ).render
 
+    def restoreSegment = RestoreProjectSegment.Props(
+      sspUpdateLiveness = p.sspUpdateLiveness,
+      async             = p.async,
+    ).render
+
     <.main(BaseStyles.containerLarge, *.main,
       heading,
       if (p.state.value.showDeletionForm)
@@ -84,7 +89,10 @@ object StatusPage {
       else
         <.div(
           table,
-          deleteSegment,
+          p.project.live match {
+            case Live => deleteSegment
+            case Dead => restoreSegment
+          },
         )
     )
   }
