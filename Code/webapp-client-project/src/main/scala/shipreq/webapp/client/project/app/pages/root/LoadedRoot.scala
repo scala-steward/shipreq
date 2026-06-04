@@ -255,6 +255,9 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitDataWithoutE
     private val accessPageAsyncW: AsyncFeature.Write.D1[admin.access.AccessPage.AsyncKey, ErrorMsg] =
       AsyncFeature.Write.D1.init($ zoomStateL State.accessPageAsync)
 
+    private val statusPageAsyncW: AsyncFeature.Write.D0[ErrorMsg] =
+      AsyncFeature.Write.D0.init($ zoomStateL State.statusPageAsync)
+
     private val updateConfigCmdInvoker: UpdateConfigCmd ~=> Callback =
       Reusable.fn(cmd => updateConfigCmdAsyncW(cmd)(sspUpdateConfigE(cmd)))
 
@@ -623,6 +626,8 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitDataWithoutE
             project = project,
             rolodex = rolodex,
             meta    = cbProjectMetaData.runNow(),
+            state   = StateSnapshot.zoomL(State.statusPage)(s).setStateVia($),
+            async   = AsyncFeature.ReadWrite.D0(statusPageAsyncW, s.statusPageAsync),
           ).render
       }
 

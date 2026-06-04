@@ -2041,6 +2041,25 @@ object Style extends StyleSheet.Inline {
   object statusPage {
 
     val main = style(paddingTop(2.em))
+
+    val segment = style(
+      marginTop(3 em).important,
+      display.flex,
+      alignItems.flexEnd,
+    )
+
+    val segmentLeft = style(
+      flexGrow(1),
+      marginRight(8 ex),
+    )
+
+    val segmentButton = style(
+      marginRight(`0`).important,
+    )
+
+    val deleteFormHeaderProjectName = style(
+      marginTop(0.25 em),
+    )
   }
 
   // ===================================================================================================================
