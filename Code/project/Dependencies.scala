@@ -239,7 +239,7 @@ object Dependencies {
   val scaffeine    = jvmOnly("com.github.blemale"         %% "scaffeine"             % "5.3.0")
   val scalaCheck   = jvmOnly("org.scalacheck"             %% "scalacheck"            % "1.19.0")
   val scalaLogging = jvmOnly("com.typesafe.scala-logging" %% "scala-logging"         % "3.9.6")
-  val scalaXml     = jvmOnly("org.scala-lang.modules"     %% "scala-xml"             % "1.3.1")
+  val scalaXml     = jvmOnly("org.scala-lang.modules"     %% "scala-xml"             % "2.4.0")
   val scalaz       = jvmOnly("org.scalaz"                 %% "scalaz-core"           % "7.3.8") // only used for scalaz.Heap
 
   val scalajsBenchmark = jsOnly("com.github.japgolly.scalajs-benchmark" %% "benchmark"         % "0.10.0")
