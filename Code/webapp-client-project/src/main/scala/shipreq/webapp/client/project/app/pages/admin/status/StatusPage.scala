@@ -9,10 +9,12 @@ import scalacss.ScalaCssReact._
 import shipreq.base.util.ErrorMsg
 import shipreq.webapp.base.data.Rolodex
 import shipreq.webapp.base.feature.AsyncFeature
+import shipreq.webapp.base.ui.semantic.{Colour, Icon, Message, Size}
 import shipreq.webapp.base.protocol.ServerSideProcInvoker
 import shipreq.webapp.client.project.app.Style.{statusPage => *}
 import shipreq.webapp.client.project.widgets.ProjectWidgets
 import shipreq.webapp.member.project.data._
+import shipreq.webapp.member.project.data.derivation.NaTags
 import shipreq.webapp.member.project.protocol.websocket.UpdateLivenessCmd
 import shipreq.webapp.member.project.text.TextSearch
 import shipreq.webapp.member.ui.BaseStyles
@@ -44,6 +46,16 @@ object StatusPage {
 
   private def render(p: Props) = {
 
+    def heading =
+      p.project.deletionReason.map { reason =>
+        Message(
+          Message.Style(colour = Colour.Black, size = Size.Huge),
+          Icon.Trash,
+          "This project is deleted.",
+          <.div(*.deadReason, p.widgets.text(reason, Live, NaTags.none, Optional))
+        )
+      }
+
     def table = StatusTable.Props(
         project = p.project,
         rolodex = p.rolodex,
@@ -66,6 +78,7 @@ object StatusPage {
     ).render
 
     <.main(BaseStyles.containerLarge, *.main,
+      heading,
       if (p.state.value.showDeletionForm)
         deleteForm
       else

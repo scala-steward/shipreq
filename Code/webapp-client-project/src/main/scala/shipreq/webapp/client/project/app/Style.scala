@@ -2042,6 +2042,10 @@ object Style extends StyleSheet.Inline {
 
     val main = style(paddingTop(2.em))
 
+    val deadReason = style(
+      fontSize(16 px),
+    )
+
     val segment = style(
       marginTop(3 em).important,
       display.flex,
