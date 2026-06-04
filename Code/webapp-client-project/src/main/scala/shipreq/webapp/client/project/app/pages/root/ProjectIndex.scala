@@ -37,6 +37,7 @@ object ProjectIndex {
     case object CfgReqTypes extends WithPage("Req Types" , Icon.Inbox         , Page.CfgReqTypes, "Configure types of reqs.")
     case object CfgTags     extends WithPage("Tags"      , Icon.Tags          , Page.CfgTags    , "Configure attributes for content and organisation.")
     case object Access      extends WithPage("Access"    , Icon.Users         , Page.Access     , "Configure users' access to this project.")
+    case object Status      extends WithPage("Status"    , Icon.Cogs          , Page.Status     , "Configure the status of this project.")
 
     implicit def univEq: UnivEq[Item] = UnivEq.derive
 
@@ -46,6 +47,7 @@ object ProjectIndex {
         case ReqDetail   => None
       } {
         case Page.Access       => Some(Access)
+        case Page.Status       => Some(Status)
         case Page.ReqTable     => Some(ReqTable)
         case Page.ReqGraph     => Some(ReqGraph)
         case Page.Issues       => Some(Issues)
@@ -88,6 +90,7 @@ object ProjectIndex {
       "Admin", Icon.Lock, Colour.Red, Colour.Grey,
       NonEmptyVector(
         Access,
+        Status,
       ))
 
     implicit def univEq: UnivEq[Category] = UnivEq.derive

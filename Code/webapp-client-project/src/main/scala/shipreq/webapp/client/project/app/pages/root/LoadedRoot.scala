@@ -479,6 +479,7 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitDataWithoutE
       def editorArgs        = pxEditorArgs.value()
       def onlyAdminCanEdit  = ProjectRole.Admin.isSatisfiedBy(pxProjectRole.value())
       def globalEditability = pxGlobalEditability.value()
+      def rolodex           = unsafeSupp().rolodex
 
       val body: VdomElement = p.page match {
 
@@ -609,7 +610,7 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitDataWithoutE
           admin.access.AccessPage.Props(
             userId          = initPageData.userId,
             access          = project.access,
-            rolodex         = unsafeSupp().rolodex,
+            rolodex         = rolodex,
             editability     = onlyAdminCanEdit,
             state           = StateSnapshot.zoomL(State.access)(s).setStateVia($),
             confirmJs       = confirmJs,
@@ -617,6 +618,12 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitDataWithoutE
             async           = AsyncFeature.ReadWrite.D1(accessPageAsyncW, s.accessPageAsync.toRead),
           ).render
 
+        case Page.Status =>
+          admin.status.StatusPage.Props(
+            project = project,
+            rolodex = rolodex,
+            meta    = cbProjectMetaData.runNow(),
+          ).render
       }
 
       State.recorder.record(s)

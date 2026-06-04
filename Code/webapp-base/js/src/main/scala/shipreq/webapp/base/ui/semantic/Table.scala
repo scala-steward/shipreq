@@ -10,4 +10,7 @@ object Table {
   val celledCompactDefinition =
     <.table(^.cls := "ui table celled compact definition")
 
+  val definition =
+    <.table(^.cls := "ui table definition")
+
 }

@@ -26,6 +26,9 @@ final case class ProjectMetaData(id           : ProjectId.Public,
   def eventsPostInit =
     eventsTotal - eventsInit
 
+  def reqsDead =
+    reqsTotal - reqsLive
+
   def lastUpdatedOrCreatedAt: Instant =
     lastUpdatedAt.getOrElse(createdAt)
 

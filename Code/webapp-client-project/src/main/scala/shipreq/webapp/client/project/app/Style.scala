@@ -2038,6 +2038,13 @@ object Style extends StyleSheet.Inline {
 
   // ===================================================================================================================
 
+  object statusPage {
+
+    val main = style(paddingTop(2.em))
+  }
+
+  // ===================================================================================================================
+
   initInnerObjects(
     accessPage.existingUserSegment.segment,
     accessPage.leaveProjectSegment.segment,
@@ -2064,6 +2071,7 @@ object Style extends StyleSheet.Inline {
     reqTypeConfig.implicationHelp,
     restorationForm.bottomSection,
     savedViews.activeItem,
+    statusPage.main,
     tagConfig.tagTree,
     tags.iconDead,
     widgets.impGraphEdgeEditor.root,
