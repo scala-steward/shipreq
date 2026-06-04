@@ -400,6 +400,9 @@ object DbInterpreter {
       // has already been modified.
       Update("UPDATE project SET name=? WHERE id=?")
 
+    val updateProjectLive: Update[(Boolean, ProjectId)] =
+      Update("UPDATE project SET live=? WHERE id=?")
+
     val updateProjectStats: Update[(Int, Int, ProjectId)] =
       Update("UPDATE project SET events_total = events_total + 1, reqs_live=?, reqs_total=?, accessed_at = now(), updated_at = now() WHERE id=?")
   }
@@ -441,6 +444,9 @@ object DbInterpreter {
 
     override protected def updateProjectName(id: ProjectId, name: Project.Name): ConnectionIO[Unit] =
       SaveProjectEventLogic.updateProjectName.run((name, id)).void
+
+    override protected def updateProjectLive(id: ProjectId, live: Live): ConnectionIO[Unit] =
+      SaveProjectEventLogic.updateProjectLive.run((live is Live, id)).void
   }
 
   trait SaveProjectEvent extends DB.SaveProjectEvent[ConnectionIO] with OnSaveProjectEvent {

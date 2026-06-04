@@ -81,7 +81,6 @@ abstract class DbLaws extends TestSuite {
         assertEq(db.getUsernamesByUserId(users.values.toSet), \/-(users.map(_.swap)))
         \/-(users)
       }
-
   }
 
   private implicit def autoUserId(u: User): UserId = u.id

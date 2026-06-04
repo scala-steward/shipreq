@@ -46,7 +46,8 @@ object MockDb {
                                 events       : VerifiedEvent.Seq,
                                 createdAt    : Instant,
                                 accessedAt   : Instant,
-                                lastUpdatedAt: Option[Instant]) {
+                                lastUpdatedAt: Option[Instant],
+                                live         : Live) {
 
     lazy val project: Project =
       ApplyEvent.trusted(events)(Project.init(creatorId)).getOrThrow()
@@ -301,7 +302,7 @@ final class MockDb(_now: Eval[Instant]) extends DB.Algebra[Eval] with DB.ForSecu
     val initEvents = events.size
     val ves = verifyEvents(Project.init(creatorId))(events: _*)
     val now = Instant.now()
-    val mde = MockDb.ProjectEntry(projectId, creatorId, key, initEvents, ves, now, now, Some(now))
+    val mde = MockDb.ProjectEntry(projectId, creatorId, key, initEvents, ves, now, now, Some(now), Live)
     projects += mde
     addProjectAccess(projectId, creatorId, ProjectRole.Admin)
   }
@@ -467,6 +468,11 @@ final class MockDb(_now: Eval[Instant]) extends DB.Algebra[Eval] with DB.ForSecu
 
   override protected def updateProjectName(id: ProjectId, name: Project.Name) = Eval.always[Unit] {
     // Hmm, we don't store the project name in ProjectEntry
+  }
+
+  override protected def updateProjectLive(pid: ProjectId, live: Live) = Eval.always[Unit] {
+    val entry = projects.need(pid)
+    projects += entry.copy(live = live)
   }
 
   override def getProjectRolodex(pid: ProjectId) = Eval.always[Rolodex] {
