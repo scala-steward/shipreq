@@ -1,4 +1,4 @@
-<self>               712.18 KB  53.2%
+<self>               712.21 KB  53.2%
 lodash               140.01 KB  10.5%
 moment               76.39 KB   5.71%
 react-color          75.34 KB   5.63%

@@ -1782,7 +1782,7 @@
     44 [remove] i.icon.shopping.cart:before
     40 [remove] i.icon.bar.graph:before
     34 [remove] i.icon.key:before
-    35 [remove] i.icon.cogs:before
+    35 [keep  ] i.icon.cogs:before
     42 [remove] i.icon.discussions:before
     43 [remove] i.icon.like.outline:before
     46 [remove] i.icon.dislike.outline:before

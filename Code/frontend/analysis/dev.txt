@@ -1,4 +1,4 @@
-<self>                      605.68 KB  39.8%
+<self>                      605.71 KB  39.8%
 lodash                      140.01 KB  9.19%
 react-svg-pan-zoom          102.51 KB  6.73%
 moment                      76.39 KB   5.02%
