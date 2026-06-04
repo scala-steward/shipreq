@@ -61,7 +61,10 @@ object MockDb {
         createdAt     = createdAt,
         accessedAt    = accessedAt,
         lastUpdatedAt = lastUpdatedAt,
-      ).copy(role = Some(role))
+      ).copy(
+        role = Some(role),
+        live = live,
+      )
 
     def projectLoad: VerifiedEvent.Seq =
       events

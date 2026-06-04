@@ -10,7 +10,7 @@ import shipreq.webapp.base.data._
 import shipreq.webapp.base.test.TestAjaxClient
 import shipreq.webapp.base.test.TestState._
 import shipreq.webapp.client.home.test.PrepareEnv
-import shipreq.webapp.member.project.data._
+import shipreq.webapp.member.project.data.{Dead => _, Live => _, _}
 import shipreq.webapp.member.protocol.ajax.HomeSpaProtocols
 import shipreq.webapp.member.protocol.entrypoint.HomeSpaEntryPoint
 import shipreq.webapp.member.ui.BaseStyles
@@ -121,9 +121,9 @@ object HomeTest extends TestSuite {
     import shipreq.webapp.member.test.project.UnsafeTypes._
     import ProjectRole._
     val now = Instant.now()
-    val piE = ProjectMetaData("abeF", "Empty", Admin, 0, 0, 0, 0, now.minus(18, DAYS), now.minus(19, DAYS), None)
-    val piO = ProjectMetaData("qwe3F", "Old", Admin, 2, 1581, 311, 340, now.minus(92, DAYS), now.minus(7, MINUTES), Some(now.minus(7, MINUTES)))
-    val piN = ProjectMetaData("wenkj", "New", Admin, 2, 2, 0, 0, now, now, None)
+    val piE = ProjectMetaData("abeF", "Empty", Admin, 0, 0, 0, 0, now.minus(18, DAYS), now.minus(19, DAYS), None, Live)
+    val piO = ProjectMetaData("qwe3F", "Old", Admin, 2, 1581, 311, 340, now.minus(92, DAYS), now.minus(7, MINUTES), Some(now.minus(7, MINUTES)), Live)
+    val piN = ProjectMetaData("wenkj", "New", Admin, 2, 2, 0, 0, now, now, None, Live)
     val pc  = List(piE, piO)
   }
 

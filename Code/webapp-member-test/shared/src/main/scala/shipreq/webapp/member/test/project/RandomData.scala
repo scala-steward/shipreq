@@ -1804,6 +1804,7 @@ object RandomData {
       createdAt      = if (t1 isBefore t2) t1 else t2
       accessedAt     = if (t1 isBefore t2) t2 else t1
       lastUpdatedAt <- instantPast.option.map(_.filter(_ isAfter createdAt))
+      live          <- genLive
     } yield
     ProjectMetaData(
       id            = id,
@@ -1815,7 +1816,8 @@ object RandomData {
       reqsTotal     = reqsTotal,
       createdAt     = createdAt,
       accessedAt    = accessedAt,
-      lastUpdatedAt = lastUpdatedAt)
+      lastUpdatedAt = lastUpdatedAt,
+      live          = live)
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   object savedViews {

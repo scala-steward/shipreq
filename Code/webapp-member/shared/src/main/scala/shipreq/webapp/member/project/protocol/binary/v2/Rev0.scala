@@ -1,6 +1,5 @@
 package shipreq.webapp.member.project.protocol.binary.v2
 
-import java.time.Instant
 import shipreq.webapp.base.data._
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.event._
@@ -67,45 +66,6 @@ object Rev0 {
 
   implicit lazy val picklerProjectAccess: Pickler[ProjectAccess] =
     pickleMap[UserId, ProjectRole].xmap(ProjectAccess.apply)(_.asMap)
-
-  implicit lazy val picklerProjectMetaData: Pickler[ProjectMetaData] =
-    new Pickler[ProjectMetaData] {
-      override def pickle(a: ProjectMetaData)(implicit state: PickleState): Unit = {
-        state.pickle(a.id)
-        state.pickle(a.role)
-        state.pickle(a.name)
-        state.pickle(a.eventsInit)
-        state.pickle(a.eventsTotal)
-        state.pickle(a.reqsLive)
-        state.pickle(a.reqsTotal)
-        state.pickle(a.createdAt)
-        state.pickle(a.accessedAt)
-        state.pickle(a.lastUpdatedAt)
-      }
-      override def unpickle(implicit state: UnpickleState): ProjectMetaData = {
-        val id            = state.unpickle[ProjectId.Public]
-        val role          = state.unpickle[Option[ProjectRole]]
-        val name          = state.unpickle[Project.Name]
-        val eventsInit    = state.unpickle[Int]
-        val eventsTotal   = state.unpickle[Int]
-        val reqsLive      = state.unpickle[Int]
-        val reqsTotal     = state.unpickle[Int]
-        val createdAt     = state.unpickle[Instant]
-        val accessedAt    = state.unpickle[Instant]
-        val lastUpdatedAt = state.unpickle[Option[Instant]]
-        ProjectMetaData(
-          id            = id           ,
-          role          = role         ,
-          name          = name         ,
-          eventsInit    = eventsInit   ,
-          eventsTotal   = eventsTotal  ,
-          reqsLive      = reqsLive     ,
-          reqsTotal     = reqsTotal    ,
-          createdAt     = createdAt    ,
-          accessedAt    = accessedAt   ,
-          lastUpdatedAt = lastUpdatedAt)
-      }
-    }
 
   implicit lazy val picklerRolodex: Pickler[Rolodex] =
     pickleMap[UserId, Username].xmap(Rolodex.apply)(_.asMap)

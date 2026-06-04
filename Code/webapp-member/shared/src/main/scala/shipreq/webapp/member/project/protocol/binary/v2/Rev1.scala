@@ -11,6 +11,7 @@ import shipreq.webapp.member.project.text.Text.DeletionReason
 object Rev1 {
   import boopickle.DefaultBasic._
   import shipreq.webapp.base.protocol.binary.v1.BaseData._
+  import shipreq.webapp.member.project.protocol.binary.v1.BaseMemberData1._
   import shipreq.webapp.member.project.protocol.binary.v1.BaseMemberData2._
   import shipreq.webapp.member.project.protocol.binary.v1.Rev1._
   import shipreq.webapp.member.project.protocol.binary.v1.Rev6._
@@ -329,5 +330,48 @@ object Rev1 {
     implicit val p = picklerProject(projectVer)
     pickleDisj
   }
+
+  // New field: .live
+  implicit lazy val picklerProjectMetaData: Pickler[ProjectMetaData] =
+    new Pickler[ProjectMetaData] {
+      override def pickle(a: ProjectMetaData)(implicit state: PickleState): Unit = {
+        state.pickle(a.id)
+        state.pickle(a.role)
+        state.pickle(a.name)
+        state.pickle(a.eventsInit)
+        state.pickle(a.eventsTotal)
+        state.pickle(a.reqsLive)
+        state.pickle(a.reqsTotal)
+        state.pickle(a.createdAt)
+        state.pickle(a.accessedAt)
+        state.pickle(a.lastUpdatedAt)
+        state.pickle(a.live)
+      }
+      override def unpickle(implicit state: UnpickleState): ProjectMetaData = {
+        val id            = state.unpickle[ProjectId.Public]
+        val role          = state.unpickle[Option[ProjectRole]]
+        val name          = state.unpickle[Project.Name]
+        val eventsInit    = state.unpickle[Int]
+        val eventsTotal   = state.unpickle[Int]
+        val reqsLive      = state.unpickle[Int]
+        val reqsTotal     = state.unpickle[Int]
+        val createdAt     = state.unpickle[Instant]
+        val accessedAt    = state.unpickle[Instant]
+        val lastUpdatedAt = state.unpickle[Option[Instant]]
+        val live          = state.unpickle[Live]
+        ProjectMetaData(
+          id            = id,
+          role          = role,
+          name          = name,
+          eventsInit    = eventsInit,
+          eventsTotal   = eventsTotal,
+          reqsLive      = reqsLive,
+          reqsTotal     = reqsTotal,
+          createdAt     = createdAt,
+          accessedAt    = accessedAt,
+          lastUpdatedAt = lastUpdatedAt,
+          live          = live)
+      }
+    }
 
 }

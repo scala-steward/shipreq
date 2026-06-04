@@ -9,7 +9,7 @@
 * [x] Update random data (don't generate normal events when dead in RandomEventStream)
 * [x] Prevent updating of dead projects (ProjectSpaLogic & TestGlobal)
 * [x] DB: Add live field to project table and update it on delete/restore
-* [ ] Update project metadata to include a live field
+* [x] Update project metadata to include a live field
 
 ### Client-side
 

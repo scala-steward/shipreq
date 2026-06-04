@@ -17,7 +17,8 @@ final case class ProjectMetaData(id           : ProjectId.Public,
                                  reqsTotal    : Int,
                                  createdAt    : Instant,
                                  accessedAt   : Instant,
-                                 lastUpdatedAt: Option[Instant]) {
+                                 lastUpdatedAt: Option[Instant],
+                                 live         : Live) {
 
   def latestOrd: Option[EventOrd.Latest] =
     Option.when(eventsTotal > 0)(EventOrd.Latest(eventsTotal))
@@ -67,7 +68,8 @@ object ProjectMetaData {
       reqsTotal     = p.content.reqs.size,
       createdAt     = createdAt,
       accessedAt    = accessedAt,
-      lastUpdatedAt = lastUpdatedAt)
+      lastUpdatedAt = lastUpdatedAt,
+      live          = p.live)
 
   def props(project: Project): Prop[ProjectMetaData] = {
     type P = ProjectMetaData

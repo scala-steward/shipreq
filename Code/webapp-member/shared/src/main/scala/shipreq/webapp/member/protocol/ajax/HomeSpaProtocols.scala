@@ -22,7 +22,7 @@ object HomeSpaProtocols {
     type Response = ProjectMetaData
 
     val ajax = {
-      import shipreq.webapp.member.project.protocol.binary.v2.Rev0._
+      import shipreq.webapp.member.project.protocol.binary.v2.Rev1._
 
       val picklerRequest: Pickler[Request] = implicitly
       val picklerResponse: Pickler[Response] = implicitly
@@ -31,7 +31,7 @@ object HomeSpaProtocols {
         SafePickler.of(Version.v1(0), _ => picklerRequest).withMagicNumbers(0x42A63E36, 0x0C1B2566)
 
       implicit val safePicklerResponse: SafePickler[Response] =
-        SafePickler.of(Version.v2(0), _ => picklerResponse).withMagicNumbers(0xB27B40C3, 0x004A70E7)
+        SafePickler.of(Version.v2(1), _ => picklerResponse).withMagicNumbers(0xB27B40C3, 0x004A70E7)
 
       defAjax[Request, Response]("cp")
     }
