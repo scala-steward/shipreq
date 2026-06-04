@@ -2060,6 +2060,23 @@ object Style extends StyleSheet.Inline {
     val deleteFormHeaderProjectName = style(
       marginTop(0.25 em),
     )
+
+    val deleteFormEditorHeader = style(
+      marginTop(2 em),
+      marginBottom(0.5 em),
+      fontSize(15 px),
+      fontWeight.bold,
+    )
+
+    val deleteFormButtons = style(
+      marginTop(2 em),
+      textAlign.right,
+    )
+
+    val deleteFormButtonGap = style(
+      width(1 rem),
+      display.inlineBlock,
+    )
   }
 
   // ===================================================================================================================

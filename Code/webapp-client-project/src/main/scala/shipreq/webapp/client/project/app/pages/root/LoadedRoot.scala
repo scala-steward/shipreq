@@ -73,6 +73,7 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitDataWithoutE
     private val sspUpdateManualIssues  = Reusable.byRef(global.sspUpdateManualIssues)
     private val sspUpdateManualIssuesE = global.sspUpdateManualIssues.map(_.events)
     private val sspUpdateAccess        = global.sspUpdateAccess
+    private val sspUpdateLiveness      = global.sspUpdateLiveness
 
     private val feedbackModal: FeedbackModal = {
       val projectMetadata = global.projectMetadata(initPageData.projectId)
@@ -623,11 +624,14 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitDataWithoutE
 
         case Page.Status =>
           admin.status.StatusPage.Props(
-            project = project,
-            rolodex = rolodex,
-            meta    = cbProjectMetaData.runNow(),
-            state   = StateSnapshot.zoomL(State.statusPage)(s).setStateVia($),
-            async   = AsyncFeature.ReadWrite.D0(statusPageAsyncW, s.statusPageAsync),
+            project           = project,
+            rolodex           = rolodex,
+            meta              = cbProjectMetaData.runNow(),
+            widgets           = projectWidgets,
+            textSearch        = pxTextSearch.value(),
+            state             = StateSnapshot.zoomL(State.statusPage)(s).setStateVia($),
+            sspUpdateLiveness = sspUpdateLiveness,
+            async             = AsyncFeature.ReadWrite.D0(statusPageAsyncW, s.statusPageAsync),
           ).render
       }
 
