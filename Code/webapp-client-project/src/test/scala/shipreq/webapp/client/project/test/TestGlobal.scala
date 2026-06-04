@@ -246,21 +246,18 @@ final class TestGlobal(initialProjectLibrary: ProjectLibrary.WithMetaData,
       pxProject.toCallback.flatMap(run)
     }
 
-    def updateProjectI[I](mkEvent: I => MakeEvent.Result): MsgFn[I] =
-      updateProject((i, _) => mkEvent(i))
-
     val msgFold = WsReqRes.Fold[MsgFoldIn, MsgFoldOut](
       onInitApp               = _ => None,
       onReconnect             = _ => None,
       onSync                  = _ => None,
-      onUpdateConfig          = updateProject (MakeEvent.updateConfig),
-      onCreateContent         = updateProject (MakeEvent.createContent),
-      onUpdateContent         = updateProject (MakeEvent.updateContent),
-      onProjectNameSet        = updateProjectI(MakeEvent.projectNameSetFn),
-      onUpdateSavedViews      = updateProject (MakeEvent.updateSavedViews),
-      onUpdateManualIssues    = updateProject (MakeEvent.updateManualIssues),
-      onReqTypeImplicationMod = updateProjectI(MakeEvent.reqTypeImplicationMod),
-      onUpdateLiveness        = updateProject (MakeEvent.updateLiveness),
+      onUpdateConfig          = updateProject(MakeEvent.updateConfig),
+      onCreateContent         = updateProject(MakeEvent.createContent),
+      onUpdateContent         = updateProject(MakeEvent.updateContent),
+      onProjectNameSet        = updateProject(MakeEvent.projectNameSetFn),
+      onUpdateSavedViews      = updateProject(MakeEvent.updateSavedViews),
+      onUpdateManualIssues    = updateProject(MakeEvent.updateManualIssues),
+      onReqTypeImplicationMod = updateProject(MakeEvent.reqTypeImplicationMod),
+      onUpdateLiveness        = updateProject(MakeEvent.updateLiveness),
       onUpdateAccess          = cmd =>
         UpdateAccessCmd.resolve[CallbackTo, MsgFoldOut[WsReqRes.UpdateAccess.type]](cmd)(
           userId     = userId,

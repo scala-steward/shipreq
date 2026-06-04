@@ -7,7 +7,7 @@
 * [x] Add new commands to delete/restore project
 * [x] Upgrade protocols (and add protocol tests)
 * [x] Update random data (don't generate normal events when dead in RandomEventStream)
-* [ ] Prevent updating of dead projects (ProjectSpaLogic & TestGlobal)
+* [x] Prevent updating of dead projects (ProjectSpaLogic & TestGlobal)
 * [ ] DB: Add live field to project table and update it on delete/restore
 * [ ] Update project metadata to include a live field
 

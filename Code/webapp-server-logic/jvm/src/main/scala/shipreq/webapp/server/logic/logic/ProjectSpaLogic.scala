@@ -454,14 +454,14 @@ object ProjectSpaLogic extends StrictLogging {
         onInitApp               = onInitApp,
         onReconnect             = onReconnect,
         onSync                  = onSync,
-        onUpdateConfig          = updateProject (MakeEvent.updateConfig),
-        onCreateContent         = updateProject (MakeEvent.createContent),
-        onUpdateContent         = updateProject (MakeEvent.updateContent),
-        onProjectNameSet        = updateProjectI(MakeEvent.projectNameSetFn),
-        onUpdateSavedViews      = updateProject (MakeEvent.updateSavedViews),
-        onUpdateManualIssues    = updateProject (MakeEvent.updateManualIssues),
-        onReqTypeImplicationMod = updateProjectI(MakeEvent.reqTypeImplicationMod),
-        onUpdateLiveness        = updateProject (MakeEvent.updateLiveness),
+        onUpdateConfig          = updateProject(MakeEvent.updateConfig),
+        onCreateContent         = updateProject(MakeEvent.createContent),
+        onUpdateContent         = updateProject(MakeEvent.updateContent),
+        onProjectNameSet        = updateProject(MakeEvent.projectNameSetFn),
+        onUpdateSavedViews      = updateProject(MakeEvent.updateSavedViews),
+        onUpdateManualIssues    = updateProject(MakeEvent.updateManualIssues),
+        onReqTypeImplicationMod = updateProject(MakeEvent.reqTypeImplicationMod),
+        onUpdateLiveness        = updateProject(MakeEvent.updateLiveness),
         onUpdateAccess          = onUpdateAccess,
         onFieldMandatorinessMod = _ => F.pure(-\/(MsgError.FunctionNoLongerSupported("fieldMandatorinessMod"))),
       )
@@ -506,9 +506,6 @@ object ProjectSpaLogic extends StrictLogging {
           case ProjectUpdater.Result.ServerBehindDatabase(e) => -\/(MsgError.ServerBehindDatabase(e))
           case ProjectUpdater.Result.ServerBehindRedis(e)    => -\/(MsgError.ServerBehindRedis(e))
         }
-
-      private def updateProjectI[I](mkEvent: I => MakeEvent.Result): MsgFn[I, EventResult] =
-        updateProject((i, _) => mkEvent(i))
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
