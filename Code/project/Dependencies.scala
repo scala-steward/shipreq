@@ -97,7 +97,7 @@ object Dependencies {
   }
 
   object Lift {
-    private val mm = MultiModule.scala("net.liftweb", "3.5.0")
+    private val mm = MultiModule.scala("net.liftweb", "4.0.0")
     val webkit  = mm("lift-webkit") ++ Scala.all // because it contains lift-json
     val testkit = mm("lift-testkit")
   }
