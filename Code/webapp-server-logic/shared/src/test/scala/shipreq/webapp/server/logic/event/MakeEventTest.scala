@@ -1,7 +1,7 @@
 package shipreq.webapp.server.logic.event
 
-import shipreq.base.util.PotentialChange._
 import shipreq.base.util.ErrorMsg
+import shipreq.base.util.PotentialChange._
 import shipreq.webapp.base.data.{ProjectRole, UserId}
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.event._
