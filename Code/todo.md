@@ -13,7 +13,7 @@
 
 ### Client-side
 
-* [ ] Factor project liveness into editability
+* [x] Factor project liveness into editability
 * [x] Make a status page
 * [x] Add unit tests for status page
 * [x] Add deletion UI (admin-only)

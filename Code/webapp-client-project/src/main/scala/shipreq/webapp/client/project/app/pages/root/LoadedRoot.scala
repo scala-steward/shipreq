@@ -7,7 +7,7 @@ import japgolly.scalajs.react.vdom.PackageBase._
 import monocle.Lens
 import org.scalajs.dom.window
 import shipreq.base.util.{Allow, ErrorMsg, Permission, Valid}
-import shipreq.webapp.base.data.ProjectRole
+import shipreq.webapp.base.data.{Live, ProjectRole}
 import shipreq.webapp.base.feature.AsyncFeature.Implicits._
 import shipreq.webapp.base.feature._
 import shipreq.webapp.base.lib.{ConfirmJs, PromptJs}
@@ -93,6 +93,9 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitDataWithoutE
     private val pxFilterDead =
       pxState.map(_.filterDead).withReuse
 
+    private val pxProjectLive =
+      pxProject.map(_.live).withReuse
+
     private val pxProjectAccess =
       pxProject.map(_.access).withReuse
 
@@ -124,9 +127,13 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitDataWithoutE
 
     /** Whether the user has permission to change the project. */
     private val pxGlobalEditability: Px[Permission] =
-      pxProjectRole.map(usersRole =>
+      (for {
+        live      <- pxProjectLive
+        usersRole <- pxProjectRole
+      } yield (
+        Allow.when(live is Live) &
         ProjectRole.Collaborator.isSatisfiedBy(usersRole)
-      ).withReuse
+      )).withReuse
 
     private val pxEditorEditability: Px[EditorFeature.Editability.ForProject] =
       Px.apply2(pxProject, pxGlobalEditability)(EditorFeature.Editability.apply)
@@ -468,22 +475,23 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitDataWithoutE
       ))
 
     def render(p: Props, s: State): VdomElement = {
-      lazy val editAsyncState = s.editAsync.toRead
-      def createR           = CreateFeature.Read.ForProject(s.create, pxCreateEditability.value(), s.newReqAsync)
-      def createRW          = createW.toReadWrite(createR)
-      def editR             = EditorFeature.Read.ForProject(s.edit, renderFeature, pxEditorEditability.value(), editAsyncState.mapKey1(AsyncKey.ToEditor))
-      def editRW            = editW.toReadWrite(editR)
-      def filterDeadSS      = StateSnapshot.withReuse(s.filterDead)(setFilterDead)
-      def project           = unsafeProject()
-      def projectWidgets    = pxProjectWidgets.value.value()
-      def renderFeature     = pxRenderFeatureText.value()(s.filterDead)
-      def savedViewFeature  = SavedViewFeature(savedViewFeatureStatic, s.savedViews, project, s.filterDead)
-      def usage             = pxUsage.value()
-      def createPreviewRW   = pxCreatePreviewRW.value()
-      def editorArgs        = pxEditorArgs.value()
-      def onlyAdminCanEdit  = ProjectRole.Admin.isSatisfiedBy(pxProjectRole.value())
-      def globalEditability = pxGlobalEditability.value()
-      def rolodex           = unsafeSupp().rolodex
+      lazy val editAsyncState   = s.editAsync.toRead
+      def createR               = CreateFeature.Read.ForProject(s.create, pxCreateEditability.value(), s.newReqAsync)
+      def createRW              = createW.toReadWrite(createR)
+      def editR                 = EditorFeature.Read.ForProject(s.edit, renderFeature, pxEditorEditability.value(), editAsyncState.mapKey1(AsyncKey.ToEditor))
+      def editRW                = editW.toReadWrite(editR)
+      def filterDeadSS          = StateSnapshot.withReuse(s.filterDead)(setFilterDead)
+      def project               = unsafeProject()
+      def projectWidgets        = pxProjectWidgets.value.value()
+      def renderFeature         = pxRenderFeatureText.value()(s.filterDead)
+      def savedViewFeature      = SavedViewFeature(savedViewFeatureStatic, s.savedViews, project, s.filterDead)
+      def usage                 = pxUsage.value()
+      def createPreviewRW       = pxCreatePreviewRW.value()
+      def editorArgs            = pxEditorArgs.value()
+      def onlyAdminCanEdit      = ProjectRole.Admin.isSatisfiedBy(pxProjectRole.value())
+      def onlyWhenProjectIsLive = Allow.when(project.live is Live)
+      def globalEditability     = pxGlobalEditability.value()
+      def rolodex               = unsafeSupp().rolodex
 
       val body: VdomElement = p.page match {
 
@@ -497,7 +505,7 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitDataWithoutE
 
           val pname = ProjectItem.WithEditableName.Props(
             cbProjectMetaData.runNow(),
-            onlyAdminCanEdit,
+            onlyAdminCanEdit & onlyWhenProjectIsLive,
             StateSnapshot.zoomL(State.projectName)(s).setStateVia($),
             setProjectNameIO)
 
@@ -615,7 +623,8 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitDataWithoutE
             userId          = initPageData.userId,
             access          = project.access,
             rolodex         = rolodex,
-            editability     = onlyAdminCanEdit,
+            editability     = onlyAdminCanEdit & onlyWhenProjectIsLive,
+            leave           = onlyWhenProjectIsLive,
             state           = StateSnapshot.zoomL(State.access)(s).setStateVia($),
             confirmJs       = confirmJs,
             sspUpdateAccess = sspUpdateAccess,
