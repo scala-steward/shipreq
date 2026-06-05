@@ -46,7 +46,7 @@ object DeleteProjectForm {
       Message.Style(colour = Colour.Black, size = Size.Huge),
       Icon.Trash,
       "You are about to delete the project:",
-      <.div(*.deleteFormHeaderProjectName, p.projectName)
+      <.span(*.deleteFormHeaderProjectName, p.projectName)
     )
 
     val inFlight: Boolean =

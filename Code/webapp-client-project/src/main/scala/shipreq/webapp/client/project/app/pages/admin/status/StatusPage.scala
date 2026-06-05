@@ -52,7 +52,7 @@ object StatusPage {
           Message.Style(colour = Colour.Black, size = Size.Huge),
           Icon.Trash,
           "This project is deleted.",
-          <.div(*.deadReason, p.widgets.text(reason, Live, NaTags.none, Optional))
+          <.span(*.deadReason, p.widgets.text(reason, Live, NaTags.none, Optional))
         )
       }
 
