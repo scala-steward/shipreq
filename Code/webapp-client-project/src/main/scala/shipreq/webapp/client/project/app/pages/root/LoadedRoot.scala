@@ -629,6 +629,7 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitDataWithoutE
             meta              = cbProjectMetaData.runNow(),
             widgets           = projectWidgets,
             textSearch        = pxTextSearch.value(),
+            editability       = onlyAdminCanEdit,
             state             = StateSnapshot.zoomL(State.statusPage)(s).setStateVia($),
             sspUpdateLiveness = sspUpdateLiveness,
             async             = AsyncFeature.ReadWrite.D0(statusPageAsyncW, s.statusPageAsync),

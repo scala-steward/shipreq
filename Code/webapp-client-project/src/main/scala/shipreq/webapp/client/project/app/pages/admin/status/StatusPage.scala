@@ -6,7 +6,7 @@ import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.html_<^._
 import monocle.macros.Lenses
 import scalacss.ScalaCssReact._
-import shipreq.base.util.ErrorMsg
+import shipreq.base.util._
 import shipreq.webapp.base.data.Rolodex
 import shipreq.webapp.base.feature.AsyncFeature
 import shipreq.webapp.base.protocol.ServerSideProcInvoker
@@ -26,6 +26,7 @@ object StatusPage {
                          meta             : ProjectMetaData,
                          widgets          : ProjectWidgets.NoCtx,
                          textSearch       : TextSearch,
+                         editability      : Permission,
                          state            : StateSnapshot[State],
                          sspUpdateLiveness: ServerSideProcInvoker[UpdateLivenessCmd, ErrorMsg, Any],
                          async            : AsyncFeature.ReadWrite.D0[ErrorMsg],
@@ -63,7 +64,8 @@ object StatusPage {
       ).render
 
     def deleteSegment = DeleteProjectSegment.Props(
-      onDelete = p.state.modState(_.copy(showDeletionForm = true)),
+      editability = p.editability,
+      onDelete    = p.state.modState(_.copy(showDeletionForm = true)),
     ).render
 
     def deleteForm = DeleteProjectForm.Props(
@@ -78,13 +80,14 @@ object StatusPage {
     ).render
 
     def restoreSegment = RestoreProjectSegment.Props(
+      editability       = p.editability,
       sspUpdateLiveness = p.sspUpdateLiveness,
       async             = p.async,
     ).render
 
     <.main(BaseStyles.containerLarge, *.main,
       heading,
-      if (p.state.value.showDeletionForm)
+      if (p.state.value.showDeletionForm && p.editability.is(Allow))
         deleteForm
       else
         <.div(

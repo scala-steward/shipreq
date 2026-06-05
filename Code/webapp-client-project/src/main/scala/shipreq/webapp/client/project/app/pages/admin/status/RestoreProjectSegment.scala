@@ -3,7 +3,7 @@ package shipreq.webapp.client.project.app.pages.admin.status
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
-import shipreq.base.util.ErrorMsg
+import shipreq.base.util._
 import shipreq.webapp.base.feature.AsyncFeature
 import shipreq.webapp.base.protocol.ServerSideProcInvoker
 import shipreq.webapp.base.ui.semantic.{Button, Colour, Header, Icon, Segment}
@@ -12,7 +12,8 @@ import shipreq.webapp.member.project.protocol.websocket.UpdateLivenessCmd
 
 object RestoreProjectSegment {
 
-  final case class Props(sspUpdateLiveness: ServerSideProcInvoker[UpdateLivenessCmd.Restore.type, ErrorMsg, Any],
+  final case class Props(editability      : Permission,
+                         sspUpdateLiveness: ServerSideProcInvoker[UpdateLivenessCmd.Restore.type, ErrorMsg, Any],
                          async            : AsyncFeature.ReadWrite.D0[ErrorMsg]) {
     @inline def render: VdomElement = Component(this)
   }
@@ -33,7 +34,7 @@ object RestoreProjectSegment {
       <.div(
         Button(
           tipe   = Button.Type.IconAndText(Icon.Undo, "Restore"),
-          state  = Button.State.loadingWhen(inFlight),
+          state  = Button.State.loadingOrEnabled(loading = inFlight, enabled = p.editability is Allow),
           colour = Colour.Green,
         ).tag(^.onClick --> onClick, *.segmentButton)
       )
