@@ -9,9 +9,9 @@ import scalacss.ScalaCssReact._
 import shipreq.webapp.base.ui.semantic.Header
 import shipreq.webapp.client.project.app.Style.{reqdetail => *}
 import shipreq.webapp.client.project.feature.EditorFeature
-import shipreq.webapp.client.project.widgets._
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.util.DataReusability._
+import shipreq.webapp.member.ui.FilterDeadButton
 
 private[reqdetail] object HeaderRow {
 

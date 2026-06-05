@@ -17,14 +17,14 @@ import shipreq.webapp.base.util.DomUtil
 import shipreq.webapp.client.project.app.Style.reqtable.{page => *}
 import shipreq.webapp.client.project.feature.SavedViewFeature.ColumnPlus
 import shipreq.webapp.client.project.feature._
-import shipreq.webapp.client.project.widgets.{FilterDeadButton, ProjectWidgets}
+import shipreq.webapp.client.project.widgets.ProjectWidgets
 import shipreq.webapp.member.feature.PreviewFeature
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.data.savedview._
 import shipreq.webapp.member.project.filter.Filter
 import shipreq.webapp.member.project.protocol.websocket.UpdateContentCmd
 import shipreq.webapp.member.project.text.{PlainText, TextSearch}
-import shipreq.webapp.member.ui.Toast
+import shipreq.webapp.member.ui.{FilterDeadButton, Toast}
 
 object ReqTablePage {
 
