@@ -1,8 +1,9 @@
 package shipreq.webapp.member.test.project
 
+import java.time.Instant
 import shipreq.base.util._
 import shipreq.webapp.member.project.data._
-import shipreq.webapp.member.project.event.{Event, ProjectEvents}
+import shipreq.webapp.member.project.event._
 import shipreq.webapp.member.test.WebappTestUtil
 
 /**
@@ -123,7 +124,9 @@ object SampleProject {
       savedview.SavedViews.empty,
       ProjectAccess.init(UserId1),
       None,
-      ProjectEvents.empty,
+      ProjectEvents(VerifiedEvent.Seq.empty +
+        VerifiedEvent(EventOrd(1), Event.ProjectNameSet("Sample Project"), UserId1, Instant.now())
+      ),
       _))
 
   lazy val tagTree = project.config.tags.tree.mapValues(_.children)

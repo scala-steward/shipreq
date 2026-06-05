@@ -11,6 +11,7 @@ import shipreq.webapp.base.test.TestLocation
 import shipreq.webapp.base.test.TestState._
 import shipreq.webapp.base.util.Obfuscated
 import shipreq.webapp.client.project.app.pages.admin.access.{AccessPageObs, AccessPageTestDsl}
+import shipreq.webapp.client.project.app.pages.admin.status.{StatusPageObs, StatusPageTestDsl}
 import shipreq.webapp.client.project.app.pages.config.fields.{FieldConfigObs, FieldConfigTestDsl}
 import shipreq.webapp.client.project.app.pages.config.issues.{IssueConfigObs, IssueConfigTestDsl}
 import shipreq.webapp.client.project.app.pages.config.reqtypes.{ReqTypeConfigObs, ReqTypeConfigTestDsl}
@@ -69,7 +70,7 @@ object ProjectSpaTestDsl {
           new TestGlobal.Obs($, global),
           new TestConfirmJs.Obs(confirmJs),
           nav,
-          e, e, e, e, e, e, e, e, e, e)
+          e, e, e, e, e, e, e, e, e, e, e)
       }
 
       nav.page match {
@@ -83,6 +84,7 @@ object ProjectSpaTestDsl {
         case Page.Issues       => base.copy(issues      = Try(new IssuesPageObs(inner, base.global)))
         case Page.ReqGraph     => base.copy(reqGraph    = Try(new ReqGraphObs(inner, base.global)))
         case Page.Access       => base.copy(access      = Try(new AccessPageObs(inner, base.global, base.confirmJs)))
+        case Page.Status       => base.copy(status      = Try(new StatusPageObs(inner, base.global)))
       }
     }
   }
@@ -110,6 +112,7 @@ object ProjectSpaTestDsl {
         case None              => Page.Index
         case Some("Issues")    => if (inner.exists(Style.issues.newIssueCont.selector)) Page.Issues else Page.CfgIssues
         case Some("Access")    => Page.Access
+        case Some("Status")    => Page.Status
         case Some(n)           => sys error s"Unknown page: $n"
       }
 
@@ -132,6 +135,7 @@ object ProjectSpaTestDsl {
                        reqTable   : Maybe[ReqTableObs],
                        reqDetail  : Maybe[ReqDetailObs],
                        access     : Maybe[AccessPageObs],
+                       status     : Maybe[StatusPageObs],
                       ) {
 
     lazy val reqSearch: ReqSearchObs =
@@ -211,6 +215,12 @@ object ProjectSpaTestDsl {
       .pmapO[Obs](_.access)
       .mapS[TestState](_ => ())((s, _) => s)
 
+  implicit lazy val transformStatusPage =
+    StatusPageTestDsl.*.transformer
+      .mapR[Ref](r => StatusPageTestDsl.Ref(r.global))
+      .pmapO[Obs](_.status)
+      .mapS[TestState](_ => ())((s, _) => s)
+
   private lazy val invariantsPH            = PH.invariants.lift
   private lazy val invariantsRT            = RT.invariants.lift
   private lazy val invariantsRD            = RD.invariants.lift
@@ -221,6 +231,7 @@ object ProjectSpaTestDsl {
   private lazy val invariantsTagConfig     = TagConfigTestDsl.invariants.lift
   private lazy val invariantsReqGraph      = ReqGraphTestDsl.invariants.lift
   private lazy val invariantsAccessPage    = AccessPageTestDsl.invariants.lift
+  private lazy val invariantsStatusPage    = StatusPageTestDsl.invariants.lift
 
   private val pageInvariants: *.Invariants =
     *.chooseInvariant("Page invariants")(_.state.page match {
@@ -234,6 +245,7 @@ object ProjectSpaTestDsl {
       case Page.CfgTags      => invariantsTagConfig
       case Page.ReqGraph     => invariantsReqGraph
       case Page.Access       => invariantsAccessPage
+      case Page.Status       => invariantsStatusPage
     })
 
   private val invariants: *.Invariants =
@@ -275,6 +287,7 @@ object ProjectSpaTestDsl {
   def liftTagConfigPageTests  (p: TagConfigTestDsl    .*.Plan): *.Plan = p.lift
   def liftReqGraphTests       (p: ReqGraphTestDsl     .*.Plan): *.Plan = p.lift
   def liftAccessPageTests     (p: AccessPageTestDsl   .*.Plan): *.Plan = p.lift
+  def liftStatusPageTests     (p: StatusPageTestDsl   .*.Plan): *.Plan = p.lift
 
   def testReqTable(action: RT.*.Actions): *.Actions =
     liftReqTableTests(Plan.action(action)).asAction("Test ReqTable")
