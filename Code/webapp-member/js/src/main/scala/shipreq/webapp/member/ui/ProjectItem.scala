@@ -57,7 +57,7 @@ object ProjectItem {
       renderLeftContent(p) {
 
         val header =
-          <.h1(*.itemHeaderRO,
+          <.h1(*.itemHeaderRO(p.live),
             <.a(^.href := Urls.project(p.id).relativeUrl, p.name))
 
         TagMod(header, renderMeta(p))
@@ -113,7 +113,7 @@ object ProjectItem {
       def renderView(p: Props): TagMod = {
         val editableInline = EditControlsFeature.editableInline(p.state setState Some(EditState(p.item.name, None)))
         TagMod(
-          <.h1(*.itemHeaderRW,
+          <.h1(*.itemHeaderRW(p.item.live),
             editableInline.when(p.editability is Allow),
             p.item.name),
           ProjectItem.renderMeta(p.item))

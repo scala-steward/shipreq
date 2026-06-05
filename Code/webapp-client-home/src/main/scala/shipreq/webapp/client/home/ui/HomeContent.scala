@@ -9,12 +9,13 @@ import shipreq.webapp.base.config.WebappConfig
 import shipreq.webapp.base.feature.{AsyncFeature, EditorStatus}
 import shipreq.webapp.base.ui.semantic.Colour
 import shipreq.webapp.base.ui.widgets._
-import shipreq.webapp.member.project.data.{DataValidators, ProjectMetaData}
+import shipreq.webapp.member.project.data.{DataValidators, FilterDead, ProjectMetaData}
 import shipreq.webapp.member.ui._
 
 object HomeContent {
 
   final case class Props(projects         : List[ProjectMetaData],
+                         filterDead       : StateSnapshot[FilterDead],
                          createProjectText: StateSnapshot[String],
                          createProjectAS  : AsyncFeature.Read.D0[ErrorMsg],
                          createProjectIO  : String => Callback,
@@ -31,20 +32,29 @@ object HomeContent {
 
       val noProjects = p.projects.isEmpty
 
-      val createProject = {
+      val topRow = {
+
         val status: EditorStatus =
           EditorStatus.async(p.createProjectAS) getOrElse
             EditorStatus.ignoreOrValidate(DataValidators.projectName.unnamed)(
               p.createProjectText.value, _.isEmpty, s => Some(p.createProjectIO(s)))
-        <.div(Styles.createProjectCont,
+
+        val createProject =
           PlainTextEditor.WithButton.Props(
             p.createProjectText.value,
             p.createProjectText.setState,
             status,
             Colour.Green,
             buttonLabel = "Create Project",
-            inputMod = TagMod(inputMod, (^.autoFocus := true).when(noProjects)))
-            .render)
+            inputMod = TagMod(inputMod, (^.autoFocus := true).when(noProjects)),
+          ).render
+
+        val filterDeadButton =
+          FilterDeadButton.Component(p.filterDead)
+
+        <.div(Styles.createProjectCont,
+          createProject,
+          <.div(filterDeadButton))
       }
 
       def noProjectGreeting: VdomTag =
@@ -56,14 +66,16 @@ object HomeContent {
               <.br,
               "Create a new project using the button above.")))
 
-      def projectList: VdomTag =
+      def projectList: VdomTag = {
+        val filtered = p.filterDead.value(p.projects)(_.live)
         <.div(Styles.projectList,
-          p.projects.sortBy(_.name).toTagMod(p => ProjectItem.AsLink.Component.withKey(p.id.value)(p)))
+          filtered.sortBy(_.name).toTagMod(p => ProjectItem.AsLink.Component.withKey(p.id.value)(p)))
+      }
 
       <.main(
         BaseStyles.containerLarge,
         p.tagMod,
-        createProject,
+        topRow,
         if (noProjects) noProjectGreeting else projectList)
     }
   }

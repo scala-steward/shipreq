@@ -29,7 +29,7 @@ final class HomeObs(cp: TestAjaxClient, $: DomZipperJs) {
     private val cont = $("." + Styles.createProjectCont.className.value)
 
     val input  = cont("input").domAs[html.Input]
-    val button = cont("button").domAs[html.Button]
+    val button = cont("button", 1 of 2).domAs[html.Button]
     val error  = cont.collect01(".ui.pointing.label").doms.map(_.textContent)
 
     val inputText      = input.value

@@ -18,7 +18,7 @@
 * [x] Add unit tests for status page
 * [x] Add deletion UI (admin-only)
 * [x] Add restoration UI (admin-only)
-* [ ] Add live/dead filter to client-home
+* [x] Add live/dead filter to client-home
 
 ### Other
 

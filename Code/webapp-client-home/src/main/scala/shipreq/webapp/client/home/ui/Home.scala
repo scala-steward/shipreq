@@ -13,7 +13,8 @@ import shipreq.webapp.base.protocol.ajax.{AjaxClient, CommonProtocolsJs}
 import shipreq.webapp.base.ui.semantic.Breadcrumb
 import shipreq.webapp.base.ui.widgets._
 import shipreq.webapp.base.util.CallbackHelpers._
-import shipreq.webapp.member.project.data.ProjectMetaData
+import shipreq.webapp.member.project.data.{FilterDead, HideDead, ProjectMetaData}
+import shipreq.webapp.member.project.util.DataReusability._
 import shipreq.webapp.member.protocol.ajax.HomeSpaProtocols
 import shipreq.webapp.member.protocol.entrypoint.HomeSpaEntryPoint
 import shipreq.webapp.member.ui._
@@ -35,7 +36,8 @@ object Home {
   @Lenses
   final case class State(createProjectText: String,
                          createProjectAAS : AsyncFeature.Read.D0[ErrorMsg],
-                         projects         : List[ProjectMetaData])
+                         projects         : List[ProjectMetaData],
+                         filterDead       : FilterDead)
 
   object State {
 
@@ -46,6 +48,7 @@ object Home {
         createProjectText = "",
         createProjectAAS  = AsyncFeature.State.initD0,
         projects          = projects,
+        filterDead        = HideDead,
       )
   }
 
@@ -53,6 +56,9 @@ object Home {
 
     val setCreateProjectText: Reusable[SetStateFnPure[String]] =
       Reusable.fn.state($ zoomStateL State.createProjectText).setStateFn
+
+    val setFilterDead: Reusable[SetStateFnPure[FilterDead]] =
+      Reusable.fn.state($ zoomStateL State.filterDead).setStateFn
 
     val createProjectAF: AsyncFeature.Write.D0[ErrorMsg] =
       AsyncFeature.Write.D0.init($ zoomStateL State.createProjectAAS)
@@ -80,6 +86,7 @@ object Home {
       def mainContent(m: TagMod): VdomElement =
         HomeContent.Props(
           s.projects,
+          StateSnapshot.withReuse(s.filterDead)(setFilterDead),
           StateSnapshot.withReuse(s.createProjectText)(setCreateProjectText),
           s.createProjectAAS,
           createProjectIO,
