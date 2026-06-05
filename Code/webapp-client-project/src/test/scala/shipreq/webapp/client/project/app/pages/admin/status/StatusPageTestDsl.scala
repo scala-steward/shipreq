@@ -17,7 +17,11 @@ object StatusPageTestDsl {
 
   // ===================================================================================================================
 
-  lazy val deleteButton  = new CommonObs.SemanticUiButton.TestDslOption(*, "delete")(_.deleteButton)
-  lazy val cancelButton  = new CommonObs.SemanticUiButton.TestDslOption(*, "cancel")(_.cancelButton)
-  lazy val restoreButton = new CommonObs.SemanticUiButton.TestDslOption(*, "restore")(_.restoreButton)
+  val deleteButton  = new CommonObs.SemanticUiButton.TestDslOption(*, "delete")(_.deleteButton)
+  val cancelButton  = new CommonObs.SemanticUiButton.TestDslOption(*, "cancel")(_.cancelButton)
+  val restoreButton = new CommonObs.SemanticUiButton.TestDslOption(*, "restore")(_.restoreButton)
+
+  val messageExists  = *.focus("message").value(_.obs.message.isDefined)
+  val tableExists    = *.focus("table").value(_.obs.table.isDefined)
+  val textareaExists = *.focus("textarea").value(_.obs.textarea.isDefined)
 }

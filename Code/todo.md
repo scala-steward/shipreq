@@ -15,7 +15,7 @@
 
 * [ ] Factor project liveness into editability
 * [x] Make a status page
-* [ ] Add unit tests for status page
+* [x] Add unit tests for status page
 * [ ] Add deletion UI (admin-only)
 * [ ] Add restoration UI (admin-only)
 * [ ] Add live/dead filter to client-home

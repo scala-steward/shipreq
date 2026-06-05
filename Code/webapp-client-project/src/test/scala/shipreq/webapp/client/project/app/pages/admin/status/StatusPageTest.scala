@@ -36,11 +36,16 @@ object StatusPageTest extends TestSuite {
         +> deleteButton.exists.assert(true)
         +> cancelButton.exists.assert(false)
         +> restoreButton.exists.assert(false)
+        +> messageExists.assert(false)
+        +> tableExists.assert(true)
+        +> textareaExists.assert(false)
 
       >> deleteButton.click
         +> deleteButton.exists.assert(true)
         +> cancelButton.exists.assert(true)
         +> restoreButton.exists.assert(false)
+        +> tableExists.assert(false)
+        +> textareaExists.assert(true)
 
       >> deleteButton.click
         +> deleteButton.isLoading.assert(true)
@@ -48,9 +53,13 @@ object StatusPageTest extends TestSuite {
         +> restoreButton.exists.assert(false)
 
       >> global.autoRespondToLast
+        // Project is now deleted
         +> deleteButton.exists.assert(false)
         +> cancelButton.exists.assert(false)
         +> restoreButton.exists.assert(true)
+        +> messageExists.assert(true)
+        +> tableExists.assert(true)
+        +> textareaExists.assert(false)
 
       >> restoreButton.click
         +> deleteButton.exists.assert(false)
@@ -58,9 +67,13 @@ object StatusPageTest extends TestSuite {
         +> restoreButton.isLoading.assert(true)
 
       >> global.autoRespondToLast
+        // Project is now restored
         +> deleteButton.exists.assert(true)
         +> cancelButton.exists.assert(false)
         +> restoreButton.exists.assert(false)
+        +> messageExists.assert(false)
+        +> tableExists.assert(true)
+        +> textareaExists.assert(false)
 
     )
 
