@@ -33,6 +33,23 @@ object StatusPageTest extends TestSuite {
     "loop" - runActions(SampleProject.project)(
 
       global.disableAutoResponse
+        // Ready to delete
+        +> deleteButton.exists.assert(true)
+        +> cancelButton.exists.assert(false)
+        +> restoreButton.exists.assert(false)
+        +> messageExists.assert(false)
+        +> tableExists.assert(true)
+        +> textareaExists.assert(false)
+
+      >> deleteButton.click
+        +> deleteButton.exists.assert(true)
+        +> cancelButton.exists.assert(true)
+        +> restoreButton.exists.assert(false)
+        +> tableExists.assert(false)
+        +> textareaExists.assert(true)
+
+      >> cancelButton.click
+        // Ready to delete
         +> deleteButton.exists.assert(true)
         +> cancelButton.exists.assert(false)
         +> restoreButton.exists.assert(false)
@@ -74,7 +91,6 @@ object StatusPageTest extends TestSuite {
         +> messageExists.assert(false)
         +> tableExists.assert(true)
         +> textareaExists.assert(false)
-
     )
 
   }
