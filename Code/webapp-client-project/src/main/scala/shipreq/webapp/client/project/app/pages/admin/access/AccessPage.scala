@@ -22,6 +22,7 @@ object AccessPage {
                          access         : ProjectAccess,
                          rolodex        : Rolodex,
                          editability    : Permission,
+                         leave          : Permission,
                          state          : StateSnapshot[State],
                          confirmJs      : ConfirmJs,
                          sspUpdateAccess: ServerSideProcInvoker[UpdateAccessCmd, ErrorMsg, Any],
@@ -59,6 +60,7 @@ object AccessPage {
     ).render
 
     val leaveProjectSegment = LeaveProjectSegment.Props(
+      p.leave,
       p.confirmJs,
       p.sspUpdateAccess,
       p.async(AsyncKey(p.userId)),

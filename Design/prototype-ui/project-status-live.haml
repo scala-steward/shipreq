@@ -24,15 +24,15 @@
         width: 100%;
       }
 
-      #menu .segment {
+      .segment {
         display: flex;
         align-items:flex-end;
       }
-      #menu .left {
+      .segment .left {
         flex-grow:1;
         margin-right: 8ex;
       }
-      #menu .right .button {
+      .segment .right .button {
         margin-right:0!important;
       }
       .texteditor {
@@ -156,17 +156,17 @@
                   = " — 1"
               -# %div = "= 3"
 
-      .ui.segments#menu(style="width:100%")
+      -# .ui.segments#menux(style="width:100%")
 
-        .ui.segment
-          .left
-            %h4.ui.header Delete
-            %p Mark this project as deleted and read-only. It can be restored at any time.
-          .right
-            %a(href="project-status-delete.html")
-              %button.ui.button.negative.basic(style="white-space: nowrap;")
-                %i.icon.trash
-                Delete
+      .ui.segment
+        .left
+          %h4.ui.header Delete
+          %p Mark this project as deleted and read-only. It can be restored at any time.
+        .right
+          %a(href="project-status-delete.html")
+            %button.ui.button.negative.basic(style="white-space: nowrap;")
+              %i.icon.trash
+              Delete
 
         -# .ui.segment
           .left

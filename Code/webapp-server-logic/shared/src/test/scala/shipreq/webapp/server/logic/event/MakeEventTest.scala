@@ -1,5 +1,6 @@
 package shipreq.webapp.server.logic.event
 
+import shipreq.base.util.ErrorMsg
 import shipreq.base.util.PotentialChange._
 import shipreq.webapp.base.data.{ProjectRole, UserId}
 import shipreq.webapp.member.project.data._
@@ -318,6 +319,47 @@ object MakeEventTest extends TestSuite {
         "del"   - test(UserId2, None)
         "mod"   - test(UserId1, Some(Admin))
       }
+    }
+
+    "UpdateLiveness" - {
+      import UpdateLivenessCmd._
+
+      "delete" - {
+        val reason: Text.DeletionReason.OptionalText = "Too many bugs"
+        val e = assertMakeEvent(_.updateLiveness(Delete(reason), _), { case e: ProjectDelete => e })
+        assertEq(e.reason, reason)
+
+        assertApplies(e)
+        assertMakeEventFails(_.updateLiveness(Delete(reason), _))
+      }
+
+      "restore" - {
+        "alreadyLive" - assertNoChange(_.updateLiveness(Restore, _))
+
+        "fromDead" - {
+          assertApplies(ProjectDelete(∅))
+          assertMakeEvent[ProjectRestore.type](_.updateLiveness(Restore, _), { case ProjectRestore => ProjectRestore })
+        }
+      }
+    }
+
+    "ProjectDeleted" - {
+      assertApplies(ProjectDelete(∅))
+
+      def assertDeleted(f: (MakeEvent.type, Project) => MakeEvent.Result)(implicit l: Line): Unit =
+        f(MakeEvent, project()) match {
+          case Failure(ErrorMsg(m)) if m == "Project is deleted." => ()
+          case x => fail(s"Expected 'Project is deleted.' failure, got: $x")
+        }
+
+      "updateAccess"          - assertDeleted(_.updateAccess(UpdateAccessCmd.Modify(UserId2, Some(ProjectRole.Admin)), _))
+      "projectNameSetFn"      - assertDeleted(_.projectNameSetFn("new name", _))
+      "reqTypeImplicationMod" - assertDeleted(_.reqTypeImplicationMod((si, Mandatory), _))
+      "updateConfig"          - assertDeleted(_.updateConfig(UpdateConfigCmd.StaticFieldAdd(StaticField.ImplicationGraph), _))
+      "createContent"         - assertDeleted(_.createContent(CreateContentCmd.CreateCodeGroup("code", ∅), _))
+      "updateContent"         - assertDeleted(_.updateContent(UpdateContentCmd.SetGenericReqTitle(GenericReqId(1), ∅), _))
+      "updateSavedViews"      - assertDeleted(_.updateSavedViews(SavedViewCmd.MakeDefault(shipreq.webapp.member.project.data.savedview.SavedView.Id(1)), _))
+      "updateManualIssues"    - assertDeleted(_.updateManualIssues(ManualIssueCmd.Delete(ManualIssueId(1)), _))
     }
   }
 }

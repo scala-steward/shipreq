@@ -4,7 +4,6 @@ import boopickle.DefaultBasic._
 import shipreq.base.util.Util
 import shipreq.webapp.base.protocol._
 import shipreq.webapp.base.protocol.binary.SafePickler
-import shipreq.webapp.base.protocol.binary.SafePickler.ConstructionHelperImplicits._
 
 object WebSocketShared {
 
@@ -190,6 +189,8 @@ object WebSocketShared {
         }
       }
 
-    Protocol(pickler.asV1(0))
+    val safePickler = SafePickler.of(Version.v1(0), _ => pickler)
+
+    Protocol(safePickler)
   }
 }

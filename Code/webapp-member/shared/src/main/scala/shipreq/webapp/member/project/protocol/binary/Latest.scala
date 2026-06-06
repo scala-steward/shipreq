@@ -5,13 +5,12 @@ package shipreq.webapp.member.project.protocol.binary
   * object rather than all uses that don't care and just need the latest.
   */
 object Latest {
-  import v2.{Rev0 => L}
 
-  @inline implicit def picklerEvent                    = L.picklerEvent
-  @inline implicit def picklerProject                  = L.picklerProject
-  @inline implicit def picklerVerifiedEvent            = L.picklerVerifiedEvent
-  @inline implicit def picklerVerifiedEventSeq         = L.picklerVerifiedEventSeq
-  @inline implicit def picklerVerifiedEventNonEmptySeq = L.picklerVerifiedEventNonEmptySeq
+  @inline implicit def picklerEvent                    = v2.Rev1.picklerEvent
+  @inline implicit def picklerProject                  = v2.Rev1.picklerProject(v2.Rev1.latestMinorVersion)
+  @inline implicit def picklerVerifiedEvent            = v2.Rev1.picklerVerifiedEvent
+  @inline implicit def picklerVerifiedEventSeq         = v2.Rev1.picklerVerifiedEventSeq
+  @inline implicit def picklerVerifiedEventNonEmptySeq = v2.Rev1.picklerVerifiedEventNonEmptySeq
   @inline implicit def pickleValidFilter               = v1.Rev7.pickleValidFilter
 
   val AtomPicklers      = v1.Rev6.AtomPicklers

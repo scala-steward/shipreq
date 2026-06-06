@@ -5,8 +5,8 @@ import shipreq.webapp.client.project.app.ProjectSpaTestDsl
 import shipreq.webapp.client.project.app.pages.root.Routes.Page
 import shipreq.webapp.client.project.test.PrepareEnv
 import shipreq.webapp.member.project.data.Project
-import shipreq.webapp.member.test.project.{ProjectDsl, SampleProject, SampleProject6}
 import shipreq.webapp.member.test.project.UnsafeTypes._
+import shipreq.webapp.member.test.project.{ProjectDsl, SampleProject, SampleProject6}
 import utest._
 import utest.framework.TestPath
 

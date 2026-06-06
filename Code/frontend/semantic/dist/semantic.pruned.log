@@ -357,7 +357,7 @@
     62 [keep  ] .ui.button,.ui.buttons .button,.ui.buttons .or
     89 [keep  ] .ui.large.button,.ui.large.buttons .button,.ui.large.buttons .or
     83 [remove] .ui.big.button,.ui.big.buttons .button,.ui.big.buttons .or
-    86 [remove] .ui.huge.button,.ui.huge.buttons .button,.ui.huge.buttons .or
+    86 [keep  ] .ui.huge.button,.ui.huge.buttons .button,.ui.huge.buttons .or
     95 [remove] .ui.massive.button,.ui.massive.buttons .button,.ui.massive.buttons .or
     85 [keep  ] .ui.icon.button,.ui.icon.buttons .button
    102 [keep  ] .ui.icon.button>.icon,.ui.icon.buttons .button>.icon
@@ -866,12 +866,12 @@
     40 [keep  ] h3.ui.header .sub.header
     40 [keep  ] h4.ui.header .sub.header
     48 [keep  ] h5.ui.header .sub.header
-    45 [remove] .ui.huge.header
+    45 [keep  ] .ui.huge.header
     40 [keep  ] .ui.large.header
     41 [remove] .ui.medium.header
     40 [remove] .ui.small.header
     30 [keep  ] .ui.tiny.header
-    52 [remove] .ui.huge.header .sub.header
+    52 [keep  ] .ui.huge.header .sub.header
     53 [keep  ] .ui.large.header .sub.header
     38 [keep  ] .ui.header .sub.header
     44 [remove] .ui.small.header .sub.header
@@ -880,7 +880,7 @@
     43 [remove] .ui.small.sub.header
     37 [keep  ] .ui.sub.header
     43 [keep  ] .ui.large.sub.header
-    34 [remove] .ui.huge.sub.header
+    34 [keep  ] .ui.huge.sub.header
     74 [keep  ] .ui.icon.header
     85 [remove] .ui.icon.header:after
     41 [remove] .ui.icon.header:first-child
@@ -973,7 +973,7 @@
     46 [remove] .ui.small.block.header
     80 [keep  ] .ui.block.header:not(h1):not(h2):not(h3):not(h4):not(h5):not(h6)
     47 [keep  ] .ui.large.block.header
-    46 [remove] .ui.huge.block.header
+    46 [keep  ] .ui.huge.block.header
    162 [keep  ] .ui.attached.header
     45 [keep  ] .ui.attached.block.header
    104 [keep  ] .ui.attached:not(.top):not(.bottom).header
@@ -983,7 +983,7 @@
     48 [remove] .ui.small.attached.header
     82 [keep  ] .ui.attached.header:not(h1):not(h2):not(h3):not(h4):not(h5):not(h6)
     49 [keep  ] .ui.large.attached.header
-    48 [remove] .ui.huge.attached.header
+    48 [keep  ] .ui.huge.attached.header
     82 [keep  ] .ui.header:not(h1):not(h2):not(h3):not(h4):not(h5):not(h6)
    345 [keep  ] i.icon
     39 [keep  ] i.icon:before
@@ -1782,7 +1782,7 @@
     44 [remove] i.icon.shopping.cart:before
     40 [remove] i.icon.bar.graph:before
     34 [remove] i.icon.key:before
-    35 [remove] i.icon.cogs:before
+    35 [keep  ] i.icon.cogs:before
     42 [remove] i.icon.discussions:before
     43 [remove] i.icon.like.outline:before
     46 [remove] i.icon.dislike.outline:before
@@ -2047,7 +2047,7 @@
     24 [keep  ] .ui.input
     39 [keep  ] .ui.large.input
     37 [remove] .ui.big.input
-    38 [remove] .ui.huge.input
+    38 [keep  ] .ui.huge.input
     41 [remove] .ui.massive.input
    341 [keep  ] .ui.label
     36 [keep  ] .ui.label:first-child
@@ -2219,7 +2219,7 @@
     51 [keep  ] .ui.label,.ui.labels .label
     55 [keep  ] .ui.large.label,.ui.large.labels .label
     60 [remove] .ui.big.label,.ui.big.labels .label
-    62 [remove] .ui.huge.label,.ui.huge.labels .label
+    62 [keep  ] .ui.huge.label,.ui.huge.labels .label
     68 [remove] .ui.massive.label,.ui.massive.labels .label
    195 [keep  ] .ui.loader
    139 [keep  ] .ui.loader:before
@@ -2234,7 +2234,7 @@
    104 [keep  ] .ui.loader:after,.ui.loader:before
    116 [keep  ] .ui.large.loader:after,.ui.large.loader:before
    112 [remove] .ui.big.loader:after,.ui.big.loader:before
-   114 [remove] .ui.huge.loader:after,.ui.huge.loader:before
+   114 [keep  ] .ui.huge.loader:after,.ui.huge.loader:before
    120 [remove] .ui.massive.loader:after,.ui.massive.loader:before
     33 [keep  ] .ui.dimmer .loader
     49 [keep  ] .ui.dimmer .ui.loader
@@ -2253,7 +2253,7 @@
     97 [keep  ] .ui.inverted.dimmer .ui.loader,.ui.loader
    118 [keep  ] .ui.inverted.dimmer .ui.large.loader,.ui.large.loader
    114 [remove] .ui.big.loader,.ui.inverted.dimmer .ui.big.loader
-   116 [remove] .ui.huge.loader,.ui.inverted.dimmer .ui.huge.loader
+   116 [keep  ] .ui.huge.loader,.ui.inverted.dimmer .ui.huge.loader
    122 [remove] .ui.inverted.dimmer .ui.massive.loader,.ui.massive.loader
     62 [keep  ] .ui.mini.text.loader
     71 [keep  ] .ui.tiny.text.loader
@@ -2261,7 +2261,7 @@
     66 [keep  ] .ui.text.loader
     72 [keep  ] .ui.large.text.loader
     63 [remove] .ui.big.text.loader
-    71 [remove] .ui.huge.text.loader
+    71 [keep  ] .ui.huge.text.loader
     74 [remove] .ui.massive.text.loader
     47 [remove] .ui.inverted.loader
     62 [remove] .ui.inverted.loader:before
@@ -2383,7 +2383,7 @@
     49 [keep  ] .ui.segment,.ui.segments .segment
     70 [keep  ] .ui.large.segment,.ui.large.segments .segment
     66 [remove] .ui.big.segment,.ui.big.segments .segment
-    68 [remove] .ui.huge.segment,.ui.huge.segments .segment
+    68 [keep  ] .ui.huge.segment,.ui.huge.segments .segment
     74 [remove] .ui.massive.segment,.ui.massive.segments .segment
     83 [keep  ] .ui.breadcrumb
     40 [keep  ] .ui.breadcrumb:first-child
@@ -2402,7 +2402,7 @@
     30 [keep  ] .ui.breadcrumb
     45 [keep  ] .ui.large.breadcrumb
     43 [remove] .ui.big.breadcrumb
-    44 [remove] .ui.huge.breadcrumb
+    44 [keep  ] .ui.huge.breadcrumb
     47 [remove] .ui.massive.breadcrumb
     42 [keep  ] .ui.form
     24 [keep  ] .ui.form>p
@@ -2544,7 +2544,7 @@
     24 [keep  ] .ui.form
     39 [keep  ] .ui.large.form
     37 [remove] .ui.big.form
-    38 [remove] .ui.huge.form
+    38 [keep  ] .ui.huge.form
     41 [remove] .ui.massive.form
    348 [keep  ] .ui.menu
     78 [keep  ] .ui.menu:after
@@ -2860,7 +2860,7 @@
     30 [remove] .ui.vertical.menu
     39 [keep  ] .ui.large.menu
     36 [remove] .ui.large.vertical.menu
-    38 [remove] .ui.huge.menu
+    38 [keep  ] .ui.huge.menu
     35 [remove] .ui.huge.vertical.menu
     37 [remove] .ui.big.menu
     34 [remove] .ui.big.vertical.menu
@@ -2903,7 +2903,7 @@
     59 [keep  ] .ui.icon.message .icon:not(.close)+.content
     42 [keep  ] .ui.icon.message .circular.icon
    247 [keep  ] .ui.floating.message
-    70 [remove] .ui.black.message
+    70 [keep  ] .ui.black.message
     60 [keep  ] .ui.positive.message
    169 [keep  ] .ui.attached.positive.message,.ui.positive.message
     43 [keep  ] .ui.positive.message .header
@@ -2922,7 +2922,8 @@
     59 [keep  ] .ui.success.message
    167 [keep  ] .ui.attached.success.message,.ui.success.message
     42 [keep  ] .ui.success.message .header
-    91 [remove] .ui.black.message,.ui.inverted.message
+    20 [remove] .ui.inverted.message
+    71 [keep  ] .ui.black.message
    173 [remove] .ui.red.message
     38 [remove] .ui.red.message .header
    176 [remove] .ui.orange.message
@@ -2951,7 +2952,7 @@
     26 [keep  ] .ui.message
     41 [keep  ] .ui.large.message
     39 [remove] .ui.big.message
-    40 [remove] .ui.huge.message
+    40 [keep  ] .ui.huge.message
     43 [remove] .ui.massive.message
    233 [keep  ] .ui.table
     35 [keep  ] .ui.table:first-child
@@ -3384,9 +3385,9 @@
     91 [keep  ] .ui.large.statistic>.value,.ui.large.statistics .statistic>.value
    113 [keep  ] .ui.large.horizontal.statistic>.value,.ui.large.horizontal.statistics .statistic>.value
    103 [keep  ] .ui.large.statistic>.text.value,.ui.large.statistics .statistic>.text.value
-    89 [remove] .ui.huge.statistic>.value,.ui.huge.statistics .statistic>.value
-   111 [remove] .ui.huge.horizontal.statistic>.value,.ui.huge.horizontal.statistics .statistic>.value
-   101 [remove] .ui.huge.statistic>.text.value,.ui.huge.statistics .statistic>.text.value
+    89 [keep  ] .ui.huge.statistic>.value,.ui.huge.statistics .statistic>.value
+   111 [keep  ] .ui.huge.horizontal.statistic>.value,.ui.huge.horizontal.statistics .statistic>.value
+   101 [keep  ] .ui.huge.statistic>.text.value,.ui.huge.statistics .statistic>.text.value
    229 [keep  ] .ui.checkbox
    174 [keep  ] .ui.checkbox input[type=checkbox],.ui.checkbox input[type=radio]
    128 [keep  ] .ui.checkbox .box,.ui.checkbox label
@@ -3855,7 +3856,7 @@
     39 [remove] .ui.small.popup
     25 [keep  ] .ui.popup
     40 [keep  ] .ui.large.popup
-    39 [remove] .ui.huge.popup
+    39 [keep  ] .ui.huge.popup
     29 [keep  ] .ui.search
    808 [keep  ] .ui.search>.prompt
     40 [keep  ] .ui.search .prompt
@@ -3906,7 +3907,7 @@
     25 [keep  ] .ui.search
     40 [keep  ] .ui.large.search
     38 [remove] .ui.big.search
-    39 [remove] .ui.huge.search
+    39 [keep  ] .ui.huge.search
     42 [remove] .ui.massive.search
    258 [keep  ] .transition
    113 [keep  ] .animating.transition

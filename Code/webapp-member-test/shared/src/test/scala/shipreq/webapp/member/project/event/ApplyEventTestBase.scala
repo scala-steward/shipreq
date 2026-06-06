@@ -117,6 +117,7 @@ object ApplyEventTestFns {
       case _: AccessUpdate
          | _: ApplicableTagUpdate
          | _: ApplicableTagUpdateV1
+         | _: CodeGroupUpdate
          | _: CustomIssueTypeDelete
          | _: CustomIssueTypeRestore
          | _: CustomIssueTypeUpdate
@@ -124,31 +125,32 @@ object ApplyEventTestFns {
          | _: CustomReqTypeDeleteHard
          | _: CustomReqTypeDeleteSoft
          | _: CustomReqTypeRestore
-         | _: CustomReqTypeUpdateV1
          | _: CustomReqTypeUpdate
+         | _: CustomReqTypeUpdateV1
          | _: FieldCustomDelete
-         | _: FieldCustomImpUpdateV1
          | _: FieldCustomImpUpdate
+         | _: FieldCustomImpUpdateV1
          | _: FieldCustomRestore
-         | _: FieldCustomTagUpdateV1
          | _: FieldCustomTagUpdate
-         | _: FieldCustomTextUpdateV1
+         | _: FieldCustomTagUpdateV1
          | _: FieldCustomTextUpdate
+         | _: FieldCustomTextUpdateV1
          | _: FieldReposition
          | _: FieldStaticAdd
          | _: FieldStaticRemove
          | _: GenericReqTitleSet
          | _: GenericReqTypeSet
          | _: ManualIssueUpdate
+         | _: ProjectDelete
          | _: ProjectNameSet
-         | _: CodeGroupUpdate
+         | _: ProjectRestore.type
          | _: ReqCodesPatch
          | _: ReqFieldCustomTextSet
          | _: ReqImplicationsPatch
          | _: ReqTagsPatch
          | _: SavedViewDefaultSet
-         | _: SavedViewUpdateV1
          | _: SavedViewUpdate
+         | _: SavedViewUpdateV1
          | _: TagDelete
          | _: TagGroupUpdate
          | _: TagRestore
@@ -157,8 +159,9 @@ object ApplyEventTestFns {
          | _: UseCaseStepRestore
          | _: UseCaseStepShiftLeft
          | _: UseCaseStepShiftRight
+         | _: UseCaseStepUpdate
          | _: UseCaseTitleSet
-         | _: UseCaseStepUpdate => ()
+          => ()
     }
 
     val cfg = p.config

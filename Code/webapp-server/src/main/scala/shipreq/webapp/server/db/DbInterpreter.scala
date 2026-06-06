@@ -302,11 +302,11 @@ object DbInterpreter {
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   private def projectMetaDataQuery[A: Write](where: String): Query[A, ProjectMetaData] = {
-    type Types = (ProjectId, String, Option[ProjectRole], Int, Int, Int, Int, Instant, Instant, Instant)
-    val cols = "id, name, role, events_init, events_total, reqs_live, reqs_total, created_at, accessed_at, updated_at"
+    type Types = (ProjectId, String, Option[ProjectRole], Int, Int, Int, Int, Instant, Instant, Instant, Boolean)
+    val cols = "id, name, role, events_init, events_total, reqs_live, reqs_total, created_at, accessed_at, updated_at, live"
     val sql = s"SELECT $cols FROM project p, project_access a WHERE p.id = a.project_id AND role IS NOT NULL AND $where"
     Query[A, Types](sql).map {
-      case (id, name, role, events_init, events_total, reqs_live, reqs_total, created_at, accessed_at, updated_at) =>
+      case (id, name, role, events_init, events_total, reqs_live, reqs_total, created_at, accessed_at, updated_at, live) =>
         ProjectMetaData(
           id            = Obfuscators.projectId.obfuscate(id),
           name          = name,
@@ -317,7 +317,9 @@ object DbInterpreter {
           reqsTotal     = reqs_total,
           createdAt     = created_at,
           accessedAt    = accessed_at,
-          lastUpdatedAt = Option.when(events_total > events_init)(updated_at))
+          lastUpdatedAt = Option.when(events_total > events_init)(updated_at),
+          live          = Live when live,
+        )
     }
   }
 
@@ -400,6 +402,9 @@ object DbInterpreter {
       // has already been modified.
       Update("UPDATE project SET name=? WHERE id=?")
 
+    val updateProjectLive: Update[(Boolean, ProjectId)] =
+      Update("UPDATE project SET live=? WHERE id=?")
+
     val updateProjectStats: Update[(Int, Int, ProjectId)] =
       Update("UPDATE project SET events_total = events_total + 1, reqs_live=?, reqs_total=?, accessed_at = now(), updated_at = now() WHERE id=?")
   }
@@ -441,6 +446,9 @@ object DbInterpreter {
 
     override protected def updateProjectName(id: ProjectId, name: Project.Name): ConnectionIO[Unit] =
       SaveProjectEventLogic.updateProjectName.run((name, id)).void
+
+    override protected def updateProjectLive(id: ProjectId, live: Live): ConnectionIO[Unit] =
+      SaveProjectEventLogic.updateProjectLive.run((live is Live, id)).void
   }
 
   trait SaveProjectEvent extends DB.SaveProjectEvent[ConnectionIO] with OnSaveProjectEvent {

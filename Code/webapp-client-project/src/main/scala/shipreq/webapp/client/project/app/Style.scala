@@ -2038,6 +2038,53 @@ object Style extends StyleSheet.Inline {
 
   // ===================================================================================================================
 
+  object statusPage {
+
+    val main = style(paddingTop(2.em))
+
+    val deadReason = style(
+      fontSize(16 px),
+    )
+
+    val segment = style(
+      marginTop(3 em).important,
+      display.flex,
+      alignItems.flexEnd,
+    )
+
+    val segmentLeft = style(
+      flexGrow(1),
+      marginRight(8 ex),
+    )
+
+    val segmentButton = style(
+      marginRight(`0`).important,
+    )
+
+    val deleteFormHeaderProjectName = style(
+      marginTop(0.25 em),
+    )
+
+    val deleteFormEditorHeader = style(
+      marginTop(2 em),
+      marginBottom(0.5 em),
+      fontSize(15 px),
+      fontWeight.bold,
+    )
+
+    val deleteFormButtons = style(
+      marginTop(2 em),
+      textAlign.right,
+    )
+
+    val deleteFormButtonGap = style(
+      width(1 rem),
+      display.inlineBlock,
+    )
+  }
+
+  // ===================================================================================================================
+
   initInnerObjects(
     accessPage.existingUserSegment.segment,
     accessPage.leaveProjectSegment.segment,
@@ -2064,6 +2111,7 @@ object Style extends StyleSheet.Inline {
     reqTypeConfig.implicationHelp,
     restorationForm.bottomSection,
     savedViews.activeItem,
+    statusPage.main,
     tagConfig.tagTree,
     tags.iconDead,
     widgets.impGraphEdgeEditor.root,

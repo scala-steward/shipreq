@@ -133,4 +133,7 @@ object RandomBaseData {
   lazy val userId: Gen[UserId] =
     idLong.map(UserId.apply)
 
+  lazy val genLive: Gen[Live] =
+    Gen.chooseInt(4).map(i => Live.when(i > 0))
+
 }

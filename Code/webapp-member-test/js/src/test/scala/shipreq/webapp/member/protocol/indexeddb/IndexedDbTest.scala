@@ -2,6 +2,7 @@ package shipreq.webapp.member.protocol.indexeddb
 
 import japgolly.scalajs.react._
 import shipreq.base.test.Node.asyncTest
+import shipreq.webapp.base.protocol.Version
 import shipreq.webapp.base.protocol.binary.SafePickler
 import shipreq.webapp.member.project.data.Project
 import shipreq.webapp.member.protocol.binary.{BinaryFormat, Compression}
@@ -57,12 +58,11 @@ object IndexedDbTest extends TestSuite {
       import shipreq.webapp.member.project.protocol.binary.Latest.picklerProject
       import SampleProject8.{project => project1}
       import SampleProject5.{project => project2}
-      import SafePickler.ConstructionHelperImplicits._
       import TestEncryption.UnsafeTypes._
       import ValueCodec.Async.binary
 
       implicit val safePicklerProject: SafePickler[Project] =
-        picklerProject.asV1(0).withMagicNumbers(0x89827590, 0x8858F858)
+        SafePickler.of(Version.v1(0), _ => picklerProject).withMagicNumbers(0x89827590, 0x8858F858)
 
       val zip3 = Compression(3, addHeaders = false)
       val zip9 = Compression(9, addHeaders = false)

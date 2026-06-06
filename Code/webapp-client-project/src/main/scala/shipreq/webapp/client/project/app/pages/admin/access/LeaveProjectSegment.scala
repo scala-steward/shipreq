@@ -3,17 +3,19 @@ package shipreq.webapp.client.project.app.pages.admin.access
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
-import shipreq.base.util.ErrorMsg
+import shipreq.base.util._
 import shipreq.webapp.base.feature.AsyncFeature
 import shipreq.webapp.base.lib.ConfirmJs
 import shipreq.webapp.base.protocol.ServerSideProcInvoker
 import shipreq.webapp.base.ui.semantic.{Button, ColourPlus, Header, Segment}
+import shipreq.webapp.base.util.BaseReusability._
 import shipreq.webapp.client.project.app.Style.accessPage.{leaveProjectSegment => *}
 import shipreq.webapp.member.project.protocol.websocket.UpdateAccessCmd
 
 object LeaveProjectSegment {
 
-  final case class Props(confirmJs      : ConfirmJs,
+  final case class Props(perm           : Permission,
+                         confirmJs      : ConfirmJs,
                          sspUpdateAccess: ServerSideProcInvoker[UpdateAccessCmd.RemoveSelf.type, ErrorMsg, Any],
                          async          : AsyncFeature.ReadWrite.D0[ErrorMsg]) {
     @inline def render: VdomElement = Component(this)
@@ -38,7 +40,7 @@ object LeaveProjectSegment {
 
       val button = Button(
         tipe   = Button.Type.Text("Leave This Project"),
-        state  = Button.State.loadingWhen(p.async.isInProgress),
+        state  = Button.State.loadingOrEnabled(loading = p.async.isInProgress, enabled = p.perm is Allow),
         colour = ColourPlus.Negative,
       )
 

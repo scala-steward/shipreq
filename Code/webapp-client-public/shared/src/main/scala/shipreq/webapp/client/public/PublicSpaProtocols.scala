@@ -6,7 +6,6 @@ import shipreq.base.util._
 import shipreq.webapp.base.config.Urls
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.protocol._
-import shipreq.webapp.base.protocol.binary.SafePickler.ConstructionHelperImplicits._
 import shipreq.webapp.base.protocol.binary._
 import shipreq.webapp.base.util.TextMod
 import shipreq.webapp.base.validation.UserValidators
@@ -87,10 +86,10 @@ object PublicSpaProtocols {
         implicitly
 
       implicit val safePicklerRequest: SafePickler[Request] =
-        picklerRequest.asV1(0).withMagicNumbers(0xB5AE4CF5, 0x228FA2F2)
+        SafePickler.of(Version.v1(0), _ => picklerRequest).withMagicNumbers(0xB5AE4CF5, 0x228FA2F2)
 
       implicit val safePicklerResponse: SafePickler[Response] =
-        picklerResponse.asV1(0).withMagicNumbers(0x7CD703D9, 0xB2C6D5E3)
+        SafePickler.of(Version.v1(0), _ => picklerResponse).withMagicNumbers(0x7CD703D9, 0xB2C6D5E3)
 
       defAjax[Request, Response]("lp")
     }
@@ -108,10 +107,10 @@ object PublicSpaProtocols {
       val picklerResponse: Pickler[Response] = implicitly
 
       implicit val safePicklerRequest: SafePickler[Request] =
-        picklerRequest.asV1(0).withMagicNumbers(0x89827590, 0x8858F858)
+        SafePickler.of(Version.v1(0), _ => picklerRequest).withMagicNumbers(0x89827590, 0x8858F858)
 
       implicit val safePicklerResponse: SafePickler[Response] =
-        picklerResponse.asV1(0).withMagicNumbers(0x0FCE3232, 0x713A4224)
+        SafePickler.of(Version.v1(0), _ => picklerResponse).withMagicNumbers(0x0FCE3232, 0x713A4224)
 
       defAjax("reg1")
     }
@@ -199,10 +198,10 @@ object PublicSpaProtocols {
         pickleDisj
 
       implicit val safePicklerRequest: SafePickler[Request] =
-        picklerRequest.asV1(0).withMagicNumbers(0x456C4A18, 0x74601B38)
+        SafePickler.of(Version.v1(0), _ => picklerRequest).withMagicNumbers(0x456C4A18, 0x74601B38)
 
       implicit val safePicklerResponse: SafePickler[Response] =
-        picklerResponse.asV1(0).withMagicNumbers(0x9FE45912, 0x6FDDAE09)
+        SafePickler.of(Version.v1(0), _ => picklerResponse).withMagicNumbers(0x9FE45912, 0x6FDDAE09)
 
       defAjax("reg2")
     }
@@ -220,10 +219,10 @@ object PublicSpaProtocols {
       val picklerResponse: Pickler[Response] = implicitly
 
       implicit val safePicklerRequest: SafePickler[Request] =
-        picklerRequest.asV1(0).withMagicNumbers(0x1EFE85AA, 0x43067CC7)
+        SafePickler.of(Version.v1(0), _ => picklerRequest).withMagicNumbers(0x1EFE85AA, 0x43067CC7)
 
       implicit val safePicklerResponse: SafePickler[Response] =
-        picklerResponse.asV1(0).withMagicNumbers(0xFEF9FB89, 0x318614CF)
+        SafePickler.of(Version.v1(0), _ => picklerResponse).withMagicNumbers(0xFEF9FB89, 0x318614CF)
 
       defAjax("rp1")
     }
@@ -281,10 +280,10 @@ object PublicSpaProtocols {
         pickleDisj
 
       implicit val safePicklerRequest: SafePickler[Request] =
-        picklerRequest.asV1(0).withMagicNumbers(0x024A43EE, 0x63AE6C82)
+        SafePickler.of(Version.v1(0), _ => picklerRequest).withMagicNumbers(0x024A43EE, 0x63AE6C82)
 
       implicit val safePicklerResponse: SafePickler[Response] =
-        picklerResponse.asV1(0).withMagicNumbers(0xB9CB8212, 0xDA4601AD)
+        SafePickler.of(Version.v1(0), _ => picklerResponse).withMagicNumbers(0xB9CB8212, 0xDA4601AD)
 
       defAjax("rp2")
     }

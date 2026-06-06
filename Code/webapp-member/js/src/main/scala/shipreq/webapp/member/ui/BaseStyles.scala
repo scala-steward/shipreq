@@ -9,6 +9,7 @@ import shipreq.webapp.base.util.{Off, On}
 import shipreq.webapp.member.feature.EditControlsFeature
 import shipreq.webapp.member.feature.PreviewFeature.Position
 import shipreq.webapp.member.feature.editcontrols.Mode
+import shipreq.webapp.member.project.data.{Dead, Live}
 
 object BaseStyles extends StyleSheet.Inline {
   import dsl._
@@ -21,6 +22,7 @@ object BaseStyles extends StyleSheet.Inline {
     val previewPosition = Domain.ofValues(Position.values.whole: _*)
     val editorPosMode   = previewPosition *** editorMode
     val font            = Domain.ofValues(EditControlsFeature.Font.values.whole: _*)
+    val live            = Domain.ofValues[Live](Live, Dead)
 
     val textEditor = (
       EditorState.domain
@@ -143,13 +145,16 @@ object BaseStyles extends StyleSheet.Inline {
       flexGrow(1),
       marginRight(1 rem).important) // so that there's a gap between this & the stats. Affects :hover & <input> size
 
-    val itemHeaderRO = style(
+    val itemHeaderRO = styleF(D.live)(live => styleS(
       addClassNames("ui", "header"),
-      marginBottom(`0`).important)
+      marginBottom(`0`).important,
+      mixinIf(live is Dead)(
+        textDecoration := ^.lineThrough,
+      )))
 
-    val itemHeaderRW = style(
-      itemHeaderRO,
-      color(c"#1e70bf").important)
+    val itemHeaderRW = styleF(D.live)(live => styleS(
+      itemHeaderRO(live),
+      color(c"#1e70bf").important))
 
     val itemHeaderEditCont = style(
       width(100 %%),

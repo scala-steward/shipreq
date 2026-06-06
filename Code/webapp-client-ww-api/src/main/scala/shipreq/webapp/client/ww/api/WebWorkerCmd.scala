@@ -50,12 +50,13 @@ object WebWorkerCmd {
 
   // ===================================================================================================================
 
-  val protocolVer = Version.fromInts(2, 0) // Bump this when any of following imports change
+  val protocolVer = Version.fromInts(2, 1) // Bump this when any of following imports change
   import shipreq.webapp.base.protocol.binary.v1.BaseData._
   import shipreq.webapp.member.project.protocol.binary.v1.BaseMemberData1._
   import shipreq.webapp.member.project.protocol.binary.v1.BaseMemberData2._
   import shipreq.webapp.member.project.protocol.binary.v1.Rev1.SavedViewPicklers._
   import shipreq.webapp.member.project.protocol.binary.v2.Rev0._
+  import shipreq.webapp.member.project.protocol.binary.v2.Rev1._
 
   implicit val picklerSvg: Pickler[Svg] =
     transformPickler(Svg.apply)(_.content)
@@ -68,8 +69,10 @@ object WebWorkerCmd {
       i => Option.when(i > 0)(EventOrd.Latest(i)))(
       _.fold(0)(_.value))
 
-  implicit val picklerUpdateProject: Pickler[UpdateProject] =
+  implicit val picklerUpdateProject: Pickler[UpdateProject] = {
+    implicit val x = picklerProjectOrEvents(latestMinorVersion)
     transformPickler(UpdateProject.apply)(_.data)
+  }
 
   implicit val picklerErrorMsgOrSvg: Pickler[ErrorMsg \/ Svg] =
     pickleDisj

@@ -1709,8 +1709,18 @@ object RandomData {
     def ucStepIds       = reqsWithoutText.useCases.stepIterator.map(_.id)
     val ucStepIdG       = Gen tryGenChoose ucStepIds.toIndexedSeq
     val rcgTitleText    = TextGen.codeGroupTitleAtom(reqIdG, ucStepIdG, activeCodeIdG, cissueIdG).text
+    val delReasonText0  = TextGen.deletionReasonAtom(reqIdG, ucStepIdG, activeCodeIdG, atagIdG).text
     val delReasonText   = TextGen.deletionReasonAtom(reqIdG, ucStepIdG, activeCodeIdG, atagIdG).text1(Text.DeletionReason)
     val manualIssueText = TextGen.manualIssueAtom(reqIdG, ucStepIdG, activeCodeIdG, atagIdG).text1(Text.ManualIssue)
+
+    val projectDelReason =
+      Gen.chooseInt(64).flatMap { i =>
+        if (i == 0)
+          delReasonText0.map(Some(_))
+        else
+          Gen pure None
+      }
+
     for {
       name       <- projectName
       reqText    <- reqFieldDataText2(reqIdSet, textColIds, ucStepIdG, activeCodeIdG, cissueIdG, atagIdG)
@@ -1719,6 +1729,7 @@ object RandomData {
       dr         <- deletionReasons(reqIdG, delReasonText)
       mis        <- genManualIssues(manualIssueText)
       access     <- projectAccess
+      delReason  <- projectDelReason
       p1         = Project(
                      name,
                      cfg,
@@ -1732,6 +1743,7 @@ object RandomData {
                      mis,
                      savedview.SavedViews.empty,
                      access,
+                     delReason,
                      ProjectEvents.empty,
                      IdCeilings.zero)
       savedViews <- savedViews.savedViewsForProject(p1)
@@ -1792,6 +1804,7 @@ object RandomData {
       createdAt      = if (t1 isBefore t2) t1 else t2
       accessedAt     = if (t1 isBefore t2) t2 else t1
       lastUpdatedAt <- instantPast.option.map(_.filter(_ isAfter createdAt))
+      live          <- genLive
     } yield
     ProjectMetaData(
       id            = id,
@@ -1803,7 +1816,8 @@ object RandomData {
       reqsTotal     = reqsTotal,
       createdAt     = createdAt,
       accessedAt    = accessedAt,
-      lastUpdatedAt = lastUpdatedAt)
+      lastUpdatedAt = lastUpdatedAt,
+      live          = live)
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   object savedViews {
@@ -2877,6 +2891,12 @@ object RandomData {
     val genProjectNameSet: Gen[ProjectNameSet] =
       projectName map ProjectNameSet
 
+    val genProjectDelete: Gen[ProjectDelete] =
+      deletionReason map ProjectDelete
+
+    val genProjectRestore: Gen[ProjectRestore.type] =
+      Gen pure ProjectRestore
+
     val manualIssueId = id map ManualIssueId
 
     val genManualIssueCreate = Gen.apply2(ManualIssueCreate)(manualIssueId, manualIssueText)
@@ -2888,6 +2908,9 @@ object RandomData {
         case _: AccessUpdate            => genAccessUpdate
         case _: ApplicableTagCreate     => genApplicableTagCreate
         case _: ApplicableTagUpdate     => genApplicableTagUpdate
+        case _: CodeGroupCreate         => genCodeGroupCreate
+        case _: CodeGroupsDelete        => genCodeGroupsDelete
+        case _: CodeGroupUpdate         => genCodeGroupUpdate
         case _: ContentRestore          => genContentRestore
         case _: CustomIssueTypeCreate   => genCustomIssueTypeCreate
         case _: CustomIssueTypeDelete   => genCustomIssueTypeDelete
@@ -2915,11 +2938,10 @@ object RandomData {
         case _: ManualIssueCreate       => genManualIssueCreate
         case _: ManualIssueDelete       => genManualIssueDelete
         case _: ManualIssueUpdate       => genManualIssueUpdate
+        case _: ProjectDelete           => genProjectDelete
         case _: ProjectNameSet          => genProjectNameSet
+        case _: ProjectRestore.type     => genProjectRestore
         case _: ProjectTemplateApply    => genProjectTemplateApply
-        case _: CodeGroupCreate         => genCodeGroupCreate
-        case _: CodeGroupsDelete        => genCodeGroupsDelete
-        case _: CodeGroupUpdate         => genCodeGroupUpdate
         case _: ReqCodesPatch           => genReqCodesPatch
         case _: ReqFieldCustomTextSet   => genReqFieldCustomTextSet
         case _: ReqImplicationsPatch    => genReqImplicationsPatch

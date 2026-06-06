@@ -229,7 +229,7 @@ object Icon {
   // case object Codepen                           extends Unmodified("codepen")
   // case object Codiepie                          extends Unmodified("codiepie")
   // case object Coffee                            extends Unmodified("coffee")
-  // case object Cogs                              extends Unmodified("cogs")
+  case object Cogs                              extends Unmodified("cogs")
   case object Columns                           extends Unmodified("columns")
   // case object Comment                           extends Unmodified("comment")
   // case object Commenting                        extends Unmodified("commenting")

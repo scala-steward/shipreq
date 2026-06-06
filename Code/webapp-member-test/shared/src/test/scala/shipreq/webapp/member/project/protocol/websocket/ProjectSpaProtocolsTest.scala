@@ -499,5 +499,23 @@ object ProjectSpaProtocolsTest extends TestSuite {
       }
     }
 
+    // =================================================================================================================
+    "UpdateLiveness" - {
+      import UpdateLivenessCmd._
+      "req" - {
+        "v2.1" - {
+          "restore" - {
+            val bin    = BinaryData.fromHex("5945B41D0201010C7238295653")
+            val expect = (ReqId(1), UpdateLiveness.AndReq(Restore))
+            assertRequest(bin, expect)
+          }
+          "delete" - {
+            val bin    = BinaryData.fromHex("5945B41D0201020C64016C0D73616D706C6520726561736F6E38295653")
+            val expect = (ReqId(2), UpdateLiveness.AndReq(Delete("sample reason")))
+            assertRequest(bin, expect)
+          }
+        }
+      }
+    }
   }
 }

@@ -1,8 +1,8 @@
 package shipreq.webapp.client.project.app.pages.content.issues
 
 import japgolly.scalajs.react.extra.Px
-import japgolly.scalajs.react.{Key, Reusability, Reusable}
 import japgolly.scalajs.react.vdom.html_<^.TagMod
+import japgolly.scalajs.react.{Key, Reusability, Reusable}
 import shipreq.base.util.IfApplicable
 import shipreq.webapp.client.project.app.pages.root.Routes
 import shipreq.webapp.client.project.feature.EditorFeature

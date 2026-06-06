@@ -9,7 +9,6 @@ import shipreq.base.util._
 import shipreq.webapp.base.lib.LoggerJs
 import shipreq.webapp.base.protocol._
 import shipreq.webapp.base.protocol.binary.SafePickler
-import shipreq.webapp.base.protocol.binary.SafePickler.ConstructionHelperImplicits._
 import shipreq.webapp.base.protocol.websocket.WebSocket.ReadyState
 import shipreq.webapp.base.protocol.websocket.WebSocketShared.ReqId
 import shipreq.webapp.base.protocol.websocket._
@@ -35,9 +34,9 @@ object WebSocketClientTester {
     override type ReqId  = WebSocketShared.ReqId
     override type ReqRes = Protocol.RequestResponse.Simple[SafePickler, ReqMsg, ResMsg]
     override val url     = Url.Relative("/x")
-    override val req     = Protocol(transformPickler(ReqMsg.apply)(_.msg).asV1(0))
-    override val push    = Protocol(transformPickler(PushMsg.apply)(_.msg).asV1(0))
-    val res              = Protocol(transformPickler(ResMsg.apply)(_.msg).asV1(0))
+    override val req     = Protocol(SafePickler.of(Version.v1(0), _ => transformPickler(ReqMsg.apply)(_.msg)))
+    override val push    = Protocol(SafePickler.of(Version.v1(0), _ => transformPickler(PushMsg.apply)(_.msg)))
+    val res              = Protocol(SafePickler.of(Version.v1(0), _ => transformPickler(ResMsg.apply)(_.msg)))
     val ReqRes: ReqRes   = Protocol.RequestResponse.simple(res)
   }
 

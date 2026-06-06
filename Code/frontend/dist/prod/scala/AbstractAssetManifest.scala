@@ -98,7 +98,7 @@ abstract class AbstractAssetManifest[+A] {
     href = "https://cdnjs.cloudflare.com/ajax/libs/react/17.0.2/umd/react.production.min.js",
     integrity = Some("sha256-Ipu/TQ50iCCVZBUsZyNJfxrDk0E2yhaEIz0vqI+kFG8="))
 
-  final val semanticCss = modify("/s/d1a739b7b9b5282d1bda8f3628664ede.css")
+  final val semanticCss = modify("/s/b5ab199c99758d740390a5f42ce8268e.css")
 
   final val semanticCssUrls: List[A] =
     modify("icons.eot") ::

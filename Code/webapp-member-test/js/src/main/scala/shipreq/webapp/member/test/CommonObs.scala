@@ -41,8 +41,33 @@ object CommonObs {
 
   final class Link($: DomZipperJs) {
     val dom = $.domAs[html.Anchor]
-    val label = $.domAsHtml.textContent.trim
+    val label = dom.textContent.trim
     def click() = Simulate.click(dom)
+  }
+
+  // ===================================================================================================================
+
+  final class SemanticUiButton($: DomZipperJs) {
+    val dom        = $.domAs[html.Button]
+    val isLoading  = dom.classList.contains("loading")
+    val isDisabled = dom.classList.contains("disabled") || dom.hasAttribute("disabled")
+    def click()    = Simulate.click(dom)
+  }
+
+  object SemanticUiButton {
+    final class TestDsl[R, O, S](val * : Dsl[Id, R, O, S, String], name: String)(getObs: O => SemanticUiButton) {
+      protected implicit def autoObs(o: O): SemanticUiButton = getObs(o)
+      def isLoading  = *.focus(s"$name: loading").value(_.obs.isLoading)
+      def isDisabled = *.focus(s"$name: disabled").value(_.obs.isDisabled)
+      def click      = *.action(s"Click $name")(_.obs.click())
+    }
+    final class TestDslOption[R, O, S](val * : Dsl[Id, R, O, S, String], name: String)(getObs: O => Option[SemanticUiButton]) {
+      protected implicit def autoObs(o: O): Option[SemanticUiButton] = getObs(o)
+      def exists     = *.focus(s"$name: exists").value(_.obs.isDefined)
+      def isLoading  = *.focus(s"$name: loading").value(_.obs.get.isLoading)
+      def isDisabled = *.focus(s"$name: disabled").value(_.obs.get.isDisabled)
+      def click      = *.action(s"Click $name")(_.obs.get.click())
+    }
   }
 
   // ===================================================================================================================

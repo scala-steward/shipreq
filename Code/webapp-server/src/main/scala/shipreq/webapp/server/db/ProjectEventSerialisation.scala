@@ -9,6 +9,8 @@ import shipreq.webapp.member.project.protocol.json.v1.Rev1.EventData._
 import shipreq.webapp.member.project.protocol.json.v1.Rev6.EventData._
 import shipreq.webapp.member.project.protocol.json.v1.Rev7.EventData._
 import shipreq.webapp.member.project.protocol.json.v2.Rev0.EventData._
+import shipreq.webapp.member.project.protocol.json.v2.Rev1.EventData._
+import shipreq.webapp.member.protocol.json.JsonCodec.Implicits._
 import shipreq.webapp.server.logic.algebra.DB.ReadProjectEventError
 
 object ProjectEventSerialisation {
@@ -49,7 +51,9 @@ object ProjectEventSerialisation {
     case e: ManualIssueCreate       => (TypeManualIssueCreate      , e.asJson)
     case e: ManualIssueDelete       => (TypeManualIssueDelete      , e.asJson)
     case e: ManualIssueUpdate       => (TypeManualIssueUpdate      , e.asJson)
+    case e: ProjectDelete           => (TypeProjectDelete          , e.asJson)
     case e: ProjectNameSet          => (TypeProjectNameSet         , e.asJson)
+    case e: ProjectRestore.type     => (TypeProjectRestore         , e.asJson)
     case e: ProjectTemplateApply    => (TypeProjectTemplateApply   , e.asJson)
     case e: ReqCodesPatch           => (TypeReqCodesPatch          , e.asJson)
     case e: ReqFieldCustomTextSet   => (TypeReqFieldCustomTextSet  , e.asJson)
@@ -155,19 +159,21 @@ object ProjectEventSerialisation {
       case TypeManualIssueCreate       => parse[ManualIssueCreate]
       case TypeManualIssueDelete       => parse[ManualIssueDelete]
       case TypeManualIssueUpdate       => parse[ManualIssueUpdate]
+      case TypeProjectDelete           => parse[ProjectDelete]
       case TypeProjectNameSet          => parse[ProjectNameSet]
+      case TypeProjectRestore          => parse[ProjectRestore.type]
       case TypeProjectTemplateApply    => parse[ProjectTemplateApply]
       case TypeReqCodesPatch           => parse[ReqCodesPatch]
       case TypeReqFieldCustomTextSet   => parse[ReqFieldCustomTextSet]
       case TypeReqImplicationsPatch    => parse[ReqImplicationsPatch]
       case TypeReqsDelete              => parse[ReqsDelete]
       case TypeReqTagsPatch            => parse[ReqTagsPatch]
-      case TypeSavedViewCreateV1       => parse[SavedViewCreateV1]
       case TypeSavedViewCreate         => parse[SavedViewCreate]
+      case TypeSavedViewCreateV1       => parse[SavedViewCreateV1]
       case TypeSavedViewDefaultSet     => parse[SavedViewDefaultSet]
       case TypeSavedViewDelete         => parse[SavedViewDelete]
-      case TypeSavedViewUpdateV1       => parse[SavedViewUpdateV1]
       case TypeSavedViewUpdate         => parse[SavedViewUpdate]
+      case TypeSavedViewUpdateV1       => parse[SavedViewUpdateV1]
       case TypeTagDelete               => parse[TagDelete]
       case TypeTagGroupCreate          => parse[TagGroupCreate]
       case TypeTagGroupUpdate          => parse[TagGroupUpdate]

@@ -29,6 +29,7 @@ object Routes {
     case object Index       extends Page
     case object ReqTable    extends Page
     case object Access      extends Page
+    case object Status      extends Page
 
     case class ReqDetail(pubid: ExternalPubid) extends Page {
       @elidable(elidable.INFO)
@@ -53,10 +54,12 @@ object Routes {
       case CfgReqTypes  => "Config " + ProjectIndex.Item.CfgReqTypes.title :: Nil
       case CfgTags      => "Config " + ProjectIndex.Item.CfgTags    .title :: Nil
       case Access       => ProjectIndex.Item.Access.title :: Nil
+      case Status       => ProjectIndex.Item.Status.title :: Nil
     }
 
     def sampleValues = NonEmptyVector[Page](
       Access,
+      Status,
       CfgFields,
       CfgIssues,
       CfgReqTypes,
@@ -119,6 +122,7 @@ object Routes {
       | staticPage("#/config/reqtypes", Page.CfgReqTypes)
       | staticPage("#/config/tags"    , Page.CfgTags    )
       | staticPage("#/admin/access"   , Page.Access     )
+      | staticPage("#/admin/status"   , Page.Status     )
       | normalisation
       | reqDetailRoute
       ).notFound(redirectToPage(Page.Index)(SetRouteVia.HistoryReplace))
@@ -140,6 +144,7 @@ object Routes {
         case Page.CfgReqTypes  => root / "cfg/reqTypes"
         case Page.CfgTags      => root / "cfg/tags"
         case Page.Access       => root / "admin/access"
+        case Page.Status       => root / "admin/status"
       }
       GoogleAnalytics.onRouteChange(_, _)(path)
     }

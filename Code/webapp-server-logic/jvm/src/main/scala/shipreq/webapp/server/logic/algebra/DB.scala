@@ -6,7 +6,7 @@ import java.sql.Connection
 import java.time.Instant
 import shipreq.webapp.base.data._
 import shipreq.webapp.member.global._
-import shipreq.webapp.member.project.data._
+import shipreq.webapp.member.project.data.{Dead => _, Live => _, _}
 import shipreq.webapp.member.project.event.{ActiveEvent, Event, EventOrd, VerifiedEvent}
 import shipreq.webapp.server.logic.data._
 
@@ -289,6 +289,8 @@ object DB {
 
     protected def updateProjectName(id: ProjectId, name: Project.Name): F[Unit]
 
+    protected def updateProjectLive(id: ProjectId, live: Live): F[Unit]
+
     final protected def onSaveProjectEvent(pid: ProjectId, event: Event): Option[F[SaveProjectEventError \/ Unit]] = {
       type Out = SaveProjectEventError \/ Unit
 
@@ -311,6 +313,12 @@ object DB {
 
         case e: Event.ProjectNameSet =>
           Some(updateProjectName(pid, e.name))
+
+        case _: Event.ProjectDelete =>
+          Some(updateProjectLive(pid, Dead))
+
+        case Event.ProjectRestore =>
+          Some(updateProjectLive(pid, Live))
 
         case _ =>
           None
@@ -443,6 +451,7 @@ object DB {
         override def _importProject(a: UserId, b: VerifiedEvent.Seq, c: Project, d: ProjectEncryptionKey) = t(self._importProject(a, b, c, d))
         override def updateProjectAccess(a: ProjectId, b: Set[UserId], c: Map[UserId,ProjectRole]) = t(self.updateProjectAccess(a, b, c))
         override def updateProjectName(a: ProjectId, b: Project.Name): G[Unit] = t(self.updateProjectName(a, b))
+        override def updateProjectLive(a: ProjectId, b: Live): G[Unit] = t(self.updateProjectLive(a, b))
       }
   }
 

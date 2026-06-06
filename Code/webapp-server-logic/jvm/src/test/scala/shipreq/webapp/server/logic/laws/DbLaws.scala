@@ -5,10 +5,10 @@ import java.time.Instant
 import java.util.UUID
 import nyaya.gen.Gen
 import shipreq.webapp.base.data._
-import shipreq.webapp.member.project.data.{Project, ProjectAccess}
+import shipreq.webapp.member.project.data.{Project, ProjectAccess, ProjectMetaData}
 import shipreq.webapp.member.project.event._
 import shipreq.webapp.member.test.project.RandomData
-import shipreq.webapp.member.test.project.UnsafeTypes.projectCreatorFromUserId
+import shipreq.webapp.member.test.project.UnsafeTypes._
 import shipreq.webapp.server.logic.algebra.DB.{ProjectSpaInitPage, ReadProjectEventError, SaveProjectEventError}
 import shipreq.webapp.server.logic.data.ProjectEncryptionKey
 import shipreq.webapp.server.logic.test.WebappServerLogicTestUtil._
@@ -36,6 +36,7 @@ abstract class DbLaws extends TestSuite {
     def getProjectAccess: ProjectId => ProjectAccess
     def projectSpaInitPage: (ProjectId, UserId) => Option[ProjectSpaInitPage]
     def getProjectRolodex: ProjectId => Rolodex
+    def getProjectMetaData: (ProjectId, UserId) => Option[ProjectMetaData]
 
     def needProjectCreator: ProjectId => UserId
     def getProjectEvents: ProjectId => ReadProjectEventError \/ VerifiedEvent.Seq
@@ -81,7 +82,6 @@ abstract class DbLaws extends TestSuite {
         assertEq(db.getUsernamesByUserId(users.values.toSet), \/-(users.map(_.swap)))
         \/-(users)
       }
-
   }
 
   private implicit def autoUserId(u: User): UserId = u.id
@@ -190,6 +190,22 @@ abstract class DbLaws extends TestSuite {
     )))
   }
 
+  private def testProjectDeleteRestore() = test { (t, u) =>
+    val p = t.createProject(u)
+
+    def getMetaData() = t.db.getProjectMetaData(p, u).getOrThrow("getMetaData")
+
+    assertEq(getMetaData().live, Live)
+
+    // Delete
+    t.db.addEvent(p, Event.ProjectDelete(∅)).getOrThrow("ProjectDelete")
+    assertEq(getMetaData().live, Dead)
+
+    // Restore
+    t.db.addEvent(p, Event.ProjectRestore).getOrThrow("ProjectRestore")
+    assertEq(getMetaData().live, Live)
+  }
+
   // ===================================================================================================================
 
   override def tests = Tests {
@@ -209,6 +225,8 @@ abstract class DbLaws extends TestSuite {
       "upd" - testUpdateProjectAccessUpd()
       "bulk" - testUpdateProjectAccessBulk()
     }
+
+    "projectDeleteRestore" - testProjectDeleteRestore()
 
     "projectSpaInitPage" - {
       "ok" - test { (t, u) =>

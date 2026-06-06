@@ -25,7 +25,7 @@ const unusedClasses = [
   'medium',
   // 'large',
   // 'big', // in manualRemovals
-  // 'huge', // in manualRemovals
+  // 'huge',
   'massive',
 
   'radio',
@@ -89,7 +89,7 @@ const manualRemovals = [
   s => /\.ribbon/  .test(s),
   s => /\.inverted/.test(s) && !/\.(?:dimmer|segment|menu)/   .test(s),
   s => /\.compact/ .test(s) && !/\.(?:table)/                 .test(s),
-  s => /\.black/   .test(s) && !/\.(?:button)/                .test(s),
+  s => /\.black/   .test(s) && !/\.(?:button|message)/        .test(s),
   s => /\.blue/    .test(s) && !/\.(?:label|button|card)/     .test(s),
   s => /\.green/   .test(s) && !/\.(?:button|icon)/           .test(s),
   s => /\.grey/    .test(s) && !/\.(?:icon|label)/            .test(s),
@@ -97,7 +97,6 @@ const manualRemovals = [
   s => /\.red/     .test(s) && !/\.(?:card|label|button|icon)/.test(s),
   s => /\.yellow/  .test(s) && !/\.(?:card|icon)/             .test(s),
   s => /\.big/     .test(s) && !/\.(?:icons?)/                .test(s),
-  s => /\.huge/    .test(s) && !/\.(?:icons?)/                .test(s),
 ];
 
 // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████

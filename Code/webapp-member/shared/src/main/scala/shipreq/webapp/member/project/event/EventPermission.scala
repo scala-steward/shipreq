@@ -1,7 +1,7 @@
 package shipreq.webapp.member.project.event
 
 import shipreq.webapp.base.data.{ProjectRole, UserId}
-import Event._
+import shipreq.webapp.member.project.event.Event._
 
 object EventPermission {
 
@@ -13,6 +13,8 @@ object EventPermission {
 
       case _: ProjectNameSet
          | _: ProjectTemplateApply
+         | _: ProjectDelete
+         |    ProjectRestore
          =>
           ProjectRole.Admin
 

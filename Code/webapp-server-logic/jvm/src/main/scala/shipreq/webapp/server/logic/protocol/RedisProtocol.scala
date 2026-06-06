@@ -2,7 +2,6 @@ package shipreq.webapp.server.logic.protocol
 
 import shipreq.webapp.base.protocol.Version
 import shipreq.webapp.base.protocol.binary.SafePickler
-import shipreq.webapp.base.protocol.binary.SafePickler.ConstructionHelperImplicits._
 import shipreq.webapp.member.project.data.Project
 import shipreq.webapp.member.project.event.{EventOrd, VerifiedEvent}
 import shipreq.webapp.server.logic.algebra.Redis.ProjectSnapshot
@@ -11,13 +10,14 @@ object RedisProtocol {
 
   val picklerProjectSnapshot: SafePickler[ProjectSnapshot] = {
 
-    val ver = Version.fromInts(2, 0) // Bump this when any of following imports change
+    val ver = Version.fromInts(2, 1) // Bump this when any of following imports change
     import boopickle.DefaultBasic._
     import shipreq.webapp.member.project.protocol.binary.v1.PostEvents.picklerEventOrdLatest
-    import shipreq.webapp.member.project.protocol.binary.v2.Rev0.picklerProject
+    import shipreq.webapp.member.project.protocol.binary.v2.Rev1.picklerProject
 
-    val pickler: Pickler[ProjectSnapshot] =
+    def pickler(v: Version.Minor): Pickler[ProjectSnapshot] =
       new Pickler[ProjectSnapshot] {
+        private implicit val p = picklerProject(v)
         override def pickle(a: ProjectSnapshot)(implicit state: PickleState): Unit = {
           state.pickle(a.project)
           state.pickle(a.ord)
@@ -29,19 +29,19 @@ object RedisProtocol {
         }
       }
 
-    pickler
-      .asVersion(ver)
+    SafePickler.of(ver, pickler)
       .withMagicNumbers(0x713D305C, 0xB72AC2DE)
   }
 
   // ===================================================================================================================
 
   val picklerEvent: SafePickler[VerifiedEvent] = {
-    val ver = Version.fromInts(2, 0) // Bump this when any of following imports change
-    import shipreq.webapp.member.project.protocol.binary.v2.Rev0.picklerVerifiedEvent
+    val ver = Version.fromInts(2, 1) // Bump this when any of following imports change
+    import shipreq.webapp.member.project.protocol.binary.v2.Rev1.picklerVerifiedEvent
 
-    // no magic numbers - overhead to high proportional to the event size, too frequent
-    picklerVerifiedEvent.asVersion(ver)
+    // - no magic numbers - overhead to high proportional to the event size, too frequent
+    // - picklerVerifiedEvent is already backwards-compatible - no need to inspect version
+    SafePickler.of(ver, _ => picklerVerifiedEvent)
   }
 
 }
