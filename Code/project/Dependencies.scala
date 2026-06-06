@@ -44,7 +44,7 @@ object Dependencies {
   }
 
   object Flyway {
-    private val mm = MultiModule.java("org.flywaydb", "12.6.2")
+    private val mm = MultiModule.java("org.flywaydb", "12.8.1")
     val core     = mm("flyway-core")
     val postgres = mm("flyway-database-postgresql")
     val all      = core ++ postgres
