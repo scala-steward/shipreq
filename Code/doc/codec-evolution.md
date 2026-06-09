@@ -25,6 +25,11 @@ There are different types:
 How to evolve binary codecs
 ===========================
 
+* Per-pickler backwards-compatibility
+  * Add `writeVersion(v)` to the beginning of the `pickle` method
+  * Add `readByVersion(v)` to the beginning of the `unpickle` method and write separate unpicklers depending on the
+    version
+
 * Create an object called `RevX` where `X` is the new point version.
   eg. create `.binary.v1.Rev3` for v1.3
 
