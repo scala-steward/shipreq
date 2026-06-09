@@ -1,6 +1,5 @@
 package shipreq.webapp.member.project.storage
 
-import boopickle.Pickler
 import japgolly.scalajs.react.{AsyncCallback, CallbackTo}
 import shipreq.webapp.base.data.ProjectCreator
 import shipreq.webapp.base.protocol.Version
@@ -69,6 +68,7 @@ final class WebStorage(ws        : AbstractWebStorage,
 object WebStorage {
 
   private[WebStorage] final class Protocols(creator: ProjectCreator, encryption: Encryption) {
+    import SafePickler.ConstructionHelperImplicits._
 
     object projectLibrary {
 
@@ -77,12 +77,11 @@ object WebStorage {
 
       val cache = CacheJs(creator)
 
-      def picklerProjectLibrary(v: Version.Minor): Pickler[ProjectLibrary] =
-        picklerProject(v)
-          .xmap(ProjectLibrary.init(creator, _, cache))(_.latest)
-
       implicit val pickler: SafePickler[ProjectLibrary] =
-        SafePickler.of(ver, picklerProjectLibrary).withMagicNumbers(0x7F19E183, 0x3365F95A)
+        picklerProject
+          .xmap(ProjectLibrary.init(creator, _, cache))(_.latest)
+          .asVersion(ver)
+          .withMagicNumbers(0x7F19E183, 0x3365F95A)
 
       val format: BinaryFormat[ProjectLibrary] =
         BinaryFormat.versioned(

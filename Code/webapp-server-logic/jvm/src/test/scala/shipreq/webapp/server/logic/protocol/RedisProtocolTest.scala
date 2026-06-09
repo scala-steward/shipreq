@@ -94,7 +94,7 @@ object RedisProtocolTest extends TestSuite {
 
       "v2.1" - {
         "empty" - {
-          val bin    = BinaryData.fromHex("5C303D710201000000000523494E454700000000000000000000000001010101010100000000000000000000DEC22AB7")
+          val bin    = BinaryData.fromHex("5C303D710201D5F5B60701000000000523494E454700000000000000000000000001010101010100000000000000000000DEC22AB7")
           val expect = ProjectSnapshot(emptyProject1, 0)
           assertDecodeOk(codec)(bin, expect)
         }

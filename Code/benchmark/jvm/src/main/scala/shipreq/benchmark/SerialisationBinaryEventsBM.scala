@@ -8,14 +8,10 @@ import shipreq.webapp.sampledata.SampleData
 
 object SerialisationBinaryEventsBM {
   import boopickle.DefaultBasic._
-  import shipreq.webapp.base.protocol.binary.SafePickler
-  import shipreq.webapp.base.protocol.Version
+  import shipreq.webapp.base.protocol.binary.SafePickler.ConstructionHelperImplicits._
   import shipreq.webapp.member.project.protocol.binary.Latest._
 
-  val binCodec = {
-    val p = implicitly[Pickler[Vector[Event]]]
-    SafePickler.of(Version.v1(0), _ => p).withMagicNumbers(123, 456)
-  }
+  val binCodec = implicitly[Pickler[Vector[Event]]].asV1(0).withMagicNumbers(123, 456)
 }
 
 @State(Scope.Benchmark)
