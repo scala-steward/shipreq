@@ -1,7 +1,7 @@
 import sbt._
 import sbt.Keys._
+import com.github.sbt.git.GitPlugin.autoImport._
 import com.timushev.sbt.updates.UpdatesPlugin.autoImport._
-import com.typesafe.sbt.GitPlugin.autoImport._
 import java.nio.file.{Files, Path}
 import org.scalajs.jsenv.Input
 import org.scalajs.jsenv.jsdomnodejs.JSDOMNodeJSEnv
