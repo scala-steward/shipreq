@@ -1058,6 +1058,7 @@ object Style extends StyleSheet.Inline {
     val rulesEditorOtherwise = style(
       rulesEditorReqTypeColumn,
       paddingLeft(2 ex).important,
+      whiteSpace.normal,
     )
 
     val rulesEditorButton = style(
