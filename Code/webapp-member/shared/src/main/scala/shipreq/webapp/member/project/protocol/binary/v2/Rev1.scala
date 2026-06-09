@@ -3,8 +3,7 @@ package shipreq.webapp.member.project.protocol.binary.v2
 import java.time.Instant
 import shipreq.base.util.ErrorMsg
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.protocol.Version
-import shipreq.webapp.member.project.data._
+import shipreq.webapp.member.project.data.{Live => _, _}
 import shipreq.webapp.member.project.event._
 import shipreq.webapp.member.project.text.Text.DeletionReason
 
@@ -22,12 +21,11 @@ object Rev1 {
   import Rev0._
   import AtomPicklers.instances._
 
-  val latestMinorVersion = Version.Minor(1)
-
-  def picklerProject(v: Version.Minor): Pickler[Project] =
+  // + deletionReason: Option[DeletionReason.OptionalText]
+  implicit lazy val picklerProject: Pickler[Project] =
     new Pickler[Project] {
       override def pickle(p: Project)(implicit state: PickleState): Unit = {
-        assert(v ==* latestMinorVersion)
+        writeVersion(1)
         state.pickle(p.name)
         state.pickle(p.config)
         state.pickle(p.content)
@@ -38,18 +36,35 @@ object Rev1 {
         state.pickle(p.history)
         state.pickle(p.idCeilings)
       }
-      override def unpickle(implicit state: UnpickleState): Project = {
-        val name           = state.unpickle[Project.Name]
-        val config         = state.unpickle[ProjectConfig]
-        val content        = state.unpickle[ProjectContent]
-        val manualIssues   = state.unpickle[ManualIssues]
-        val savedViews     = state.unpickle[savedview.SavedViews.Optional]
-        val access         = state.unpickle[ProjectAccess]
-        val deletionReason = if (v.value >= 1) state.unpickle[Option[DeletionReason.OptionalText]] else None
-        val history        = state.unpickle[ProjectEvents]
-        val idCeilings     = state.unpickle[IdCeilings]
-        Project(name, config, content, manualIssues, savedViews, access, deletionReason, history, idCeilings)
-      }
+      override def unpickle(implicit state: UnpickleState): Project =
+        readByVersion(1) {
+
+          // v1.0
+          case 0 =>
+            val name           = state.unpickle[Project.Name]
+            val config         = state.unpickle[ProjectConfig]
+            val content        = state.unpickle[ProjectContent]
+            val manualIssues   = state.unpickle[ManualIssues]
+            val savedViews     = state.unpickle[savedview.SavedViews.Optional]
+            val access         = state.unpickle[ProjectAccess]
+            val deletionReason = Option.empty[DeletionReason.OptionalText]
+            val history        = state.unpickle[ProjectEvents]
+            val idCeilings     = state.unpickle[IdCeilings]
+            Project(name, config, content, manualIssues, savedViews, access, deletionReason, history, idCeilings)
+
+          // v1.1
+          case 1 =>
+            val name           = state.unpickle[Project.Name]
+            val config         = state.unpickle[ProjectConfig]
+            val content        = state.unpickle[ProjectContent]
+            val manualIssues   = state.unpickle[ManualIssues]
+            val savedViews     = state.unpickle[savedview.SavedViews.Optional]
+            val access         = state.unpickle[ProjectAccess]
+            val deletionReason = state.unpickle[Option[DeletionReason.OptionalText]]
+            val history        = state.unpickle[ProjectEvents]
+            val idCeilings     = state.unpickle[IdCeilings]
+            Project(name, config, content, manualIssues, savedViews, access, deletionReason, history, idCeilings)
+        }
     }
 
   private[binary] implicit lazy val picklerEventProjectDelete: Pickler[Event.ProjectDelete] =
@@ -326,15 +341,14 @@ object Rev1 {
   implicit lazy val picklerProjectEvents: Pickler[ProjectEvents] =
     transformPickler(ProjectEvents.apply)(_.events)
 
-  def picklerProjectOrEvents(projectVer: Version.Minor): Pickler[Project \/ VerifiedEvent.Seq] = {
-    implicit val p = picklerProject(projectVer)
+  implicit lazy val picklerProjectOrEvents: Pickler[Project \/ VerifiedEvent.Seq] =
     pickleDisj
-  }
 
   // New field: .live
   implicit lazy val picklerProjectMetaData: Pickler[ProjectMetaData] =
     new Pickler[ProjectMetaData] {
       override def pickle(a: ProjectMetaData)(implicit state: PickleState): Unit = {
+        writeVersion(1)
         state.pickle(a.id)
         state.pickle(a.role)
         state.pickle(a.name)
@@ -347,31 +361,60 @@ object Rev1 {
         state.pickle(a.lastUpdatedAt)
         state.pickle(a.live)
       }
-      override def unpickle(implicit state: UnpickleState): ProjectMetaData = {
-        val id            = state.unpickle[ProjectId.Public]
-        val role          = state.unpickle[Option[ProjectRole]]
-        val name          = state.unpickle[Project.Name]
-        val eventsInit    = state.unpickle[Int]
-        val eventsTotal   = state.unpickle[Int]
-        val reqsLive      = state.unpickle[Int]
-        val reqsTotal     = state.unpickle[Int]
-        val createdAt     = state.unpickle[Instant]
-        val accessedAt    = state.unpickle[Instant]
-        val lastUpdatedAt = state.unpickle[Option[Instant]]
-        val live          = state.unpickle[Live]
-        ProjectMetaData(
-          id            = id,
-          role          = role,
-          name          = name,
-          eventsInit    = eventsInit,
-          eventsTotal   = eventsTotal,
-          reqsLive      = reqsLive,
-          reqsTotal     = reqsTotal,
-          createdAt     = createdAt,
-          accessedAt    = accessedAt,
-          lastUpdatedAt = lastUpdatedAt,
-          live          = live)
-      }
+      override def unpickle(implicit state: UnpickleState): ProjectMetaData =
+        readByVersion(1) {
+
+          // v1.0
+          case 0 =>
+            val id            = state.unpickle[ProjectId.Public]
+            val role          = state.unpickle[Option[ProjectRole]]
+            val name          = state.unpickle[Project.Name]
+            val eventsInit    = state.unpickle[Int]
+            val eventsTotal   = state.unpickle[Int]
+            val reqsLive      = state.unpickle[Int]
+            val reqsTotal     = state.unpickle[Int]
+            val createdAt     = state.unpickle[Instant]
+            val accessedAt    = state.unpickle[Instant]
+            val lastUpdatedAt = state.unpickle[Option[Instant]]
+            ProjectMetaData(
+              id            = id,
+              role          = role,
+              name          = name,
+              eventsInit    = eventsInit,
+              eventsTotal   = eventsTotal,
+              reqsLive      = reqsLive,
+              reqsTotal     = reqsTotal,
+              createdAt     = createdAt,
+              accessedAt    = accessedAt,
+              lastUpdatedAt = lastUpdatedAt,
+              live          = Live)
+
+          // v1.1
+          case 1 =>
+            val id            = state.unpickle[ProjectId.Public]
+            val role          = state.unpickle[Option[ProjectRole]]
+            val name          = state.unpickle[Project.Name]
+            val eventsInit    = state.unpickle[Int]
+            val eventsTotal   = state.unpickle[Int]
+            val reqsLive      = state.unpickle[Int]
+            val reqsTotal     = state.unpickle[Int]
+            val createdAt     = state.unpickle[Instant]
+            val accessedAt    = state.unpickle[Instant]
+            val lastUpdatedAt = state.unpickle[Option[Instant]]
+            val live          = state.unpickle[Live]
+            ProjectMetaData(
+              id            = id,
+              role          = role,
+              name          = name,
+              eventsInit    = eventsInit,
+              eventsTotal   = eventsTotal,
+              reqsLive      = reqsLive,
+              reqsTotal     = reqsTotal,
+              createdAt     = createdAt,
+              accessedAt    = accessedAt,
+              lastUpdatedAt = lastUpdatedAt,
+              live          = live)
+        }
     }
 
 }

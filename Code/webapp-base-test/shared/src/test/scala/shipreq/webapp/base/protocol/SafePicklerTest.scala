@@ -3,6 +3,7 @@ package shipreq.webapp.base.protocol
 import shipreq.base.test.BaseTestUtil._
 import shipreq.base.util.BinaryData
 import shipreq.webapp.base.protocol.binary.SafePickler
+import shipreq.webapp.base.protocol.binary.SafePickler.ConstructionHelperImplicits._
 import shipreq.webapp.base.test.BinaryTestUtil._
 import sourcecode.Line
 import utest._
@@ -63,10 +64,10 @@ object SafePicklerTest extends TestSuite {
       }
 
     val safePicklerv10: SafePickler[Data] =
-      SafePickler.of(Version.v1(0), _ => picklerv10).withMagicNumbers(123, 456)
+      picklerv10.asV1(0).withMagicNumbers(123, 456)
 
     val safePicklerv11: SafePickler[Data] =
-      SafePickler.of(Version.v1(1), _ => picklerv11).withMagicNumbers(123, 456)
+      picklerv11.asVersion(v11).withMagicNumbers(123, 456)
 
     def modBin(b: BinaryData, f: Array[Byte] => Array[Byte]): BinaryData =
       BinaryData.unsafeFromArray(f(b.toNewArray))
@@ -80,7 +81,7 @@ object SafePicklerTest extends TestSuite {
           inner.embeddedRead
         }
       }
-      SafePickler.of(Version.fromInts(4, 4), _ => p).withMagicNumbers(0x67230F4E, 0xA0B18F5D)
+      p.asVersion(Version.fromInts(4, 4)).withMagicNumbers(0x67230F4E, 0xA0B18F5D)
     }
 
     def assertDecodeFailure(p: SafePickler[_], bin: BinaryData)(pf: PartialFunction[DecodingFailure, Unit])

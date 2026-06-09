@@ -6,6 +6,7 @@ import shipreq.base.util._
 import shipreq.webapp.base.config.Urls
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.protocol._
+import shipreq.webapp.base.protocol.binary.SafePickler.ConstructionHelperImplicits._
 import shipreq.webapp.base.protocol.binary._
 import shipreq.webapp.base.validation.UserValidators
 import shipreq.webapp.base.validation.lib._
@@ -128,10 +129,10 @@ object CommonProtocols {
         implicitly
 
       implicit val safePicklerRequest: SafePickler[Request] =
-        SafePickler.of(Version.v1(0), _ => picklerRequest).withMagicNumbers(0x8AB0DAD1, 0x38E21961)
+        picklerRequest.asV1(0).withMagicNumbers(0x8AB0DAD1, 0x38E21961)
 
       implicit val safePicklerResponse: SafePickler[Response] =
-        SafePickler.of(Version.v1(0), _ => picklerResponse).withMagicNumbers(0xBAD9BE35, 0xBCACEC71)
+        picklerResponse.asV1(0).withMagicNumbers(0xBAD9BE35, 0xBCACEC71)
 
       defAjax("login")
     }
@@ -191,10 +192,10 @@ object CommonProtocols {
         implicitly
 
       implicit val safePicklerRequest: SafePickler[Request] =
-        SafePickler.of(Version.v1(0), _ => picklerRequest).withMagicNumbers(0xBFA2418E, 0xF5D4C77E)
+        picklerRequest.asV1(0).withMagicNumbers(0xBFA2418E, 0xF5D4C77E)
 
       implicit val safePicklerResponse: SafePickler[Response] =
-        SafePickler.of(Version.v1(0), _ => picklerResponse).withMagicNumbers(0x640CFE5C, 0x9DD455FA)
+        picklerResponse.asV1(0).withMagicNumbers(0x640CFE5C, 0x9DD455FA)
 
       defAjax("error")
     }
@@ -244,10 +245,10 @@ object CommonProtocols {
         implicitly
 
       implicit val safePicklerRequest: SafePickler[Request] =
-        SafePickler.of(Version.v1(0), _ => picklerRequest).withMagicNumbers(0xC8EF5F9E, 0x35FCD3C3)
+        picklerRequest.asV1(1).withMagicNumbers(0xC8EF5F9E, 0x35FCD3C3)
 
       implicit val safePicklerResponse: SafePickler[Response] =
-        SafePickler.of(Version.v1(0), _ => picklerResponse).withMagicNumbers(0x69420882, 0x48AFA035)
+        picklerResponse.asV1(1).withMagicNumbers(0x69420882, 0x48AFA035)
 
       defAjax("feedback")
     }
