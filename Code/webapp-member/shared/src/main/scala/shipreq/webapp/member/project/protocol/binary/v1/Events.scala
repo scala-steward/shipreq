@@ -397,12 +397,6 @@ object Events {
       }
     }
 
-  private[binary] implicit val picklerEventFieldCustomDelete: Pickler[Event.FieldCustomDelete] =
-    transformPickler(Event.FieldCustomDelete.apply)(_.id)
-
-  private[binary] implicit val picklerEventFieldCustomRestore: Pickler[Event.FieldCustomRestore] =
-    transformPickler(Event.FieldCustomRestore.apply)(_.id)
-
   private[binary] implicit val picklerEventFieldCustomTextCreateV1: Pickler[Event.FieldCustomTextCreateV1] =
     new Pickler[Event.FieldCustomTextCreateV1] {
       override def pickle(a: Event.FieldCustomTextCreateV1)(implicit state: PickleState): Unit = {

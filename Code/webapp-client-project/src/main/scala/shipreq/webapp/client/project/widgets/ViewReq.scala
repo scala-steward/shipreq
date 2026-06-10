@@ -81,6 +81,14 @@ final class ViewReq[A](data           : Data,
       \/-(viewTags.vector(fid, data.focusedTags, data.unfocusedTags))
   }
 
+  def num(id: CustomField.Number.Id): IfApplicable[A] =
+    data.fieldRules.num(id) match {
+      case Resolution.Optional
+         | Resolution.DefaultTo(_)  => \/-(pt.customNumberField(id, data.req, data.live, Optional))
+      case Resolution.Mandatory     => \/-(pt.customNumberField(id, data.req, data.live, Mandatory))
+      case Resolution.NotApplicable => NotApplicable.left
+    }
+
   def text(id: CustomField.Text.Id): IfApplicable[A] =
     data.fieldRules.text(id) match {
       case Resolution.Optional      => \/-(pt.customTextField(id, data.req, data.live, Optional))
@@ -94,6 +102,7 @@ final class ViewReq[A](data           : Data,
 
   val customField: CustomFieldId => IfApplicable[A] = {
     case id: CustomField.Implication.Id => imps(id)
+    case id: CustomField.Number     .Id => num(id)
     case id: CustomField.Tag        .Id => fieldTags(id)
     case id: CustomField.Text       .Id => text(id)
   }

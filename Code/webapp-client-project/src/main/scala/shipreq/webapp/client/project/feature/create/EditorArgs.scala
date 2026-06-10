@@ -95,6 +95,16 @@ object EditorArgs {
       extraControls  = extraControls,
     )
 
+    val forNumberEditor = (_: Any) => ForNumberEditor(
+      project       = project,
+      abort         = abort,
+      abortVerb     = abortVerb,
+      autoFocus     = autoFocus,
+      commit        = commitAny,
+      commitVerb    = commitVerb,
+      extraControls = extraControls,
+    )
+
     val forTagEditor = (_: Any) => ForTagEditor(
       project        = project,
       abort          = abort,
@@ -121,17 +131,18 @@ object EditorArgs {
     type Args[A, V] = A
 
     val fold = FieldKey.Fold[Args](
-      allTags         = forTagEditor,
-      code            = forReqCodeEditor,
-      codes           = forReqCodeEditor,
-      customFieldTags = forTagEditor,
-      customTextField = forTextEditor,
-      implications    = forImplicationEditor,
-      manualIssue     = forTextEditor,
-      otherTags       = forTagEditor,
-      titleCG         = forTextEditor,
-      titleGR         = forTextEditor,
-      titleUC         = forTextEditor,
+      allTags           = forTagEditor,
+      code              = forReqCodeEditor,
+      codes             = forReqCodeEditor,
+      customFieldTags   = forTagEditor,
+      customNumberField = forNumberEditor,
+      customTextField   = forTextEditor,
+      implications      = forImplicationEditor,
+      manualIssue       = forTextEditor,
+      otherTags         = forTagEditor,
+      titleCG           = forTextEditor,
+      titleGR           = forTextEditor,
+      titleUC           = forTextEditor,
     )
 
     f.fold(fold)
@@ -166,6 +177,14 @@ object EditorArgs {
                                 commit        : Option[Reusable[TagEditorCommitValue => Callback]],
                                 commitVerb    : String,
                                 extraControls : Reusable[EditControlsFeature.ExtraControls])
+
+  final case class ForNumberEditor(project      : Project,
+                                   abort        : Option[Reusable[Callback]],
+                                   abortVerb    : String,
+                                   autoFocus    : Boolean,
+                                   commit       : Option[Reusable[Option[Double] => Callback]],
+                                   commitVerb   : String,
+                                   extraControls: Reusable[EditControlsFeature.ExtraControls])
 
   final case class ForTextEditor[-V](previewRW     : PreviewFeature.ReadWrite.Composite[PreviewId],
                                      project       : Project,
@@ -212,6 +231,7 @@ object EditorArgs {
   private  val reusabilityForReqCodeEditor_   : Reusability[ForReqCodeEditor[Nothing]] = Reusability.derive
   implicit def reusabilityForReqCodeEditor[V] : Reusability[ForReqCodeEditor[V]      ] = reusabilityForReqCodeEditor_.narrow
   implicit val reusabilityForImplicationEditor: Reusability[ForImplicationEditor     ] = Reusability.derive
+  implicit val reusabilityForNumberEditor     : Reusability[ForNumberEditor          ] = Reusability.derive
   implicit val reusabilityForTagEditor        : Reusability[ForTagEditor             ] = Reusability.derive
   private  val reusabilityForTextEditor_      : Reusability[ForTextEditor[Nothing]   ] = Reusability.derive
   implicit def reusabilityForTextEditor[V]    : Reusability[ForTextEditor[V]         ] = reusabilityForTextEditor_.narrow

@@ -21,11 +21,11 @@ object SavedViewCmd {
   implicit def univEq : UnivEq[SavedViewCmd] = UnivEq.derive
 
   // ===================================================================================================================
-  object CodecsV4 {
+  object CodecsV5 {
     import boopickle.DefaultBasic._
     import shipreq.webapp.member.project.protocol.binary.v1.BaseMemberData1.SavedViewPicklers._
-    import shipreq.webapp.member.project.protocol.binary.v1.Rev7._
-    import shipreq.webapp.member.project.protocol.binary.v1.Rev7.SavedViewPicklers._
+    import shipreq.webapp.member.project.protocol.binary.v2.Rev1._
+    import shipreq.webapp.member.project.protocol.binary.v2.Rev1.SavedViewPicklers._
 
     private implicit val picklerCreate: Pickler[Create] =
       new Pickler[Create] {

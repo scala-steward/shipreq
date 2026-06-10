@@ -21,6 +21,7 @@ object ProjectContent {
     ProjectContent(
       Requirements.empty,
       ReqCodes.empty,
+      ReqData.emptyNums,
       ReqData.Text.empty,
       ReqData.emptyTags,
       Implications.empty,
@@ -36,6 +37,7 @@ object ProjectContent {
 @Lenses
 final case class ProjectContent(reqs           : Requirements,
                                 reqCodes       : ReqCodes,
+                                reqNums        : ReqData.Numbers,
                                 reqText        : ReqData.Text,
                                 reqTags        : ReqData.Tags,
                                 implications   : Implications,
@@ -77,4 +79,7 @@ final case class ProjectContent(reqs           : Requirements,
 
   def reqTextFor(id: CustomField.Text.Id): Map[ReqId, Text.CustomTextField.NonEmptyText] =
     reqText.data.getOrElse(id, Map.empty)
+
+  def reqNumsFor(id: CustomField.Number.Id): Map[ReqId, Double] =
+    reqNums.getOrElse(id, Map.empty)
 }

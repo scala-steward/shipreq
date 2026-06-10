@@ -128,6 +128,7 @@ object FieldReqTypeRules {
     FieldReqTypeRules(Map(reqTypeId -> resolution), Resolution.NotApplicable)
 
   type ForImpField  = FieldReqTypeRules[Impossible]
+  type ForNumField  = FieldReqTypeRules[Double]
   type ForTagField  = FieldReqTypeRules[ApplicableTagId]
   type ForTextField = FieldReqTypeRules[Impossible]
 
@@ -135,6 +136,7 @@ object FieldReqTypeRules {
     final def isNA = applicability is NA
     def isDefault = false
     def isMandatory = false
+    def defaultOption: Option[Default] = None
   }
 
   object Resolution {
@@ -149,11 +151,13 @@ object FieldReqTypeRules {
 
     final case class DefaultTo[+D](default: D) extends Resolution[D](Applicable) {
       override def isDefault = true
+      override val defaultOption = Some(default)
     }
 
     @inline def default = Optional
 
     type ForImpField  = Resolution[Impossible]
+    type ForNumField  = Resolution[Double]
     type ForTagField  = Resolution[ApplicableTagId]
     type ForTextField = Resolution[Impossible]
 

@@ -10,8 +10,8 @@ object Latest {
   @inline implicit def encoderEvent         = v2.Rev1.encoderEvent
   @inline implicit def decoderVerifiedEvent = v2.Rev1.decoderVerifiedEvent
   @inline implicit def encoderVerifiedEvent = v2.Rev1.encoderVerifiedEvent
-  @inline implicit def codecValidFilter     = v1.Rev7.codecValidFilter
+  @inline implicit def codecValidFilter     = v2.Rev1.codecValidFilter
 
   val AtomCodecs      = v1.Rev6.AtomCodecs
-  val SavedViewCodecs = v1.Rev7.SavedViewCodecs
+  val SavedViewCodecs = v2.Rev1.SavedViewCodecs
 }

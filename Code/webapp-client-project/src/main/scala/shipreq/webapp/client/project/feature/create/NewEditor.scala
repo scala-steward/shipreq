@@ -71,22 +71,24 @@ object NewEditor {
         f => EditRichText.CodeGroupTitle(PreviewId(RowKey.CodeGroup, f), None))
 
       def prepareGR(r: RowKey.GenericReq) = FieldKey.FoldForGenericReq[LogicPerField](
-        codes           = _ => EditReqCodes.Multiple.apply,
-        customTextField = f => EditRichText.CustomTextField(PreviewId(r, f), Some(r.reqTypeId)),
-        implications    = f => EditImplications(f.scope),
-        otherTags       = _ => EditTags.otherTags(r.reqTypeId),
-        allTags         = _ => EditTags.allTags(r.reqTypeId),
-        customFieldTags = f => EditTags.customField(r.reqTypeId, f.field),
-        title           = f => EditRichText.GenericReqTitle(PreviewId(r, f), Some(r.reqTypeId)))
+        codes             = _ => EditReqCodes.Multiple.apply,
+        customNumberField = f => EditNumbers(),
+        customTextField   = f => EditRichText.CustomTextField(PreviewId(r, f), Some(r.reqTypeId)),
+        implications      = f => EditImplications(f.scope),
+        otherTags         = _ => EditTags.otherTags(r.reqTypeId),
+        allTags           = _ => EditTags.allTags(r.reqTypeId),
+        customFieldTags   = f => EditTags.customField(r.reqTypeId, f.field),
+        title             = f => EditRichText.GenericReqTitle(PreviewId(r, f), Some(r.reqTypeId)))
 
       def prepareUC(r: RowKey.UseCase.type) = FieldKey.FoldForUseCase[LogicPerField](
-        codes           = _ => EditReqCodes.Multiple.apply,
-        customTextField = f => EditRichText.CustomTextField(PreviewId(r, f), Some(StaticReqType.UseCase)),
-        implications    = f => EditImplications(f.scope),
-        otherTags       = _ => EditTags.otherTags(r.reqTypeId),
-        allTags         = _ => EditTags.allTags(r.reqTypeId),
-        customFieldTags = f => EditTags.customField(r.reqTypeId, f.field),
-        title           = f => EditRichText.UseCaseTitle(PreviewId(r, f), Some(StaticReqType.UseCase)))
+        codes             = _ => EditReqCodes.Multiple.apply,
+        customNumberField = f => EditNumbers(),
+        customTextField   = f => EditRichText.CustomTextField(PreviewId(r, f), Some(StaticReqType.UseCase)),
+        implications      = f => EditImplications(f.scope),
+        otherTags         = _ => EditTags.otherTags(r.reqTypeId),
+        allTags           = _ => EditTags.allTags(r.reqTypeId),
+        customFieldTags   = f => EditTags.customField(r.reqTypeId, f.field),
+        title             = f => EditRichText.UseCaseTitle(PreviewId(r, f), Some(StaticReqType.UseCase)))
 
       def prepareMI(r: RowKey.ManualIssue.type) = FieldKey.FoldForManualIssue[LogicPerField](
         f => EditRichTextNonEmpty.ManualIssue(PreviewId(r, f), None))

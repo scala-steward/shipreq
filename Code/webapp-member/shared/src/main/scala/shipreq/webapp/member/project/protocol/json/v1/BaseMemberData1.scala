@@ -36,9 +36,6 @@ private[json] object BaseMemberData1 {
     implicit val codecColumnImplications: JsonCodec[Column.Implications] =
       JsonCodec.xmap(Column.Implications.apply)(_.dir)
 
-    implicit val codecColumnCustomField: JsonCodec[Column.CustomField] =
-      JsonCodec.xmap(Column.CustomField.apply)(_.id)
-
     private[this] final val KeyPubid = "pubid"
 
     implicit val decoderColumnImplications: Decoder[Column.Implications] =
@@ -46,12 +43,6 @@ private[json] object BaseMemberData1 {
 
     implicit val encoderColumnImplications: Encoder[Column.Implications] =
       Encoder[Direction].contramap(_.dir)
-
-    implicit val decoderColumnCustomField: Decoder[Column.CustomField] =
-      Decoder[CustomFieldId].map(Column.CustomField.apply)
-
-    implicit val encoderColumnCustomField: Encoder[Column.CustomField] =
-      Encoder[CustomFieldId].contramap(_.id)
 
     implicit val codecColumnSortConclusive: JsonCodec[Column.SortConclusive] =
       JsonCodec.enumAdt(AdtMacros.adtIsoSet[Column.SortConclusive, String] {
@@ -106,18 +97,6 @@ private[json] object BaseMemberData1 {
 
   implicit lazy val encoderApReqCodeIdAndValue: Encoder[ApReqCodeId.AndValue] =
     Encoder.forProduct2("id", "value")(a => (a.id, a.value))
-
-  implicit lazy val decoderCustomFieldId: Decoder[CustomFieldId] = decodeSumBySoleKey {
-    case ("imp" , c) => c.as[CustomField.Implication.Id]
-    case ("tag" , c) => c.as[CustomField.Tag.Id]
-    case ("text", c) => c.as[CustomField.Text.Id]
-  }
-
-  implicit lazy val encoderCustomFieldId: Encoder[CustomFieldId] = Encoder.instance {
-    case a: CustomField.Implication.Id => Json.obj("imp"  -> a.asJson)
-    case a: CustomField.Tag.Id         => Json.obj("tag"  -> a.asJson)
-    case a: CustomField.Text.Id        => Json.obj("text" -> a.asJson)
-  }
 
   implicit lazy val codecCustomFieldImplicationId: JsonCodec[CustomField.Implication.Id] =
     codecTaggedI(CustomField.Implication.Id)

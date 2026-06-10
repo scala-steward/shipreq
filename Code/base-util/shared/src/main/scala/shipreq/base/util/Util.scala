@@ -258,6 +258,15 @@ object Util {
     else if (z.isEmpty) mergeSets(v, w, x, y)
     else (Set.newBuilder[A] ++= v ++= w ++= x ++= y ++= z).result()
 
+  def mergeSets[A: UnivEq](u: Set[_ <: A], v: Set[_ <: A], w: Set[_ <: A], x: Set[_ <: A], y: Set[_ <: A], z: Set[_ <: A]): Set[A] =
+         if (u.isEmpty) mergeSets(v, w, x, y, z)
+    else if (v.isEmpty) mergeSets(u, w, x, y, z)
+    else if (w.isEmpty) mergeSets(u, v, x, y, z)
+    else if (x.isEmpty) mergeSets(u, v, w, y, z)
+    else if (y.isEmpty) mergeSets(u, v, w, x, z)
+    else if (z.isEmpty) mergeSets(u, v, w, x, y)
+    else (Set.newBuilder[A] ++= u ++= v ++= w ++= x ++= y ++= z).result()
+
   def enumOrdering[A: UnivEq, B: Ordering](as: IterableOnce[A])(by: A => B): Ordering[A] = {
     val sorted = MutableArray(as).sortBySchwartzian(by).array
     val ord = sorted.iterator.mapToOrder

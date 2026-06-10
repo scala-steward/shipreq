@@ -72,4 +72,14 @@ object ReqData {
 
   implicit def equalityTags: UnivEq[Tags] =
     univEqMultimap
+
+  // -------------------------------------------------------------------------------------------------------------------
+
+  type Numbers = Map[CustomField.Number.Id, Map[ReqId, Double]]
+
+  def emptyNums: Numbers =
+    Map.empty
+
+  implicit def equalityNums: UnivEq[Numbers] =
+    UnivEq.univEqMap
 }

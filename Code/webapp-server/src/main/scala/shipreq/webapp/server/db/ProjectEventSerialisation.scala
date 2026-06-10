@@ -7,7 +7,6 @@ import shipreq.webapp.member.project.event._
 import shipreq.webapp.member.project.protocol.json.v1.Events.EventData._
 import shipreq.webapp.member.project.protocol.json.v1.Rev1.EventData._
 import shipreq.webapp.member.project.protocol.json.v1.Rev6.EventData._
-import shipreq.webapp.member.project.protocol.json.v1.Rev7.EventData._
 import shipreq.webapp.member.project.protocol.json.v2.Rev0.EventData._
 import shipreq.webapp.member.project.protocol.json.v2.Rev1.EventData._
 import shipreq.webapp.member.protocol.json.JsonCodec.Implicits._

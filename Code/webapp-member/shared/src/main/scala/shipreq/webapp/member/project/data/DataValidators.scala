@@ -220,14 +220,16 @@ object DataValidators {
       def tagIdUniqueness: Invalidator[TagGroupId] =
         Uniqueness.within(otherData.map({
           case f: CustomField.Tag => f.tagId.some
-          case _: CustomField.Text
+          case _: CustomField.Number
+             | _: CustomField.Text
              | _: CustomField.Implication => None
         }).filterDefined)
 
       def reqTypeIdUniqueness: Invalidator[ReqTypeId] =
         Uniqueness.within(otherData.map({
           case f: CustomField.Implication => f.reqTypeId.some
-          case _: CustomField.Text
+          case _: CustomField.Number
+             | _: CustomField.Text
              | _: CustomField.Tag => None
         }).filterDefined)
     }

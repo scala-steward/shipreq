@@ -31,9 +31,6 @@ object BaseMemberData1 {
     implicit val picklerColumnImplications: Pickler[Column.Implications] =
       transformPickler(Column.Implications.apply)(_.dir)
 
-    implicit val picklerColumnCustomField: Pickler[Column.CustomField] =
-      transformPickler(Column.CustomField.apply)(_.id)
-
     implicit val picklerColumnSortConclusive: Pickler[Column.SortConclusive] =
       new Pickler[Column.SortConclusive] {
         private[this] final val KeyPubid = 0
@@ -240,25 +237,6 @@ object BaseMemberData1 {
         val value = state.unpickle[ReqCode.Value]
         ApReqCodeId.AndValue(id, value)
       }
-    }
-
-  implicit lazy val picklerCustomFieldId: Pickler[CustomFieldId] =
-    new Pickler[CustomFieldId] {
-      private[this] final val KeyImplication = 'i'
-      private[this] final val KeyTag         = 't'
-      private[this] final val KeyText        = 'x'
-      override def pickle(a: CustomFieldId)(implicit state: PickleState): Unit =
-        a match {
-          case b: CustomField.Implication.Id => state.enc.writeByte(KeyImplication); state.pickle(b)
-          case b: CustomField.Tag        .Id => state.enc.writeByte(KeyTag        ); state.pickle(b)
-          case b: CustomField.Text       .Id => state.enc.writeByte(KeyText       ); state.pickle(b)
-        }
-      override def unpickle(implicit state: UnpickleState): CustomFieldId =
-        state.dec.readByte match {
-          case KeyImplication => state.unpickle[CustomField.Implication.Id]
-          case KeyTag         => state.unpickle[CustomField.Tag        .Id]
-          case KeyText        => state.unpickle[CustomField.Text       .Id]
-        }
     }
 
   implicit lazy val picklerCustomFieldImplicationId: Pickler[CustomField.Implication.Id] =

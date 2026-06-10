@@ -11,6 +11,7 @@ import shipreq.webapp.member.project.data._
 final case class EventSeqSummary(
     customIssueTypes    : EventSeqSummary.CUDR[CustomIssueTypeId],
     customFieldImpTypes : EventSeqSummary.CUDR[CustomField.Implication.Id],
+    customFieldNumTypes : EventSeqSummary.CUDR[CustomField.Number.Id],
     customFieldTagTypes : EventSeqSummary.CUDR[CustomField.Tag.Id],
     customFieldTextTypes: EventSeqSummary.CUDR[CustomField.Text.Id],
     customReqTypes      : EventSeqSummary.CUDR[CustomReqTypeId],
@@ -31,6 +32,7 @@ final case class EventSeqSummary(
        |EventSeqSummary(
        |  customIssueTypes     = ${customIssueTypes    .show(_.value)}
        |  customFieldImpTypes  = ${customFieldImpTypes .show(_.value)}
+       |  customFieldNumTypes  = ${customFieldNumTypes .show(_.value)}
        |  customFieldTagTypes  = ${customFieldTagTypes .show(_.value)}
        |  customFieldTextTypes = ${customFieldTextTypes.show(_.value)}
        |  customReqTypes       = ${customReqTypes      .show(_.value)}
@@ -61,6 +63,7 @@ final case class EventSeqSummary(
       fieldReposition,
       staticFields.all,
       customFieldImpTypes.all,
+      customFieldNumTypes.all,
       customFieldTagTypes.all,
       customFieldTextTypes.all)
 
@@ -68,11 +71,11 @@ final case class EventSeqSummary(
     mergeSets(applicableTags.all, tagGroups.all)
 
   lazy val allCustomFieldTypes: Set[CustomFieldId] =
-    mergeSets(customFieldTextTypes.all, customFieldTagTypes.all, customFieldImpTypes.all)
+    mergeSets(customFieldTextTypes.all, customFieldTagTypes.all, customFieldImpTypes.all, customFieldNumTypes.all)
 
   val fieldNamesChanged: Boolean =
     hasTags || customReqTypes.hasCU ||
-      customFieldImpTypes.hasAny || customFieldTagTypes.hasAny || customFieldTextTypes.hasAny
+      customFieldImpTypes.hasAny || customFieldNumTypes.hasAny || customFieldTagTypes.hasAny || customFieldTextTypes.hasAny
 
   lazy val reqsExclUseCaseSteps: Set[ReqId] =
     mergeSets(genericReqs.all, useCasesExclSteps.all)
@@ -185,6 +188,7 @@ object EventSeqSummary {
   private final class MutableBuilder {
     private[this] val customIssueTypes     = new CUDR.Mutable[CustomIssueTypeId]
     private[this] val customFieldImpTypes  = new CUDR.Mutable[CustomField.Implication.Id]
+    private[this] val customFieldNumTypes  = new CUDR.Mutable[CustomField.Number.Id]
     private[this] val customFieldTagTypes  = new CUDR.Mutable[CustomField.Tag.Id]
     private[this] val customFieldTextTypes = new CUDR.Mutable[CustomField.Text.Id]
     private[this] val customReqTypes       = new CUDR.Mutable[CustomReqTypeId]
@@ -203,6 +207,7 @@ object EventSeqSummary {
 
     private def customFieldType(f: CUDR.Field, id: CustomFieldId): Unit = id match {
       case i: CustomField.Implication.Id => customFieldImpTypes .add(f, i)
+      case i: CustomField.Number.Id      => customFieldNumTypes .add(f, i)
       case i: CustomField.Tag.Id         => customFieldTagTypes .add(f, i)
       case i: CustomField.Text.Id        => customFieldTextTypes.add(f, i)
     }
@@ -324,6 +329,7 @@ object EventSeqSummary {
       EventSeqSummary(
         customIssueTypes     = customIssueTypes    .result(),
         customFieldImpTypes  = customFieldImpTypes .result(),
+        customFieldNumTypes  = customFieldNumTypes .result(),
         customFieldTagTypes  = customFieldTagTypes .result(),
         customFieldTextTypes = customFieldTextTypes.result(),
         customReqTypes       = customReqTypes      .result(),

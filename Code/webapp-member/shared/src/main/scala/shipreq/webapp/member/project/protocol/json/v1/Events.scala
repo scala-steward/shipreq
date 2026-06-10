@@ -224,18 +224,6 @@ object Events {
     implicit val encoderEventApplicableTagUpdateV1: Encoder[Event.ApplicableTagUpdateV1] =
       Encoder.forProduct2("id", "values")(a => (a.id, a.vs))
 
-    implicit val decoderEventFieldCustomDelete: Decoder[Event.FieldCustomDelete] =
-      Decoder[CustomFieldId].map(Event.FieldCustomDelete.apply)
-
-    implicit val encoderEventFieldCustomDelete: Encoder[Event.FieldCustomDelete] =
-      Encoder[CustomFieldId].contramap(_.id)
-
-    implicit val decoderEventFieldCustomRestore: Decoder[Event.FieldCustomRestore] =
-      Decoder[CustomFieldId].map(Event.FieldCustomRestore.apply)
-
-    implicit val encoderEventFieldCustomRestore: Encoder[Event.FieldCustomRestore] =
-      Encoder[CustomFieldId].contramap(_.id)
-
     implicit val decoderEventGenericReqTypeSet: Decoder[Event.GenericReqTypeSet] =
       Decoder.forProduct2("id", "value")(Event.GenericReqTypeSet.apply)
 

@@ -75,9 +75,9 @@ object ProjectSpaProtocols {
   import shipreq.webapp.base.protocol.binary.v1.BaseData._
   import CreateContentCmd.CodecsV4._
   import ManualIssueCmd.CodecsV4._
-  import SavedViewCmd.CodecsV4._
+  import SavedViewCmd.CodecsV5._
   import UpdateAccessCmd.CodecsV1._
-  import UpdateConfigCmd.CodecsV2._
+  import UpdateConfigCmd.CodecsV3._
   import UpdateContentCmd.CodecsV4._
   import UpdateLivenessCmd.CodecsV1._
 
@@ -140,6 +140,7 @@ object ProjectSpaProtocols {
       // When any of the following change (import or impls), bump wsrrVersion
       import shipreq.webapp.member.project.protocol.binary.v1.BaseMemberData1._
       import shipreq.webapp.member.project.protocol.binary.v1.PostEvents._
+      import shipreq.webapp.member.project.protocol.binary.v2.Rev1._
 
       implicit val picklerOptionEventOrdLatest: Pickler[Option[EventOrd.Latest]] =
         transformPickler[Option[EventOrd.Latest], Int](

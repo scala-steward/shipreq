@@ -384,6 +384,9 @@ object RandomData {
   val staticFieldOptional: Gen[StaticField.Optional] =
     Gen.chooseNE(StaticField.optional)
 
+  val customFieldNumberId =
+    id map CustomField.Number.Id
+
   val customFieldTextId =
     id map CustomField.Text.Id
 
@@ -445,14 +448,32 @@ object RandomData {
       Gen sequence ids.map(id =>
         customFieldImplication(Gen pure id, rules)))
 
+  def customFieldNumber(genFieldReqTypeRules: Gen[FieldReqTypeRules.ForNumField]): Gen[CustomField.Number] =
+    for {
+      id                <- customFieldNumberId
+      name              <- fieldName
+      desc              <- Gen.string
+      min               <- Gen.double
+      size              <- Gen.double
+      decimalPlaces     <- Gen.chooseInt(4)
+      fieldReqTypeRules <- genFieldReqTypeRules
+      liveExplicitly    <- live
+    } yield {
+      val max = min + size
+      CustomField.Number(id, name, desc, min, max, decimalPlaces, fieldReqTypeRules, liveExplicitly)
+    }
+
   def customField(rulesAny: Gen[FieldReqTypeRules[Impossible]],
+                  rulesNum: Gen[FieldReqTypeRules.ForNumField],
                   rulesTag: Gen[FieldReqTypeRules.ForTagField],
                   derivTags: Gen[DerivativeTags],
                   impFields: Boolean,
                   tagFields: Boolean): Gen[CustomField] = {
     lazy val txt: Gen[CustomField] = customFieldText(rulesAny)
+    lazy val num: Gen[CustomField] = customFieldNumber(rulesNum)
     customFieldType.flatMap {
       case CustomFieldType.Text        => txt
+      case CustomFieldType.Number      => num
       case CustomFieldType.Tag         => if (tagFields) customFieldTag(tagGroupId, rulesTag, derivTags) else txt
       case CustomFieldType.Implication => if (impFields) customFieldImplication(reqTypeId, rulesAny) else txt
     }
@@ -462,10 +483,11 @@ object RandomData {
                    tagIds    : Set[TagGroupId],
                    appTagIds : Set[ApplicableTagId],
                    rulesAny  : Gen[FieldReqTypeRules[Impossible]],
+                   rulesNum  : Gen[FieldReqTypeRules.ForNumField],
                    rulesTag  : Gen[FieldReqTypeRules.ForTagField]): Gen[IMap[CustomFieldId, CustomField]] = {
     val deriv = derivativeTags(appTagIds)
     val cf = for {
-      f1 <- customField(rulesAny, rulesTag, deriv, false, false).list
+      f1 <- customField(rulesAny, rulesNum, rulesTag, deriv, false, false).list
       f2 <- customFieldTagSome(tagIds, rulesTag, deriv)
       f3 <- customFieldImplicationSome(reqTypeIds, rulesAny)
     } yield f3.toList ::: f2.toList ::: f1
@@ -481,9 +503,10 @@ object RandomData {
     val genApTagId   = NonEmptySet.option(appTagIds).map(Gen.chooseNE(_))
     val genReqTypeId = NonEmptySet.option(reqTypeIds).map(Gen.chooseNE(_))
     val rulesAny     = fieldReqTypeRules[Impossible](genReqTypeId, None)
+    val rulesNum     = fieldReqTypeRules(genReqTypeId, Some(Gen.double))
     val rulesTag     = fieldReqTypeRules(genReqTypeId, genApTagId)
     for {
-      cf           <- customFields(reqTypeIds, tagGroupIds, appTagIds, rulesAny, rulesTag)
+      cf           <- customFields(reqTypeIds, tagGroupIds, appTagIds, rulesAny, rulesNum, rulesTag)
       mandatoryIds = cf.keySet.map(f => f: FieldId) ++ StaticField.mandatory.iterator
       optionalIds  <- Gen.subset(StaticField.optional.whole)
       order        <- Gen.shuffle((mandatoryIds ++ optionalIds).toVector)
@@ -1704,6 +1727,8 @@ object RandomData {
     val atagIds         = cfg.tags.tree.valuesIterator.map(_.tag).filterSubType[ApplicableTag].map(_.id).toSet
     val atagIdG         = Gen.tryGenChoose(atagIds.toSeq)
     val textColIds      = cfg.fields.customFields.valuesIterator.filterSubType[CustomField.Text].map(_.id).toSet
+    val numFieldIds     = cfg.fields.customFields.valuesIterator.filterSubType[CustomField.Number].map(_.id).toSet
+    val numFieldIdG     = Gen tryGenChoose numFieldIds.toIndexedSeq
     val reqIdSet        = reqsWithoutText.idIterator().toSet
     val reqIdG          = Gen tryGenChoose reqIdSet.toIndexedSeq
     def ucStepIds       = reqsWithoutText.useCases.stepIterator.map(_.id)
@@ -1712,6 +1737,14 @@ object RandomData {
     val delReasonText0  = TextGen.deletionReasonAtom(reqIdG, ucStepIdG, activeCodeIdG, atagIdG).text
     val delReasonText   = TextGen.deletionReasonAtom(reqIdG, ucStepIdG, activeCodeIdG, atagIdG).text1(Text.DeletionReason)
     val manualIssueText = TextGen.manualIssueAtom(reqIdG, ucStepIdG, activeCodeIdG, atagIdG).text1(Text.ManualIssue)
+
+    val genReqDataNums: Gen[ReqData.Numbers] =
+      (numFieldIdG, reqIdG) match {
+        case (Some(numFieldIdGen), Some(reqIdGen)) =>
+          numFieldIdGen.mapTo(reqIdGen.mapTo(Gen.double))
+        case _ =>
+          Gen pure ReqData.emptyNums
+      }
 
     val projectDelReason =
       Gen.chooseInt(64).flatMap { i =>
@@ -1723,6 +1756,7 @@ object RandomData {
 
     for {
       name       <- projectName
+      reqNums    <- genReqDataNums
       reqText    <- reqFieldDataText2(reqIdSet, textColIds, ucStepIdG, activeCodeIdG, cissueIdG, atagIdG)
       reqs       <- setReqText(reqsWithoutText, reqIdG, ucStepIdG, activeCodeIdG, cissueIdG, atagIdG)
       reqCodes2  <- reqCode.updateGroupText(rcgTitleText)(reqCodes1.trie)
@@ -1736,6 +1770,7 @@ object RandomData {
                      ProjectContent(
                        reqs,
                        ReqCodes(reqCodes2),
+                       reqNums,
                        reqText,
                        reqTags,
                        reqImps,
@@ -2317,6 +2352,7 @@ object RandomData {
         val gl = specialBuiltInFieldFilterOk.map[Valid.Field](-\/(_))
         import SpecialBuiltInField._
         Gen.chooseGen(gr, gr, gr, gl).flatMap {
+          case \/-(id: CustomField.Number     .Id) => fieldAttr.map(a => FilterAst.FieldProp(\/-(id), a: FieldCriteriaF[A]))
           case \/-(id: CustomField.Tag        .Id) => fieldAttr.map(a => FilterAst.FieldProp(\/-(id), a: FieldCriteriaF[A]))
           case \/-(id: CustomField.Text       .Id) => fieldAttrNoDefault.map(FilterAst.FieldProp(\/-(id), _))
           case \/-(id: CustomField.Implication.Id) => impFieldCriteria(ga).map(FilterAst.FieldProp(\/-(id), _))

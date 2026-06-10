@@ -231,6 +231,7 @@ object FilterAlgebra {
             case (\/-(f: CustomField)                       , Blank
                                                             | NotBlank
                                                             | NotApplicable) => \/-(Valid.fieldProp(\/-(f.id), FieldCriteria.Attr(attr)))
+            case (\/-(f: CustomField.Number)                , DefaultInUse ) => \/-(Valid.fieldProp(\/-(f.id), FieldCriteria.Attr(attr)))
             case (\/-(f: CustomField.Tag)                   , DefaultInUse ) => \/-(Valid.fieldProp(\/-(f.id), FieldCriteria.Attr(attr)))
             case (\/-(_: CustomField.Text)                  , DefaultInUse ) => fail("Text fields don't have defaults.")
             case (\/-(_: CustomField.Implication)           , DefaultInUse ) => fail("Implication fields don't have defaults.")
@@ -616,6 +617,10 @@ object FilterAlgebra {
           val lookup = p.dataLogic.customFieldImps(filterDead)(id)
           reqOnly(req => lookup.getReqIds(req.id).exists(criteria.contains))
 
+        case (FieldCriteria.Attr(Blank), \/-(f: CustomField.Number.Id)) =>
+          val nums = p.content.reqNumsFor(f)
+          fieldApplicableReqOnly(f)(req => !nums.contains(req.id))
+
         case (FieldCriteria.Attr(Blank), \/-(f: CustomField.Text.Id)) =>
           val text = p.content.reqTextFor(f)
           fieldApplicableReqOnly(f)(req => !text.contains(req.id))
@@ -655,6 +660,9 @@ object FilterAlgebra {
               .isEmpty
           }
 
+        case (FieldCriteria.Attr(DefaultInUse), \/-(f: CustomField.Number.Id)) =>
+          fieldApplicableReqOnly(f)(req => !p.content.reqNumsFor(f).contains(req.id))
+
         case (FieldCriteria.Attr(DefaultInUse), \/-(f: CustomField.Tag.Id)) =>
           fieldApplicableReqOnly(f)(req => tags(req.id, filterDead).defaults.contains(f))
 
@@ -677,6 +685,7 @@ object FilterAlgebra {
 
         case (FieldCriteria.ReqTypePosSet(_) | FieldCriteria.Query(_),
                  -\/(_)
+               | \/-(_: CustomField.Number.Id)
                | \/-(_: CustomField.Tag.Id)
                | \/-(_: CustomField.Text.Id)
                | \/-(_: StaticField)

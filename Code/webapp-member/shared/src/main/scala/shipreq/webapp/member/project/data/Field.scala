@@ -32,6 +32,7 @@ object StaticFieldType {
 
 object CustomFieldType {
   case object Implication extends CustomFieldType("Implication")
+  case object Number      extends CustomFieldType("Number")
   case object Tag         extends CustomFieldType("Tag")
   case object Text        extends CustomFieldType("Text")
 
@@ -397,9 +398,40 @@ object CustomField {
   }
 
   def referencesCustomReqType(id: CustomReqTypeId): CustomField => Boolean = {
-    case _: CustomField.Tag
+    case _: CustomField.Number
+       | _: CustomField.Tag
        | _: CustomField.Text        => false
     case f: CustomField.Implication => f.reqTypeId.foldId(_ => false, _ ==* id)
+  }
+
+  // -------------------------------------------------------------------------------------------------------------------
+  @Lenses
+  final case class Number(id               : Number.Id,
+                          name             : String,
+                          desc             : String,
+                          min              : Double,
+                          max              : Double,
+                          decimalPlaces    : Int,
+                          fieldReqTypeRules: FieldReqTypeRules.ForNumField,
+                          liveExplicitly   : Live) extends CustomField(CustomFieldType.Number) {
+    override def toString = s"CustomField.Number($id, $name, $desc, $min, $max, $decimalPlaces, $fieldReqTypeRules, $liveExplicitly)"
+    override def independentName = Some(name)
+    override def live(cfg: ProjectConfig) = liveExplicitly
+
+    // lazy val fieldReqTypeRulesByResolution =
+    //   fieldReqTypeRules.byResolution
+  }
+
+  object Number {
+
+    final case class Id(value: Int) extends CustomFieldId {
+      override def toString = s"CustomField.Number.Id($value)"
+    }
+
+    object IdAccess extends ObjDataId[Number.type, Number, Id] {
+      override def id(d: Number) = d.id
+      override val unapplyData: AnyRef => Option[Number] = {case r: Number => Some(r); case _ => None}
+    }
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -436,6 +468,7 @@ object CustomField {
     final case class Id(value: Int) extends CustomFieldId {
       override def toString = s"CustomField.Text.Id($value)"
     }
+
     object IdAccess extends ObjDataId[Text.type, Text, Id] {
       override def id(d: Text) = d.id
       override val unapplyData: AnyRef => Option[Text] = {case r: Text => Some(r); case _ => None}
@@ -562,55 +595,63 @@ object CustomField {
 
   val independentName = monocle.Optional[CustomField, String](_.independentName)(n => {
     case Text(a, _, b, c) => Text(a, n, b, c)
+    case f: Number        => f
     case f: Tag           => f
     case f: Implication   => f
   })
 
   /** HACK: Default type set to "Any" which is a lie. Safe unless you try to change defaults. */
   def fieldReqTypeRulesHack = Lens[CustomField, FieldReqTypeRules[Any]](_.fieldReqTypeRules)(n => {
+    case f: Number      => f.copy(fieldReqTypeRules = n.asInstanceOf[FieldReqTypeRules.ForNumField])
     case f: Tag         => f.copy(fieldReqTypeRules = n.asInstanceOf[FieldReqTypeRules.ForTagField])
     case f: Text        => f.copy(fieldReqTypeRules = n.asInstanceOf[FieldReqTypeRules.ForTextField])
     case f: Implication => f.copy(fieldReqTypeRules = n.asInstanceOf[FieldReqTypeRules.ForImpField])
   })
 
   def liveExplicitly = Lens[CustomField, Live](_.liveExplicitly)(n => {
+    case f: Number      => f.copy(liveExplicitly = n)
     case f: Text        => f.copy(liveExplicitly = n)
     case f: Tag         => f.copy(liveExplicitly = n)
     case f: Implication => f.copy(liveExplicitly = n)
   })
 
   implicit def equalImplication: UnivEq[Implication] = UnivEq.derive
+  implicit def equalNumber     : UnivEq[Number]      = UnivEq.derive
   implicit def equalTag        : UnivEq[Tag]         = UnivEq.derive
   implicit def equalText       : UnivEq[Text]        = UnivEq.derive
   implicit def equality        : UnivEq[CustomField] = UnivEq.derive
 
   final class MutableLists {
     var imps = List.empty[CustomField.Implication]
+    var nums = List.empty[CustomField.Number]
     var tags = List.empty[CustomField.Tag]
     var text = List.empty[CustomField.Text]
 
-    def isEmpty() = imps.isEmpty && tags.isEmpty && text.isEmpty
+    def isEmpty() = imps.isEmpty && nums.isEmpty && tags.isEmpty && text.isEmpty
 
     def +=(cf: CustomField): Unit =
       cf match {
+        case f: CustomField.Number      => nums ::= f
         case f: CustomField.Text        => text ::= f
         case f: CustomField.Tag         => tags ::= f
         case f: CustomField.Implication => imps ::= f
       }
 
     def result(): Lists =
-      Lists(imps, tags, text)
+      Lists(imps, nums, tags, text)
   }
 
   final case class Lists(
     imps: List[CustomField.Implication],
+    nums: List[CustomField.Number],
     tags: List[CustomField.Tag],
     text: List[CustomField.Text],
   ) {
-    def isEmpty = text.isEmpty && imps.isEmpty && tags.isEmpty
+    def isEmpty = imps.isEmpty && nums.isEmpty && tags.isEmpty && text.isEmpty
     def contains(id: CustomField.Text       .Id): Boolean = text.exists(_.id ==* id)
     def contains(id: CustomField.Tag        .Id): Boolean = tags.exists(_.id ==* id)
     def contains(id: CustomField.Implication.Id): Boolean = imps.exists(_.id ==* id)
+    def contains(id: CustomField.Number     .Id): Boolean = nums.exists(_.id ==* id)
   }
 }
 

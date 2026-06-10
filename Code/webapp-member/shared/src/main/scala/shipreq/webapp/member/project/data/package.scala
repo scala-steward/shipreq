@@ -38,6 +38,7 @@ package object data {
 
   abstract class DataObjImplicits {
     @inline implicit final def tcCustomFieldTypeImp = CustomField.Implication.IdAccess
+    @inline implicit final def tcCustomFieldTypeNum = CustomField.Number     .IdAccess
     @inline implicit final def tcCustomFieldTypeTag = CustomField.Tag        .IdAccess
     @inline implicit final def tcCustomFieldTypeTxt = CustomField.Text       .IdAccess
     @inline implicit final def tcCustomFieldType    = CustomField            .IdAccess

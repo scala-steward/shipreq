@@ -311,58 +311,6 @@ object Rev6 {
         }
     }
 
-  implicit lazy val picklerCustomField: Pickler[CustomField] =
-    new Pickler[CustomField] {
-      private[this] final val KeyImplication = 'i'
-      private[this] final val KeyTag         = 't'
-      private[this] final val KeyText        = 'x'
-      override def pickle(a: CustomField)(implicit state: PickleState): Unit =
-        a match {
-          case b: CustomField.Implication => state.enc.writeByte(KeyImplication); state.pickle(b)
-          case b: CustomField.Tag         => state.enc.writeByte(KeyTag        ); state.pickle(b)
-          case b: CustomField.Text        => state.enc.writeByte(KeyText       ); state.pickle(b)
-        }
-      override def unpickle(implicit state: UnpickleState): CustomField =
-        state.dec.readByte match {
-          case KeyImplication => state.unpickle[CustomField.Implication]
-          case KeyTag         => state.unpickle[CustomField.Tag        ]
-          case KeyText        => state.unpickle[CustomField.Text       ]
-        }
-    }
-
-  implicit lazy val picklerFieldSetCustomFields: Pickler[FieldSet.CustomFields] =
-    pickleIMap(FieldSet.emptyCustomFields)
-
-  implicit lazy val picklerFieldSet: Pickler[FieldSet] =
-    new Pickler[FieldSet] {
-      override def pickle(a: FieldSet)(implicit state: PickleState): Unit = {
-        state.pickle(a.customFields)
-        state.pickle(a.order)
-      }
-      override def unpickle(implicit state: UnpickleState): FieldSet = {
-        val customFields = state.unpickle[FieldSet.CustomFields]
-        val order        = state.unpickle[FieldSet.Order]
-        FieldSet(customFields, order)
-      }
-    }
-
-  implicit lazy val picklerProjectConfig: Pickler[ProjectConfig] =
-    new Pickler[ProjectConfig] {
-      override def pickle(a: ProjectConfig)(implicit state: PickleState): Unit = {
-        state.pickle(a.customIssueTypes)
-        state.pickle(a.reqTypes)
-        state.pickle(a.fields)
-        state.pickle(a.tags)
-      }
-      override def unpickle(implicit state: UnpickleState): ProjectConfig = {
-        val customIssueTypes = state.unpickle[CustomIssueTypeIMap]
-        val reqTypes         = state.unpickle[ReqTypes]
-        val fields           = state.unpickle[FieldSet]
-        val tags             = state.unpickle[Tags]
-        ProjectConfig(customIssueTypes, reqTypes, fields, tags)
-      }
-    }
-
   implicit lazy val pickleCustomTagFieldGD: Pickler[CustomTagFieldGD.NonEmptyValues] = {
     import CustomTagFieldGD._
 
@@ -524,27 +472,6 @@ object Rev6 {
         val imap   = state.unpickle[ManualIssue.IMap]
         val nextId = state.unpickle[ManualIssueId]
         ManualIssues(imap, nextId)
-      }
-    }
-
-  implicit lazy val picklerProjectContent: Pickler[ProjectContent] =
-    new Pickler[ProjectContent] {
-      override def pickle(a: ProjectContent)(implicit state: PickleState): Unit = {
-        state.pickle(a.reqs)
-        state.pickle(a.reqCodes)
-        state.pickle(a.reqText)
-        state.pickle(a.reqTags)
-        state.pickle(a.implications)
-        state.pickle(a.deletionReasons)
-      }
-      override def unpickle(implicit state: UnpickleState): ProjectContent = {
-        val reqs            = state.unpickle[Requirements]
-        val reqCodes        = state.unpickle[ReqCodes]
-        val reqText         = state.unpickle[ReqData.Text]
-        val reqTags         = state.unpickle[ReqData.Tags]
-        val implications    = state.unpickle[Implications]
-        val deletionReasons = state.unpickle[DeletionReasons]
-        ProjectContent(reqs, reqCodes, reqText, reqTags, implications, deletionReasons)
       }
     }
 

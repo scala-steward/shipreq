@@ -57,6 +57,11 @@ object EditorArgs {
       reqTypes = project.config.reqTypes,
     )
 
+    val forNumberEditor = (_: Any) => ForNumberEditor(
+      project   = project,
+      autoFocus = autoFocus,
+    )
+
     val forTagEditor = (_: Any) => ForTagEditor(
       project   = project,
       autoFocus = autoFocus,
@@ -155,6 +160,9 @@ object EditorArgs {
                                         textSearch: TextSearch,
                                         autoFocus : Boolean)
 
+  final case class ForNumberEditor(project  : Project,
+                                   autoFocus: Boolean)
+
   final case class ForTagEditor(project  : Project,
                                 autoFocus: Boolean)
 
@@ -208,6 +216,7 @@ object EditorArgs {
   implicit val reusabilityForReqCodeEditor      : Reusability[ForReqCodeEditor      ] = Reusability.derive
   implicit val reusabilityForReqTypeEditor      : Reusability[ForReqTypeEditor      ] = Reusability.derive
   implicit val reusabilityForImplicationEditor  : Reusability[ForImplicationEditor  ] = Reusability.derive
+  implicit val reusabilityForNumberEditor       : Reusability[ForNumberEditor       ] = Reusability.derive
   implicit val reusabilityForTagEditor          : Reusability[ForTagEditor          ] = Reusability.derive
   implicit val reusabilityForTextEditor         : Reusability[ForTextEditor         ] = Reusability.derive
   implicit val reusabilityForUseCaseStepEditor  : Reusability[ForUseCaseStepEditor  ] = Reusability.derive

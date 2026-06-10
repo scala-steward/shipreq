@@ -56,13 +56,14 @@ object NewForm {
     override protected def createCmd(i: Input, o: Output): Option[CreateContentCmd] = {
       var c = CreateContentCmd.CreateGenericReq.empty(i.id)
       val fold = FieldKey.FoldForGenericReq[ValueConsumer](
-        codes           = f => (v: f.Value) => c = c.copy(codes = v),
-        customTextField = f => (v: f.Value) => c = c.addCustomText(f.field, v),
-        implications    = f => (v: f.Value) => c = c.addImps(f.dir, v),
-        allTags         = f => (v: f.Value) => c = c.addTags(v),
-        otherTags       = f => (v: f.Value) => c = c.addTags(v),
-        customFieldTags = f => (v: f.Value) => c = c.addTags(v),
-        title           = f => (v: f.Value) => c = c.copy(title = v))
+        codes             = f => (v: f.Value) => c = c.copy(codes = v),
+        customNumberField = f => (v: f.Value) => c = c.addCustomNumber(f.field, v),
+        customTextField   = f => (v: f.Value) => c = c.addCustomText(f.field, v),
+        implications      = f => (v: f.Value) => c = c.addImps(f.dir, v),
+        allTags           = f => (v: f.Value) => c = c.addTags(v),
+        otherTags         = f => (v: f.Value) => c = c.addTags(v),
+        customFieldTags   = f => (v: f.Value) => c = c.addTags(v),
+        title             = f => (v: f.Value) => c = c.copy(title = v))
       o.foreach(_.foldValue(fold))
       Some(c)
     }
@@ -78,13 +79,14 @@ object NewForm {
     override protected def createCmd(i: Input, o: Output): Option[CreateContentCmd] = {
       var c = CreateContentCmd.CreateUseCase.empty
       val fold = FieldKey.FoldForUseCase[ValueConsumer](
-        codes           = f => (v: f.Value) => c = c.copy(codes = v),
-        customTextField = f => (v: f.Value) => c = c.addCustomText(f.field, v),
-        implications    = f => (v: f.Value) => c = c.addImps(f.dir, v),
-        allTags         = f => (v: f.Value) => c = c.addTags(v),
-        otherTags       = f => (v: f.Value) => c = c.addTags(v),
-        customFieldTags = f => (v: f.Value) => c = c.addTags(v),
-        title           = f => (v: f.Value) => c = c.copy(title = v))
+        codes             = f => (v: f.Value) => c = c.copy(codes = v),
+        customNumberField = f => (v: f.Value) => c = c.addCustomNumber(f.field, v),
+        customTextField   = f => (v: f.Value) => c = c.addCustomText(f.field, v),
+        implications      = f => (v: f.Value) => c = c.addImps(f.dir, v),
+        allTags           = f => (v: f.Value) => c = c.addTags(v),
+        otherTags         = f => (v: f.Value) => c = c.addTags(v),
+        customFieldTags   = f => (v: f.Value) => c = c.addTags(v),
+        title             = f => (v: f.Value) => c = c.copy(title = v))
       o.foreach(_.foldValue(fold))
       Some(c)
     }
