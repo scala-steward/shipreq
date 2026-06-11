@@ -408,7 +408,7 @@ object CustomField {
   @Lenses
   final case class Number(id               : Number.Id,
                           name             : String,
-                          desc             : String,
+                          desc             : Option[String],
                           min              : Double,
                           max              : Double,
                           decimalPlaces    : Int,
@@ -723,6 +723,9 @@ final case class FieldSet(customFields: FieldSet.CustomFields,
 
   def customImpFields: List[CustomField.Implication] =
     splitFields.imps
+
+  def customNumberFields: List[CustomField.Number] =
+    splitFields.nums
 
   def customTagFields: List[CustomField.Tag] =
     splitFields.tags

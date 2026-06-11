@@ -246,6 +246,9 @@ final class ApplicableEventGen(emptyState: State, curState: State, config: Rando
   val nextCustomFieldImplicationId: Gen[CustomField.Implication.Id] =
     nextCustomField map CustomField.Implication.Id
 
+  val nextCustomFieldNumberId: Gen[CustomField.Number.Id] =
+    nextCustomField map CustomField.Number.Id
+
   val nextCustomFieldTagId: Gen[CustomField.Tag.Id] =
     nextCustomField map CustomField.Tag.Id
 
@@ -312,6 +315,9 @@ final class ApplicableEventGen(emptyState: State, curState: State, config: Rando
   lazy val fieldReqTypeRules_ : Gen[FieldReqTypeRules[Impossible]] =
     RandomData.fieldReqTypeRules(existingReqTypeId, None)
 
+  lazy val fieldReqTypeRulesNum: Gen[FieldReqTypeRules[Double]] =
+    RandomData.fieldReqTypeRules(existingReqTypeId, Some(Gen.double))
+
   lazy val fieldReqTypeRulesTag: Gen[FieldReqTypeRules[ApplicableTagId]] =
     RandomData.fieldReqTypeRules(existingReqTypeId, existingApplicableTagId)
 
@@ -359,6 +365,9 @@ final class ApplicableEventGen(emptyState: State, curState: State, config: Rando
 
   val customFieldImpId: Live => Option[Gen[CustomField.Implication.Id]] =
     tryGenChooseLiveDead(l => cfg.fields.customImpFields.filter(_.live(cfg) is l).map(_.id))
+
+  val customFieldNumberId: Live => Option[Gen[CustomField.Number.Id]] =
+    tryGenChooseLiveDead(l => cfg.fields.customNumberFields.filter(_.live(cfg) is l).map(_.id))
 
   val customFieldTagId: Live => Option[Gen[CustomField.Tag.Id]] =
     tryGenChooseLiveDead(l => cfg.fields.customTagFields.filter(_.live(cfg) is l).map(_.id))
@@ -472,6 +481,21 @@ final class ApplicableEventGen(emptyState: State, curState: State, config: Rando
       case Mandatory          => mandatory                 map Mandatory.apply
       case ApplicableReqTypes => applicableReqTypes        map ApplicableReqTypes .apply
     }
+  }
+
+  object customNumberFieldGD extends GenericDataGen(CustomNumberFieldGD) {
+    import gd._
+    private def mdp = DataValidators.numberField.maxDecimalPlaces
+    override def valueFor(a: Attr) = a match {
+      case Name              => fieldName            map Name             .apply
+      case Desc              => desc                 map Desc             .apply
+      case Min               => Gen.double           map Min              .apply
+      case Max               => Gen.double           map Max              .apply
+      case DecimalPlaces     => Gen.chooseInt(mdp)   map DecimalPlaces    .apply
+      case FieldReqTypeRules => fieldReqTypeRulesNum map FieldReqTypeRules.apply
+    }
+    override def fixValues(vs: gd.Values): gd.Values =
+      RandomData.events.customNumberFieldGD.fixValues(vs)
   }
 
   object customTextFieldGD extends GenericDataGen(CustomTextFieldGD) {
@@ -721,6 +745,9 @@ final class ApplicableEventGen(emptyState: State, curState: State, config: Rando
       vs    <- genVS
     } yield FieldCustomTagCreate(id, tagId, vs)
   }
+
+  def genFieldCustomNumberCreate: Gen[FieldCustomNumberCreate] =
+    Gen.apply2(FieldCustomNumberCreate)(nextCustomFieldNumberId, customNumberFieldGD.allValues)
 
   def genFieldCustomTextCreateV1: Gen[FieldCustomTextCreateV1] =
     Gen.apply2(FieldCustomTextCreateV1)(nextCustomFieldTextId, customTextFieldGDv1.allValues)
@@ -984,6 +1011,10 @@ final class ApplicableEventGen(emptyState: State, curState: State, config: Rando
     customFieldTextId(Live).map(id =>
       Gen.apply2(FieldCustomTextUpdateV1)(id, customTextFieldGDv1.nonEmptyValues))
 
+  def genFieldCustomNumberUpdate: Option[Gen[FieldCustomNumberUpdate]] =
+    customFieldNumberId(Live).map(id =>
+      Gen.apply2(FieldCustomNumberUpdate)(id, customNumberFieldGD.nonEmptyValues))
+
   def genFieldCustomTextUpdate: Option[Gen[FieldCustomTextUpdate]] =
     customFieldTextId(Live).map(id =>
       Gen.apply2(FieldCustomTextUpdate)(id, customTextFieldGD.nonEmptyValues))
@@ -1115,6 +1146,13 @@ final class ApplicableEventGen(emptyState: State, curState: State, config: Rando
       Gen pure ProjectRestore
     }
 
+  val genReqFieldCustomNumberSet: Option[Gen[ReqFieldCustomNumberSet]] =
+    for {
+      id  <- liveReqId
+      fid <- customFieldNumberId(Live)
+    } yield
+      Gen.apply3(ReqFieldCustomNumberSet)(id, fid, Gen.double.option)
+
   private val possibleActiveEventGensWithNames: NonEmptyVector[(EventName, Option[Gen[ActiveEvent]])] =
     valuesForAdt[ActiveEvent, (EventName, Option[Gen[ActiveEvent]])] {
       // Note: not using [case e: Xxx => EventName(e) -> xxx] here because the valuesForAdt doesn't like it
@@ -1137,6 +1175,8 @@ final class ApplicableEventGen(emptyState: State, curState: State, config: Rando
       case _: FieldCustomDelete       => EventName("FieldCustomDelete"      ) -> genFieldCustomDelete
       case _: FieldCustomImpCreate    => EventName("FieldCustomImpCreate"   ) -> genFieldCustomImpCreate
       case _: FieldCustomImpUpdate    => EventName("FieldCustomImpUpdate"   ) -> genFieldCustomImpUpdate
+      case _: FieldCustomNumberCreate => EventName("FieldCustomNumberCreate") -> genFieldCustomNumberCreate
+      case _: FieldCustomNumberUpdate => EventName("FieldCustomNumberUpdate") -> genFieldCustomNumberUpdate
       case _: FieldCustomRestore      => EventName("FieldCustomRestore"     ) -> genFieldCustomRestore
       case _: FieldCustomTagCreate    => EventName("FieldCustomTagCreate"   ) -> genFieldCustomTagCreate
       case _: FieldCustomTagUpdate    => EventName("FieldCustomTagUpdate"   ) -> genFieldCustomTagUpdate
@@ -1156,6 +1196,7 @@ final class ApplicableEventGen(emptyState: State, curState: State, config: Rando
       case _: ProjectRestore.type     => EventName("ProjectRestore"         ) -> genProjectRestore
       case _: ProjectTemplateApply    => EventName("ProjectTemplateApply"   ) -> genProjectTemplateApply
       case _: ReqCodesPatch           => EventName("ReqCodesPatch"          ) -> genReqCodesPatch
+      case _: ReqFieldCustomNumberSet => EventName("ReqFieldCustomNumberSet") -> genReqFieldCustomNumberSet
       case _: ReqFieldCustomTextSet   => EventName("ReqFieldCustomTextSet"  ) -> genReqFieldCustomTextSet
       case _: ReqImplicationsPatch    => EventName("ReqImplicationsPatch"   ) -> genReqImplicationsPatch
       case _: ReqsDelete              => EventName("ReqsDelete"             ) -> genReqsDelete

@@ -21,7 +21,7 @@ object ProjectContent {
     ProjectContent(
       Requirements.empty,
       ReqCodes.empty,
-      ReqData.emptyNums,
+      ReqData.Numbers.empty,
       ReqData.Text.empty,
       ReqData.emptyTags,
       Implications.empty,

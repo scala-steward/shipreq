@@ -18,12 +18,12 @@ object Gen {
        |  case object $attrName extends Attr {
        |    override type Data = $attrType
        |    override def apply(data: Data) = $valueName(data)
-       |    override val dataEquality: Equal[Data] = implicitly[Equal[$attrType]]
+       |    override val dataEquality: Eq[Data] = implicitly[Eq[$attrType]]
        |  }
        |  final case class $valueName(value: $attrName.Data) extends Value {
        |    override val attr: $attrName.type = $attrName
        |    override def equals(o: Any): Boolean = o match {
-       |      case v2: $valueName => $attrName.dataEquality.equal(value, v2.value)
+       |      case v2: $valueName => $attrName.dataEquality.eqv(value, v2.value)
        |      case _ => false
        |    }
        |  }
@@ -92,6 +92,14 @@ val gens = List(
     "Parents"            -> "TagInTree.Parents",
     "Children"           -> "TagInTree.Children",
   ),
+  Gen("CustomNumberFieldGD")(
+    "Name"              -> "String",
+    "Desc"              -> "Option[String]",
+    "Min"               -> "Double",
+    "Max"               -> "Double",
+    "DecimalPlaces"     -> "Int",
+    "FieldReqTypeRules" -> "FieldReqTypeRules[Double]",
+  ),
   Gen("CustomTextFieldGD")(
     "Name"              -> "String",
     "FieldReqTypeRules" -> "FieldReqTypeRules[Impossible]",
@@ -138,7 +146,7 @@ val gens = List(
     "FlowIn"  -> "SetDiff.NE[UseCaseStepId]",
     "FlowOut" -> "SetDiff.NE[UseCaseStepId]",
   ),
-  Gen("SavedViewGD", init = "import shipreq.webapp.member.filter.Filter.{Valid => ValidFilter}\nimport shipreq.webapp.member.data.savedview._")(
+  Gen("SavedViewGD", init = "import shipreq.webapp.member.project.filter.Filter.{Valid => ValidFilter}\nimport shipreq.webapp.member.project.data.savedview._")(
     "Name"           -> "SavedView.Name",
     "FilterDead"     -> "FilterDead",
     "Columns"        -> "NonEmptyVector[Column]",
@@ -153,16 +161,16 @@ val header = "// █████████████████████
 
 val content =
   s"""
-     |package shipreq.webapp.member.event
+     |package shipreq.webapp.member.project.event
      |
+     |import cats.{Eq, Order}
      |import japgolly.microlibs.nonempty._
-     |import scalaz.{Equal, Order}
      |import shipreq.base.util._
-     |import shipreq.webapp.member.data._
-     |import shipreq.webapp.member.filter.Filter.Implicits._
-     |import shipreq.webapp.member.text.Text
-     |import shipreq.webapp.member.text.Text.Equality._
-     |import shipreq.webapp.member.util.GenericData
+     |import shipreq.webapp.member.project.data._
+     |import shipreq.webapp.member.project.filter.Filter.Implicits._
+     |import shipreq.webapp.member.project.text.Text
+     |import shipreq.webapp.member.project.text.Text.Equality._
+     |import shipreq.webapp.member.project.util.GenericData
      |
      |// DO NOT EDIT THIS
      |// This file is generated in its entirety by bin/gen-generic_data
@@ -172,6 +180,6 @@ val content =
 
 // println(content)
 
-val targetFile = "webapp-member/shared/src/main/scala/shipreq/webapp/member/event/GenericData.scala"
+val targetFile = "webapp-member/shared/src/main/scala/shipreq/webapp/member/project/event/GenericData.scala"
 println(s"Writing ${content.split('\n').size + 1} lines to $targetFile")
 writeToFile(targetFile, content)

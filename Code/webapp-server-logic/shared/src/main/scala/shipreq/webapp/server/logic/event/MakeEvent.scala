@@ -141,6 +141,11 @@ object MakeEvent {
           val id = CustomField.Implication.Id(nextId)
           FieldCustomImpCreate(id, c.reqTypeId, gdAllValues(CustomImpFieldGD, "c"))
 
+        case c: UpdateConfigCmd.CustomFieldCreateNumber =>
+          locally(c) // used by macros
+          val id = CustomField.Number.Id(nextId)
+          FieldCustomNumberCreate(id, gdAllValues(CustomNumberFieldGD, "c"))
+
         case c: UpdateConfigCmd.CustomFieldCreateTag =>
           val id = CustomField.Tag.Id(nextId)
           FieldCustomTagCreate(id, c.tagId, gdAllValues(CustomTagFieldGD, "c"))
@@ -155,6 +160,12 @@ object MakeEvent {
           project.config.fields.customAttempt(id) toMakeEventResult { cur =>
             val vs2 = gdUnequalValues2(CustomImpFieldGD, cur, vs)
             eventIfNonEmpty(vs2)(FieldCustomImpUpdate(id, _))
+          }
+
+        case UpdateConfigCmd.CustomFieldUpdateNumber(id, vs) =>
+          project.config.fields.customAttempt(id) toMakeEventResult { cur =>
+            val vs2 = gdUnequalValues2(CustomNumberFieldGD, cur, vs)
+            eventIfNonEmpty(vs2)(FieldCustomNumberUpdate(id, _))
           }
 
         case UpdateConfigCmd.CustomFieldUpdateTag(id, vs) =>
@@ -422,6 +433,9 @@ object MakeEvent {
 
         case UpdateContentCmd.PatchReqTags(id, v) =>
           ReqTagsPatch(id, v)
+
+        case UpdateContentCmd.SetCustomNumberField(id, f, v) =>
+          ReqFieldCustomNumberSet(id, f, v)
 
         case UpdateContentCmd.SetCustomTextField(id, f, v) =>
           ReqFieldCustomTextSet(id, f, v)

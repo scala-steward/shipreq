@@ -352,7 +352,7 @@ object Rev1 {
       override def unpickle(implicit state: UnpickleState): CustomField.Number = {
         val id                = state.unpickle[CustomField.Number.Id]
         val name              = state.unpickle[String]
-        val desc              = state.unpickle[String]
+        val desc              = state.unpickle[Option[String]]
         val min               = state.unpickle[Double]
         val max               = state.unpickle[Double]
         val decimalPlaces     = state.unpickle[Int]
@@ -514,7 +514,7 @@ object Rev1 {
           case 0 =>
             val reqs            = state.unpickle[Requirements]
             val reqCodes        = state.unpickle[ReqCodes]
-            val reqNums         = ReqData.emptyNums
+            val reqNums         = ReqData.Numbers.empty
             val reqText         = state.unpickle[ReqData.Text]
             val reqTags         = state.unpickle[ReqData.Tags]
             val implications    = state.unpickle[Implications]
@@ -1167,6 +1167,89 @@ object Rev1 {
       }
     }
 
+  implicit lazy val pickleCustomNumberFieldGD: Pickler[CustomNumberFieldGD.NonEmptyValues] = {
+    import CustomNumberFieldGD._
+
+    implicit val picklerValueForName              = transformPickler(ValueForName             .apply)(_.value)
+    implicit val picklerValueForDesc              = transformPickler(ValueForDesc             .apply)(_.value)
+    implicit val picklerValueForMin               = transformPickler(ValueForMin              .apply)(_.value)
+    implicit val picklerValueForMax               = transformPickler(ValueForMax              .apply)(_.value)
+    implicit val picklerValueForDecimalPlaces     = transformPickler(ValueForDecimalPlaces    .apply)(_.value)
+    implicit val picklerValueForFieldReqTypeRules = transformPickler(ValueForFieldReqTypeRules.apply)(_.value)
+
+    implicit val picklerValue: Pickler[Value] =
+      new Pickler[Value] {
+        private[this] final val KeyName          = 'n'
+        private[this] final val KeyDesc          = 'd'
+        private[this] final val KeyMin           = 'm'
+        private[this] final val KeyMax           = 'M'
+        private[this] final val KeyDecimalPlaces = 'p'
+        private[this] final val KeyReqTypes      = 'R'
+        override def pickle(a: Value)(implicit state: PickleState): Unit =
+          a match {
+            case b: ValueForName              => state.enc.writeByte(KeyName         ); state.pickle(b)
+            case b: ValueForDesc              => state.enc.writeByte(KeyDesc         ); state.pickle(b)
+            case b: ValueForMin               => state.enc.writeByte(KeyMin          ); state.pickle(b)
+            case b: ValueForMax               => state.enc.writeByte(KeyMax          ); state.pickle(b)
+            case b: ValueForDecimalPlaces     => state.enc.writeByte(KeyDecimalPlaces); state.pickle(b)
+            case b: ValueForFieldReqTypeRules => state.enc.writeByte(KeyReqTypes     ); state.pickle(b)
+          }
+        override def unpickle(implicit state: UnpickleState): Value =
+          state.dec.readByte match {
+            case KeyName          => state.unpickle[ValueForName]
+            case KeyDesc          => state.unpickle[ValueForDesc]
+            case KeyMin           => state.unpickle[ValueForMin]
+            case KeyMax           => state.unpickle[ValueForMax]
+            case KeyDecimalPlaces => state.unpickle[ValueForDecimalPlaces]
+            case KeyReqTypes      => state.unpickle[ValueForFieldReqTypeRules]
+          }
+      }
+
+    val values: Pickler[Values] = pickleIMap(emptyValues)
+    pickleNonEmptyMono[Values](values, implicitly)
+  }
+
+  private[binary] implicit lazy val picklerEventFieldCustomNumberCreate: Pickler[Event.FieldCustomNumberCreate] =
+    new Pickler[Event.FieldCustomNumberCreate] {
+      override def pickle(a: Event.FieldCustomNumberCreate)(implicit state: PickleState): Unit = {
+        state.pickle(a.id)
+        state.pickle(a.vs)
+      }
+      override def unpickle(implicit state: UnpickleState): Event.FieldCustomNumberCreate = {
+        val id = state.unpickle[CustomField.Number.Id]
+        val vs = state.unpickle[CustomNumberFieldGD.NonEmptyValues]
+        Event.FieldCustomNumberCreate(id, vs)
+      }
+    }
+
+  private[binary] implicit lazy val picklerEventFieldCustomNumberUpdate: Pickler[Event.FieldCustomNumberUpdate] =
+    new Pickler[Event.FieldCustomNumberUpdate] {
+      override def pickle(a: Event.FieldCustomNumberUpdate)(implicit state: PickleState): Unit = {
+        state.pickle(a.id)
+        state.pickle(a.vs)
+      }
+      override def unpickle(implicit state: UnpickleState): Event.FieldCustomNumberUpdate = {
+        val id = state.unpickle[CustomField.Number.Id]
+        val vs = state.unpickle[CustomNumberFieldGD.NonEmptyValues]
+        Event.FieldCustomNumberUpdate(id, vs)
+      }
+    }
+
+  private[binary] implicit lazy val picklerEventReqFieldCustomNumberSet: Pickler[Event.ReqFieldCustomNumberSet] =
+    new Pickler[Event.ReqFieldCustomNumberSet] {
+      override def pickle(a: Event.ReqFieldCustomNumberSet)(implicit state: PickleState): Unit = {
+        state.pickle(a.id)
+        state.pickle(a.fid)
+        state.pickle(a.value)
+      }
+      override def unpickle(implicit state: UnpickleState): Event.ReqFieldCustomNumberSet = {
+        val id    = state.unpickle[ReqId]
+        val fid   = state.unpickle[CustomField.Number.Id]
+        val value = state.unpickle[Option[Double]]
+        Event.ReqFieldCustomNumberSet(id, fid, value)
+      }
+    }
+
   implicit lazy val picklerEvent: Pickler[Event] =
     new Pickler[Event] {
       import Event._
@@ -1241,6 +1324,9 @@ object Rev1 {
       private[this] final val KeyAccessUpdate            = 68
       private[this] final val KeyProjectDelete           = 69
       private[this] final val KeyProjectRestore          = 70
+      private[this] final val KeyFieldCustomNumberCreate = 71
+      private[this] final val KeyFieldCustomNumberUpdate = 72
+      private[this] final val KeyReqFieldCustomNumberSet = 73
 
       override def pickle(a: Event)(implicit state: PickleState): Unit =
         a match {
@@ -1270,6 +1356,8 @@ object Rev1 {
           case b: FieldCustomImpCreateV1  => state.enc.writeByte(KeyFieldCustomImpCreateV1 ); state.pickle(b)
           case b: FieldCustomImpUpdate    => state.enc.writeByte(KeyFieldCustomImpUpdateV2 ); state.pickle(b)
           case b: FieldCustomImpUpdateV1  => state.enc.writeByte(KeyFieldCustomImpUpdateV1 ); state.pickle(b)
+          case b: FieldCustomNumberCreate => state.enc.writeByte(KeyFieldCustomNumberCreate); state.pickle(b)
+          case b: FieldCustomNumberUpdate => state.enc.writeByte(KeyFieldCustomNumberUpdate); state.pickle(b)
           case b: FieldCustomRestore      => state.enc.writeByte(KeyFieldCustomRestore     ); state.pickle(b)
           case b: FieldCustomTagCreate    => state.enc.writeByte(KeyFieldCustomTagCreateV2 ); state.pickle(b)
           case b: FieldCustomTagCreateV1  => state.enc.writeByte(KeyFieldCustomTagCreateV1 ); state.pickle(b)
@@ -1293,6 +1381,7 @@ object Rev1 {
           case b: ProjectRestore.type     => state.enc.writeByte(KeyProjectRestore         ); state.pickle(b)
           case b: ProjectTemplateApply    => state.enc.writeByte(KeyProjectTemplateApply   ); state.pickle(b)
           case b: ReqCodesPatch           => state.enc.writeByte(KeyReqCodesPatch          ); state.pickle(b)
+          case b: ReqFieldCustomNumberSet => state.enc.writeByte(KeyReqFieldCustomNumberSet); state.pickle(b)
           case b: ReqFieldCustomTextSet   => state.enc.writeByte(KeyReqFieldCustomTextSet  ); state.pickle(b)
           case b: ReqImplicationsPatch    => state.enc.writeByte(KeyReqImplicationsPatch   ); state.pickle(b)
           case b: ReqsDelete              => state.enc.writeByte(KeyReqsDelete             ); state.pickle(b)
@@ -1345,6 +1434,8 @@ object Rev1 {
           case KeyFieldCustomImpCreateV2  => state.unpickle[FieldCustomImpCreate]
           case KeyFieldCustomImpUpdateV1  => state.unpickle[FieldCustomImpUpdateV1]
           case KeyFieldCustomImpUpdateV2  => state.unpickle[FieldCustomImpUpdate]
+          case KeyFieldCustomNumberCreate => state.unpickle[FieldCustomNumberCreate]
+          case KeyFieldCustomNumberUpdate => state.unpickle[FieldCustomNumberUpdate]
           case KeyFieldCustomRestore      => state.unpickle[FieldCustomRestore]
           case KeyFieldCustomTagCreateV1  => state.unpickle[FieldCustomTagCreateV1]
           case KeyFieldCustomTagCreateV2  => state.unpickle[FieldCustomTagCreate]
@@ -1368,6 +1459,7 @@ object Rev1 {
           case KeyProjectRestore          => state.unpickle[ProjectRestore.type]
           case KeyProjectTemplateApply    => state.unpickle[ProjectTemplateApply]
           case KeyReqCodesPatch           => state.unpickle[ReqCodesPatch]
+          case KeyReqFieldCustomNumberSet => state.unpickle[ReqFieldCustomNumberSet]
           case KeyReqFieldCustomTextSet   => state.unpickle[ReqFieldCustomTextSet]
           case KeyReqImplicationsPatch    => state.unpickle[ReqImplicationsPatch]
           case KeyReqsDelete              => state.unpickle[ReqsDelete]

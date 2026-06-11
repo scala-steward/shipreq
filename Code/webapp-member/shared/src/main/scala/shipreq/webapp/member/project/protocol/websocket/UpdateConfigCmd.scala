@@ -40,6 +40,15 @@ object UpdateConfigCmd {
                                         fieldReqTypeRules: FieldReqTypeRules.ForTagField,
                                         derivativeTags   : DerivativeTags) extends ToModifyFields
 
+  final case class CustomFieldCreateNumber(name             : String,
+                                           desc             : Option[String],
+                                           min              : Double,
+                                           max              : Double,
+                                           decimalPlaces    : Int,
+                                           fieldReqTypeRules: FieldReqTypeRules.ForNumField) extends ToModifyFields
+
+  final case class CustomFieldUpdateNumber(id: CustomField.Number.Id,
+                                           newValues: CustomNumberFieldGD.NonEmptyValues) extends ToModifyFields
 
   /** Note: you're not allowed to specify any dead values in:
     *
@@ -63,7 +72,7 @@ object UpdateConfigCmd {
   implicit def univEq: UnivEq[UpdateConfigCmd] = UnivEq.derive
 
   // ===================================================================================================================
-  object CodecsV3 {
+  object CodecsV4 {
     import boopickle.DefaultBasic._
     import shipreq.webapp.base.protocol.binary.v1.BaseData._
     import shipreq.webapp.member.project.protocol.binary.v1.BaseMemberData1._
@@ -299,6 +308,40 @@ object UpdateConfigCmd {
     private implicit val picklerTagRestore: Pickler[TagRestore] =
       transformPickler(TagRestore.apply)(_.id)
 
+    private implicit val picklerCustomFieldCreateNumber: Pickler[CustomFieldCreateNumber] =
+      new Pickler[CustomFieldCreateNumber] {
+        override def pickle(a: CustomFieldCreateNumber)(implicit state: PickleState): Unit = {
+          state.pickle(a.name)
+          state.pickle(a.desc)
+          state.pickle(a.min)
+          state.pickle(a.max)
+          state.pickle(a.decimalPlaces)
+          state.pickle(a.fieldReqTypeRules)
+        }
+        override def unpickle(implicit state: UnpickleState): CustomFieldCreateNumber = {
+          val name              = state.unpickle[String]
+          val desc              = state.unpickle[Option[String]]
+          val min               = state.unpickle[Double]
+          val max               = state.unpickle[Double]
+          val decimalPlaces     = state.unpickle[Int]
+          val fieldReqTypeRules = state.unpickle[FieldReqTypeRules.ForNumField]
+          CustomFieldCreateNumber(name, desc, min, max, decimalPlaces, fieldReqTypeRules)
+        }
+      }
+
+    private implicit val picklerCustomFieldUpdateNumber: Pickler[CustomFieldUpdateNumber] =
+      new Pickler[CustomFieldUpdateNumber] {
+        override def pickle(a: CustomFieldUpdateNumber)(implicit state: PickleState): Unit = {
+          state.pickle(a.id)
+          state.pickle(a.newValues)
+        }
+        override def unpickle(implicit state: UnpickleState): CustomFieldUpdateNumber = {
+          val id        = state.unpickle[CustomField.Number.Id]
+          val newValues = state.unpickle[CustomNumberFieldGD.NonEmptyValues]
+          CustomFieldUpdateNumber(id, newValues)
+        }
+      }
+
     implicit val picklerUpdateConfigCmd: Pickler[UpdateConfigCmd] =
       new Pickler[UpdateConfigCmd] {
         private[this] final val KeyCustomFieldUpdateImp    = 1
@@ -331,12 +374,20 @@ object UpdateConfigCmd {
         private[this] final val KeyStaticFieldRemove       = 28
         private[this] final val KeyCustomReqTypeDeleteHard = 29
         private[this] final val KeyCustomReqTypeDeleteSoft = 30
+        private[this] final val KeyCustomFieldCreateNumber = 31
+        private[this] final val KeyCustomFieldUpdateNumber = 32
         override def pickle(a: UpdateConfigCmd)(implicit state: PickleState): Unit =
           a match {
+            case b: ApplicableTagCreate     => state.enc.writeByte(KeyApplicableTagCreate    ); state.pickle(b)
+            case b: ApplicableTagUpdate     => state.enc.writeByte(KeyApplicableTagUpdate    ); state.pickle(b)
             case b: CustomFieldCreateImp    => state.enc.writeByte(KeyCustomFieldCreateImp   ); state.pickle(b)
+            case b: CustomFieldCreateNumber => state.enc.writeByte(KeyCustomFieldCreateNumber); state.pickle(b)
             case b: CustomFieldCreateTag    => state.enc.writeByte(KeyCustomFieldCreateTag   ); state.pickle(b)
             case b: CustomFieldCreateText   => state.enc.writeByte(KeyCustomFieldCreateText  ); state.pickle(b)
+            case b: CustomFieldDelete       => state.enc.writeByte(KeyCustomFieldDelete      ); state.pickle(b)
+            case b: CustomFieldRestore      => state.enc.writeByte(KeyCustomFieldRestore     ); state.pickle(b)
             case b: CustomFieldUpdateImp    => state.enc.writeByte(KeyCustomFieldUpdateImp   ); state.pickle(b)
+            case b: CustomFieldUpdateNumber => state.enc.writeByte(KeyCustomFieldUpdateNumber); state.pickle(b)
             case b: CustomFieldUpdateTag    => state.enc.writeByte(KeyCustomFieldUpdateTag   ); state.pickle(b)
             case b: CustomFieldUpdateText   => state.enc.writeByte(KeyCustomFieldUpdateText  ); state.pickle(b)
             case b: CustomIssueTypeCreate   => state.enc.writeByte(KeyCustomIssueTypeCreate  ); state.pickle(b)
@@ -348,13 +399,9 @@ object UpdateConfigCmd {
             case b: CustomReqTypeDeleteSoft => state.enc.writeByte(KeyCustomReqTypeDeleteSoft); state.pickle(b)
             case b: CustomReqTypeRestore    => state.enc.writeByte(KeyCustomReqTypeRestore   ); state.pickle(b)
             case b: CustomReqTypeUpdate     => state.enc.writeByte(KeyCustomReqTypeUpdate    ); state.pickle(b)
-            case b: CustomFieldDelete       => state.enc.writeByte(KeyCustomFieldDelete      ); state.pickle(b)
-            case b: CustomFieldRestore      => state.enc.writeByte(KeyCustomFieldRestore     ); state.pickle(b)
+            case b: FieldUpdateOrder        => state.enc.writeByte(KeyFieldUpdateOrder       ); state.pickle(b)
             case b: StaticFieldAdd          => state.enc.writeByte(KeyStaticFieldAdd         ); state.pickle(b)
             case b: StaticFieldRemove       => state.enc.writeByte(KeyStaticFieldRemove      ); state.pickle(b)
-            case b: FieldUpdateOrder        => state.enc.writeByte(KeyFieldUpdateOrder       ); state.pickle(b)
-            case b: ApplicableTagCreate     => state.enc.writeByte(KeyApplicableTagCreate    ); state.pickle(b)
-            case b: ApplicableTagUpdate     => state.enc.writeByte(KeyApplicableTagUpdate    ); state.pickle(b)
             case b: TagDelete               => state.enc.writeByte(KeyTagDelete              ); state.pickle(b)
             case b: TagGroupCreate          => state.enc.writeByte(KeyTagGroupCreate         ); state.pickle(b)
             case b: TagGroupUpdate          => state.enc.writeByte(KeyTagGroupUpdate         ); state.pickle(b)
@@ -363,10 +410,16 @@ object UpdateConfigCmd {
           }
         override def unpickle(implicit state: UnpickleState): UpdateConfigCmd =
           state.dec.readByte match {
+            case KeyApplicableTagCreate     => state.unpickle[ApplicableTagCreate]
+            case KeyApplicableTagUpdate     => state.unpickle[ApplicableTagUpdate]
             case KeyCustomFieldCreateImp    => state.unpickle[CustomFieldCreateImp]
+            case KeyCustomFieldCreateNumber => state.unpickle[CustomFieldCreateNumber]
             case KeyCustomFieldCreateTag    => state.unpickle[CustomFieldCreateTag]
             case KeyCustomFieldCreateText   => state.unpickle[CustomFieldCreateText]
+            case KeyCustomFieldDelete       => state.unpickle[CustomFieldDelete]
+            case KeyCustomFieldRestore      => state.unpickle[CustomFieldRestore]
             case KeyCustomFieldUpdateImp    => state.unpickle[CustomFieldUpdateImp]
+            case KeyCustomFieldUpdateNumber => state.unpickle[CustomFieldUpdateNumber]
             case KeyCustomFieldUpdateTag    => state.unpickle[CustomFieldUpdateTag]
             case KeyCustomFieldUpdateText   => state.unpickle[CustomFieldUpdateText]
             case KeyCustomIssueTypeCreate   => state.unpickle[CustomIssueTypeCreate]
@@ -378,13 +431,9 @@ object UpdateConfigCmd {
             case KeyCustomReqTypeDeleteSoft => state.unpickle[CustomReqTypeDeleteSoft]
             case KeyCustomReqTypeRestore    => state.unpickle[CustomReqTypeRestore]
             case KeyCustomReqTypeUpdate     => state.unpickle[CustomReqTypeUpdate]
-            case KeyCustomFieldDelete       => state.unpickle[CustomFieldDelete]
-            case KeyCustomFieldRestore      => state.unpickle[CustomFieldRestore]
+            case KeyFieldUpdateOrder        => state.unpickle[FieldUpdateOrder]
             case KeyStaticFieldAdd          => state.unpickle[StaticFieldAdd]
             case KeyStaticFieldRemove       => state.unpickle[StaticFieldRemove]
-            case KeyFieldUpdateOrder        => state.unpickle[FieldUpdateOrder]
-            case KeyApplicableTagCreate     => state.unpickle[ApplicableTagCreate]
-            case KeyApplicableTagUpdate     => state.unpickle[ApplicableTagUpdate]
             case KeyTagDelete               => state.unpickle[TagDelete]
             case KeyTagGroupCreate          => state.unpickle[TagGroupCreate]
             case KeyTagGroupUpdate          => state.unpickle[TagGroupUpdate]

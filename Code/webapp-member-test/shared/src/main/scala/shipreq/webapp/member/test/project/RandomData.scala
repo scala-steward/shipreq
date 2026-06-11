@@ -448,20 +448,24 @@ object RandomData {
       Gen sequence ids.map(id =>
         customFieldImplication(Gen pure id, rules)))
 
+  def minMax: Gen[(Double, Double)] =
+    for {
+      x <- Gen.double
+      y <- Gen.double
+    } yield
+      if (x <= y) (x, y) else (y, x)
+
   def customFieldNumber(genFieldReqTypeRules: Gen[FieldReqTypeRules.ForNumField]): Gen[CustomField.Number] =
     for {
       id                <- customFieldNumberId
       name              <- fieldName
-      desc              <- Gen.string
-      min               <- Gen.double
-      size              <- Gen.double
+      desc              <- Gen.string.option
+      (min, max)        <- minMax
       decimalPlaces     <- Gen.chooseInt(4)
       fieldReqTypeRules <- genFieldReqTypeRules
       liveExplicitly    <- live
-    } yield {
-      val max = min + size
+    } yield
       CustomField.Number(id, name, desc, min, max, decimalPlaces, fieldReqTypeRules, liveExplicitly)
-    }
 
   def customField(rulesAny: Gen[FieldReqTypeRules[Impossible]],
                   rulesNum: Gen[FieldReqTypeRules.ForNumField],
@@ -1743,7 +1747,7 @@ object RandomData {
         case (Some(numFieldIdGen), Some(reqIdGen)) =>
           numFieldIdGen.mapTo(reqIdGen.mapTo(Gen.double))
         case _ =>
-          Gen pure ReqData.emptyNums
+          Gen pure ReqData.Numbers.empty
       }
 
     val projectDelReason =
@@ -2558,11 +2562,33 @@ object RandomData {
     private lazy val fieldReqTypeRules_ : Gen[FieldReqTypeRules[Impossible]] =
       fieldReqTypeRules(Some(reqTypeId), None)
 
+    private def fieldReqTypeRulesNum: Gen[FieldReqTypeRules[Double]] =
+      fieldReqTypeRules(Some(reqTypeId), Some(Gen.double))
+
     private def fieldReqTypeRulesTag: Gen[FieldReqTypeRules[ApplicableTagId]] =
       fieldReqTypeRules(Some(reqTypeId), Some(applicableTagId))
 
     private lazy val derivativeTags: Gen[DerivativeTags] =
       RandomData.derivativeTags(applicableTagId)
+
+    object customNumberFieldGD extends GenericDataGen(CustomNumberFieldGD) {
+      import gd._
+      private def mdp = DataValidators.numberField.maxDecimalPlaces
+      override def valueFor(a: Attr): Gen[Value] = a match {
+        case Name              => fieldName            map Name             .apply
+        case Desc              => desc                 map Desc             .apply
+        case Min               => Gen.double           map Min              .apply
+        case Max               => Gen.double           map Max              .apply
+        case DecimalPlaces     => Gen.chooseInt(mdp)   map DecimalPlaces    .apply
+        case FieldReqTypeRules => fieldReqTypeRulesNum map FieldReqTypeRules.apply
+      }
+      override def fixValues(vs: gd.Values): gd.Values =
+        (for {
+          vMin <- Min.get(vs)
+          vMax <- Max.get(vs)
+          if vMin.value > vMax.value
+        } yield vs + Min(vMax.value) + Max(vMin.value)).getOrElse(vs)
+    }
 
     object customTextFieldGD extends GenericDataGen(CustomTextFieldGD) {
       import gd._
@@ -2939,6 +2965,15 @@ object RandomData {
     val genManualIssueUpdate = Gen.apply2(ManualIssueUpdate)(manualIssueId, manualIssueText)
     val genManualIssueDelete = manualIssueId.map(ManualIssueDelete)
 
+    val genFieldCustomNumberCreate: Gen[FieldCustomNumberCreate] =
+      Gen.apply2(FieldCustomNumberCreate)(customFieldNumberId, customNumberFieldGD.nonEmptyValues)
+
+    val genFieldCustomNumberUpdate: Gen[FieldCustomNumberUpdate] =
+      Gen.apply2(FieldCustomNumberUpdate)(customFieldNumberId, customNumberFieldGD.nonEmptyValues)
+
+    val genReqFieldCustomNumberSet: Gen[ReqFieldCustomNumberSet] =
+      Gen.apply3(ReqFieldCustomNumberSet)(reqId, customFieldNumberId, Gen.double.option)
+
     val activeEventGens: NonEmptyVector[Gen[ActiveEvent]] =
       valuesForAdt[ActiveEvent, Gen[ActiveEvent]] {
         case _: AccessUpdate            => genAccessUpdate
@@ -2960,6 +2995,8 @@ object RandomData {
         case _: FieldCustomDelete       => genFieldCustomDelete
         case _: FieldCustomImpCreate    => genFieldCustomImpCreate
         case _: FieldCustomImpUpdate    => genFieldCustomImpUpdate
+        case _: FieldCustomNumberCreate => genFieldCustomNumberCreate
+        case _: FieldCustomNumberUpdate => genFieldCustomNumberUpdate
         case _: FieldCustomRestore      => genFieldCustomRestore
         case _: FieldCustomTagCreate    => genFieldCustomTagCreate
         case _: FieldCustomTagUpdate    => genFieldCustomTagUpdate
@@ -2979,6 +3016,7 @@ object RandomData {
         case _: ProjectRestore.type     => genProjectRestore
         case _: ProjectTemplateApply    => genProjectTemplateApply
         case _: ReqCodesPatch           => genReqCodesPatch
+        case _: ReqFieldCustomNumberSet => genReqFieldCustomNumberSet
         case _: ReqFieldCustomTextSet   => genReqFieldCustomTextSet
         case _: ReqImplicationsPatch    => genReqImplicationsPatch
         case _: ReqsDelete              => genReqsDelete

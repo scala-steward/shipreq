@@ -153,6 +153,21 @@ trait ApplyContentEvent {
 
     def setReqImpTgts(id: ReqId, v: NonEmptySet[ReqId]): Eval[Unit] =
       Project.implicationsSrcToTgt.modify(_.addvs(id, v.whole))
+
+    private def ensureLiveNumberFieldId(id: CustomField.Number.Id): Eval[Unit] =
+      whenUntrusted(
+        Eval.eithers(_.config.fields.customAttempt(id)).flatMap(ensureLiveNumberField))
+
+    private def ensureLiveNumberField(cf: CustomField.Number): Eval[Unit] =
+      Eval.getFlatMap(p => ensureLive(cf live p.config)(show(cf)))
+
+    def applyReqFieldCustomNumberSet(e: ReqFieldCustomNumberSet): Eval[Unit] =
+      ensureLiveReqId(e.id) >> setCustomNumberValue(e.id, e.fid, e.value)
+
+    private def setCustomNumberValue(id   : ReqId,
+                                     fid  : CustomField.Number.Id,
+                                     value: Option[Double]): Eval[Unit] =
+      ensureLiveNumberFieldId(fid) >> (Project.reqNums andThen ReqData.Numbers.at(fid, id)).replace(value)
   }
 
   // ===================================================================================================================

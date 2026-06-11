@@ -266,6 +266,16 @@ object DataValidators {
   }
 
   // ===================================================================================================================
+  object numberField {
+    final val maxDecimalPlaces = 9
+
+    def desc          = genericDesc
+    val min           = V.double.named(FieldNames.min)
+    val max           = V.double.named(FieldNames.max)
+    val decimalPlaces = V.positiveIntBound(maxDecimalPlaces).named(FieldNames.decimalPlaces)
+  }
+
+  // ===================================================================================================================
   object tag {
     import hashRefKey.SubState
 

@@ -26,6 +26,7 @@ object Project {
   val customFields        : Lens[Project, FieldSet.CustomFields    ] = fields  andThen FieldSet.customFields
   val reqs                : Lens[Project, Requirements             ] = content andThen ProjectContent.reqs
   val reqCodes            : Lens[Project, ReqCodes                 ] = content andThen ProjectContent.reqCodes
+  val reqNums             : Lens[Project, ReqData.Numbers          ] = content andThen ProjectContent.reqNums
   val reqText             : Lens[Project, ReqData.Text             ] = content andThen ProjectContent.reqText
   val reqTags             : Lens[Project, ReqData.Tags             ] = content andThen ProjectContent.reqTags
   val implications        : Lens[Project, Implications.Graph.BiDir ] = content andThen ProjectContent.implications andThen Implications.graph

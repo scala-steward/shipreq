@@ -80,6 +80,9 @@ object UiText {
     def savedViewName        = "Name"
     def impFieldSource       = "Req Type"
     def tagFieldSource       = "Tag Group"
+    def min                  = "Min"
+    def max                  = "Max"
+    def decimalPlaces        = "Decimal Places"
   }
 
   object RichText {

@@ -225,6 +225,101 @@ object CustomIssueTypeGD extends GenericData {
 
 // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
+object CustomNumberFieldGD extends GenericData {
+  sealed abstract class Attr extends AttrBase
+  sealed abstract class Value extends ValueBase
+
+  case object DecimalPlaces extends Attr {
+    override type Data = Int
+    override def apply(data: Data) = ValueForDecimalPlaces(data)
+    override val dataEquality: Eq[Data] = implicitly[Eq[Int]]
+  }
+  final case class ValueForDecimalPlaces(value: DecimalPlaces.Data) extends Value {
+    override val attr: DecimalPlaces.type = DecimalPlaces
+    override def equals(o: Any): Boolean = o match {
+      case v2: ValueForDecimalPlaces => DecimalPlaces.dataEquality.eqv(value, v2.value)
+      case _ => false
+    }
+  }
+
+  case object Desc extends Attr {
+    override type Data = Option[String]
+    override def apply(data: Data) = ValueForDesc(data)
+    override val dataEquality: Eq[Data] = implicitly[Eq[Option[String]]]
+  }
+  final case class ValueForDesc(value: Desc.Data) extends Value {
+    override val attr: Desc.type = Desc
+    override def equals(o: Any): Boolean = o match {
+      case v2: ValueForDesc => Desc.dataEquality.eqv(value, v2.value)
+      case _ => false
+    }
+  }
+
+  case object FieldReqTypeRules extends Attr {
+    override type Data = FieldReqTypeRules[Double]
+    override def apply(data: Data) = ValueForFieldReqTypeRules(data)
+    override val dataEquality: Eq[Data] = implicitly[Eq[FieldReqTypeRules[Double]]]
+  }
+  final case class ValueForFieldReqTypeRules(value: FieldReqTypeRules.Data) extends Value {
+    override val attr: FieldReqTypeRules.type = FieldReqTypeRules
+    override def equals(o: Any): Boolean = o match {
+      case v2: ValueForFieldReqTypeRules => FieldReqTypeRules.dataEquality.eqv(value, v2.value)
+      case _ => false
+    }
+  }
+
+  case object Max extends Attr {
+    override type Data = Double
+    override def apply(data: Data) = ValueForMax(data)
+    override val dataEquality: Eq[Data] = implicitly[Eq[Double]]
+  }
+  final case class ValueForMax(value: Max.Data) extends Value {
+    override val attr: Max.type = Max
+    override def equals(o: Any): Boolean = o match {
+      case v2: ValueForMax => Max.dataEquality.eqv(value, v2.value)
+      case _ => false
+    }
+  }
+
+  case object Min extends Attr {
+    override type Data = Double
+    override def apply(data: Data) = ValueForMin(data)
+    override val dataEquality: Eq[Data] = implicitly[Eq[Double]]
+  }
+  final case class ValueForMin(value: Min.Data) extends Value {
+    override val attr: Min.type = Min
+    override def equals(o: Any): Boolean = o match {
+      case v2: ValueForMin => Min.dataEquality.eqv(value, v2.value)
+      case _ => false
+    }
+  }
+
+  case object Name extends Attr {
+    override type Data = String
+    override def apply(data: Data) = ValueForName(data)
+    override val dataEquality: Eq[Data] = implicitly[Eq[String]]
+  }
+  final case class ValueForName(value: Name.Data) extends Value {
+    override val attr: Name.type = Name
+    override def equals(o: Any): Boolean = o match {
+      case v2: ValueForName => Name.dataEquality.eqv(value, v2.value)
+      case _ => false
+    }
+  }
+
+  override implicit val equalityAttr: Order[Attr] with UnivEq[Attr] =
+    Util.univEqAndArbitraryOrder(Vector(DecimalPlaces, Desc, FieldReqTypeRules, Max, Min, Name))
+
+  @inline override implicit def equalityValue: UnivEq[Value] = UnivEq.force
+
+  override val attrs = NonEmptySet[Attr](DecimalPlaces, Desc, FieldReqTypeRules, Max, Min, Name)
+
+  def apply(name: String, desc: Option[String], min: Double, max: Double, decimalPlaces: Int, fieldReqTypeRules: FieldReqTypeRules[Double]): NonEmptyValues =
+    NonEmpty.force(emptyValues + ValueForName(name) + ValueForDesc(desc) + ValueForMin(min) + ValueForMax(max) + ValueForDecimalPlaces(decimalPlaces) + ValueForFieldReqTypeRules(fieldReqTypeRules))
+}
+
+// █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
+
 object CustomReqTypeGD extends GenericData {
   sealed abstract class Attr extends AttrBase
   sealed abstract class Value extends ValueBase

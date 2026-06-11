@@ -674,6 +674,61 @@ trait ApplyConfigEvent {
   }
 
   // -----------------------------------------------------------------------------------------------
+  object CustomNumberFieldEvents {
+    import FieldEvents.{validateName, create, update}
+
+    val ^ = CustomNumberFieldGD
+    val GD = GenericDataApp[CustomField.Number](^)
+
+    val validateDesc          = validateO(V.numberField.desc)
+    val validateMin           = validateI(V.numberField.min)(_.toString)
+    val validateMax           = validateI(V.numberField.max)(_.toString)
+    val validateDecimalPlaces = validateI(V.numberField.decimalPlaces)(_.toString)
+
+    def validateField(f: CustomField.Number): Eval[Unit] =
+      Eval.failOption(Option.when(f.max > f.min)("The maximum can't be larger than the minimum."))
+
+    def applyCreate(e: FieldCustomNumberCreate): Eval[Unit] = {
+      implicit val vs = e.vs
+      for {
+        name          <- GD.need(^.Name).flatMap(validateName)
+        desc          <- GD.need(^.Desc).flatMap(validateDesc)
+        min           <- GD.need(^.Min).flatMap(validateMin)
+        max           <- GD.need(^.Max).flatMap(validateMax)
+        decimalPlaces <- GD.need(^.DecimalPlaces).flatMap(validateDecimalPlaces)
+        reqTypeRules  <- GD.need(^.FieldReqTypeRules)
+        f              = CustomField.Number(e.id, name, desc, min, max, decimalPlaces, reqTypeRules, Live)
+        _             <- validateField(f)
+        _             <- create(f)
+      } yield ()
+    }
+
+    val updateName              = validateName          >>=@ CustomField.Number.name
+    val updateDesc              = validateDesc          >>=@ CustomField.Number.desc
+    val updateMin               = validateMin           >>=@ CustomField.Number.min
+    val updateMax               = validateMax           >>=@ CustomField.Number.max
+    val updateDecimalPlaces     = validateDecimalPlaces >>=@ CustomField.Number.decimalPlaces
+    val updateFieldReqTypeRules = fieldUpdateFn(CustomField.Number.fieldReqTypeRules)
+
+    val updateValues = GD.updateEachValue {
+      case v: ^.ValueForName              => updateName             (v.value)
+      case v: ^.ValueForDesc              => updateDesc             (v.value)
+      case v: ^.ValueForMin               => updateMin              (v.value)
+      case v: ^.ValueForMax               => updateMax              (v.value)
+      case v: ^.ValueForDecimalPlaces     => updateDecimalPlaces    (v.value)
+      case v: ^.ValueForFieldReqTypeRules => updateFieldReqTypeRules(v.value)
+    }
+
+    def applyUpdate(e: FieldCustomNumberUpdate): Eval[Unit] =
+      update[CustomField.Number](e.id, f0 =>
+        for {
+          f <- updateValues(e.vs)(f0)
+          _ <- validateField(f)
+        } yield f
+      )
+  }
+
+  // -----------------------------------------------------------------------------------------------
   object CustomTextFieldEvents {
     import FieldEvents.{validateName, create, update}
 
