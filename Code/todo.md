@@ -18,3 +18,5 @@
     * This affects `RandomEventStream` too
   * Updating a number value with the same `Option[Double]` doesn't count as `Unchanged`
     * This affects `RandomEventStream` too
+
+* Update the changelog
