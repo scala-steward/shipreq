@@ -435,7 +435,11 @@ object MakeEvent {
           ReqTagsPatch(id, v)
 
         case UpdateContentCmd.SetCustomNumberField(id, f, v) =>
-          ReqFieldCustomNumberSet(id, f, v)
+          val lens = Project.reqNums andThen ReqData.Numbers.at(f, id)
+          if (v ==* lens.get(project))
+            Unchanged
+          else
+            ReqFieldCustomNumberSet(id, f, v)
 
         case UpdateContentCmd.SetCustomTextField(id, f, v) =>
           ReqFieldCustomTextSet(id, f, v)

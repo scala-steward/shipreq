@@ -279,11 +279,19 @@ object MakeEventTest extends TestSuite {
         import UpdateContentCmd.{SetCustomNumberField => Cmd}
         val createCmd = UpdateConfigCmd.CustomFieldCreateNumber("My Num", None, 0, 100, 2, FieldReqTypeRules.empty)
         val fid = assertApplies(assertMakeEvent(_.updateConfig(createCmd, _), {case e: FieldCustomNumberCreate => e})).id
-        val rid = GenericReqId(1)
-        val e = assertMakeEvent(_.updateContent(Cmd(rid, fid, Some(12.3)), _), {case e: ReqFieldCustomNumberSet => e})
-        assertEq(e.id, rid)
-        assertEq(e.fid, fid)
-        assertEq(e.value, Some(12.3))
+        val rid = assertApplies(assertMakeEvent(_.createContent(CreateContentCmd.CreateGenericReq.empty(mf), _), {case e: GenericReqCreate => e})).id
+
+        "update" - {
+          val e = assertMakeEvent(_.updateContent(Cmd(rid, fid, Some(12.3)), _), {case e: ReqFieldCustomNumberSet => e})
+          assertEq(e.id, rid)
+          assertEq(e.fid, fid)
+          assertEq(e.value, Some(12.3))
+        }
+
+        "noop" - {
+          assertApplies(ReqFieldCustomNumberSet(rid, fid, Some(12.3)))
+          assertNoChange(_.updateContent(Cmd(rid, fid, Some(12.3)), _))
+        }
       }
     }
 
