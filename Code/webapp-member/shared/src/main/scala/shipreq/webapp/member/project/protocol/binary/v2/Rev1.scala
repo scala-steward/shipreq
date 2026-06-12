@@ -502,6 +502,7 @@ object Rev1 {
         writeVersion(1)
         state.pickle(a.reqs)
         state.pickle(a.reqCodes)
+        state.pickle(a.reqNums)
         state.pickle(a.reqText)
         state.pickle(a.reqTags)
         state.pickle(a.implications)
