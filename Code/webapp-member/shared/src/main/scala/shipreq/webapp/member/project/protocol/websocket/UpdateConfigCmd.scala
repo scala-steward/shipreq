@@ -45,7 +45,9 @@ object UpdateConfigCmd {
                                            min              : Double,
                                            max              : Double,
                                            decimalPlaces    : Int,
-                                           fieldReqTypeRules: FieldReqTypeRules.ForNumField) extends ToModifyFields
+                                           fieldReqTypeRules: FieldReqTypeRules.ForNumField) extends ToModifyFields {
+    def range = (min, max)
+  }
 
   final case class CustomFieldUpdateNumber(id: CustomField.Number.Id,
                                            newValues: CustomNumberFieldGD.NonEmptyValues) extends ToModifyFields

@@ -9,6 +9,7 @@ import shipreq.webapp.member.project.event.RetiredGenericData._
 import shipreq.webapp.member.project.text.{Text => T}
 import shipreq.webapp.member.test.WebappTestUtil._
 import shipreq.webapp.member.test.project.UnsafeTypes._
+import shipreq.webapp.member.project.data.{FieldReqTypeRules => FRTR}
 
 case class DetachedGenericReq(req       : GenericReq,
                               customText: CustomTextMap,
@@ -245,6 +246,12 @@ object ContentEventTestHelp {
   }
   val cf2 = createCTF2.id
 
+  val createCFNum1 = {
+    import CustomNumberFieldGD._
+    FieldCustomNumberCreate(90.CFNum, nev(Name("nummy"), Desc(None), Range((0, 100)), DecimalPlaces(2), FieldReqTypeRules(FRTR.optional)))
+  }
+  val cfNum1 = createCFNum1.id
+
   val testHelpInit = InitialEvents(
     createIssueType1,
     createMF,
@@ -254,6 +261,7 @@ object ContentEventTestHelp {
     createTG1,
     createCTF1,
     createCTF2,
+    createCFNum1,
   )
 
   val emptyGR1   = createGR(1)

@@ -4,8 +4,6 @@
   * "The maximum can't be larger than the minimum" from UI
 
 * Automated test
-  * new MakeEvent functionality
-  * new ApplyEvent functionality
   * protocol tests for new events
 
 * Number rendering:
@@ -20,3 +18,4 @@
     * This affects `RandomEventStream` too
 
 * Update the changelog
+* Run Scalafix

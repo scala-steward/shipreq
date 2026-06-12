@@ -511,3 +511,65 @@ object CustomImpFieldEventTest extends TestSuite with CustomImpFieldEvents {
     }
   }
 }
+
+trait CustomNumberFieldEvents {
+  import CustomFieldEventTestHelpers._
+  import CustomNumberFieldGD._
+
+  val c1Name = "NumStuff"
+  type CE = FieldCustomNumberCreate
+  val c1  = FieldCustomNumberCreate(1.CFNum, nev(Name(c1Name), Desc(None), Range((0.0, 100.0)), DecimalPlaces(2), FieldReqTypeRules(FRTR.mandatory)))
+  val c2  = FieldCustomNumberCreate(2.CFNum, nev(Name("OtherNum"), Desc(None), Range((-1.0, 1.0)), DecimalPlaces(5), FieldReqTypeRules(onlyUC)))
+  val u1  = FieldCustomNumberUpdate(1.CFNum, nev(DecimalPlaces(3)))
+  val sd1 = FieldCustomDelete(1.CFNum)
+  val r1  = FieldCustomRestore(1.CFNum)
+}
+
+object CustomNumberFieldEventSharedTests extends SharedTests()(NoInitialEvents.init) with CustomNumberFieldEvents {
+  def setId(c: CE, i: Int) = c.copy(id = i.CFNum)
+  def copyId(to: CE, from: CE) = to.copy(id = from.id)
+}
+
+object CustomNumberFieldEventTest extends TestSuite with CustomNumberFieldEvents {
+  import CustomFieldEventTestHelpers._
+  import CustomNumberFieldGD._
+  import NoInitialEvents._
+
+  implicit class FieldCustomNumberCreateExt(private val a: FieldCustomNumberCreate) extends AnyVal {
+    def mod(f: Values => Values) =
+      a.copy(vs = NonEmpty.force(f(a.vs.value)))
+  }
+
+  override def tests = Tests {
+    "create" - {
+      "needName"    - assertFail("Name")   (c1.mod(_ - Name))
+      "needDesc"    - assertFail("Desc")   (c1.mod(_ - Desc))
+      "needRange"   - assertFail("Range")  (c1.mod(_ - Range))
+      "needDP"      - assertFail("Decimal")(c1.mod(_ - DecimalPlaces))
+      "needRules"   - assertFail("rules")  (c1.mod(_ - FieldReqTypeRules))
+      "badName"     - assertFail("blank")  (c1.mod(_ + Name("")))
+      "badRange"    - assertFail("maximum")(c1.mod(_ + Range((100.0, 0.0))))
+      "badReqTypes" - assertFail("Types")  (c1.mod(_ + FieldReqTypeRules(onlyRT1))) // RT1 doesn't exist
+      "dupName"     - assertFail("unique") (c1, c2.mod(_ + Name(c1Name)))
+    }
+
+    "update" - {
+      "ok" - {
+        var es = Vector[Event](c1, u1)
+        def r = _assertPass(es: _*).config.fields.customFields.get(c1.id).get
+        assertEq(r, CustomField.Number(1.CFNum, c1Name, None, (0.0, 100.0), 3, FRTR.mandatory, Live))
+
+        es :+= FieldCustomNumberUpdate(1.CFNum, nev(Name("AH"), FieldReqTypeRules(onlyUC)))
+        assertEq(r, CustomField.Number(1.CFNum, "AH", None, (0.0, 100.0), 3, onlyUC, Live))
+
+        es :+= CustomReqTypeEventTest.c1
+        es :+= FieldCustomNumberUpdate(1.CFNum, nev(FieldReqTypeRules(onlyRT1)))
+        assertEq(r, CustomField.Number(1.CFNum, "AH", None, (0.0, 100.0), 3, onlyRT1, Live))
+      }
+      "badName"     - assertFail("blank") (c1, FieldCustomNumberUpdate(1.CFNum, nev(Name(""))))
+      "badRange"    - assertFail("maximum") (c1, FieldCustomNumberUpdate(1.CFNum, nev(Range((100.0, 0.0)))))
+      "badReqTypes" - assertFail("Types") (c1, FieldCustomNumberUpdate(1.CFNum, nev(FieldReqTypeRules(onlyRT1)))) // RT1 doesn't exist
+      "dupName"     - assertFail("unique")(c1, c2, FieldCustomNumberUpdate(2.CFNum, nev(Name(c1Name))))
+    }
+  }
+}

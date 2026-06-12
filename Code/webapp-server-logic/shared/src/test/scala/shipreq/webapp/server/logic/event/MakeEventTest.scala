@@ -247,6 +247,44 @@ object MakeEventTest extends TestSuite {
           assertFails(_.updateConfig(Cmd(relTG, ^.ValueForParents(Map(statusTG -> None))), _))
         }
       }
+
+      "CustomFieldUpdateNumber"  - {
+        import UpdateConfigCmd.{CustomFieldUpdateNumber => Cmd}
+        val ^ = CustomNumberFieldGD
+
+        // Create
+        val createCmd = UpdateConfigCmd.CustomFieldCreateNumber("My Num", Some("desc"), 1.1, 2.2, 3, FieldReqTypeRules.empty)
+        val eCreate = assertMakeEvent(_.updateConfig(createCmd, _), {case e: FieldCustomNumberCreate => e})
+        assertEq(eCreate.vs, ^.nev(
+          ^.ValueForName("My Num"),
+          ^.ValueForDesc(Some("desc")),
+          ^.ValueForRange((1.1, 2.2)),
+          ^.ValueForDecimalPlaces(3),
+          ^.ValueForFieldReqTypeRules(FieldReqTypeRules.empty)
+        ))
+        assertApplies(eCreate)
+        val fid = eCreate.id
+
+        "noop" - assertNoChange(_.updateConfig(Cmd(fid, ^.nev(^.ValueForName("My Num"))), _))
+
+        "update" - {
+          val e = assertMakeEvent(_.updateConfig(Cmd(fid, ^.nev(^.ValueForDecimalPlaces(4))), _), {case e: FieldCustomNumberUpdate => e})
+          assertEq(e.vs, ^.nev(^.ValueForDecimalPlaces(4)))
+        }
+      }
+    }
+
+    "UpdateContentCmd" - {
+      "SetCustomNumberField" - {
+        import UpdateContentCmd.{SetCustomNumberField => Cmd}
+        val createCmd = UpdateConfigCmd.CustomFieldCreateNumber("My Num", None, 0, 100, 2, FieldReqTypeRules.empty)
+        val fid = assertApplies(assertMakeEvent(_.updateConfig(createCmd, _), {case e: FieldCustomNumberCreate => e})).id
+        val rid = GenericReqId(1)
+        val e = assertMakeEvent(_.updateContent(Cmd(rid, fid, Some(12.3)), _), {case e: ReqFieldCustomNumberSet => e})
+        assertEq(e.id, rid)
+        assertEq(e.fid, fid)
+        assertEq(e.value, Some(12.3))
+      }
     }
 
     "AccessUpdate" - {
