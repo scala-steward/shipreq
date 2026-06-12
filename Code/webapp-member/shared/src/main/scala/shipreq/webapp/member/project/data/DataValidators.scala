@@ -269,9 +269,14 @@ object DataValidators {
   object numberField {
     final val maxDecimalPlaces = 9
 
-    def desc          = genericDesc
-    val min           = V.double.named(FieldNames.min)
-    val max           = V.double.named(FieldNames.max)
+    def desc = genericDesc
+
+    val range = (V.double tuple V.double)
+      .appendInvalidator(Invalidator { case (min, max) =>
+        Option.when(min > max)(Invalidity("The minimum can't be larger than the maximum."))
+      })
+      .named(FieldNames.minMaxRange)
+
     val decimalPlaces = V.positiveIntBound(maxDecimalPlaces).named(FieldNames.decimalPlaces)
   }
 

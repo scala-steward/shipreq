@@ -702,16 +702,14 @@ object Rev1 {
 
       implicit val codecValueForName              = JsonCodec.xmap(ValueForName             .apply)(_.value)
       implicit val codecValueForDesc              = JsonCodec.xmap(ValueForDesc             .apply)(_.value)
-      implicit val codecValueForMin               = JsonCodec.xmap(ValueForMin              .apply)(_.value)
-      implicit val codecValueForMax               = JsonCodec.xmap(ValueForMax              .apply)(_.value)
+      implicit val codecValueForRange             = JsonCodec.xmap(ValueForRange            .apply)(_.value)
       implicit val codecValueForDecimalPlaces     = JsonCodec.xmap(ValueForDecimalPlaces    .apply)(_.value)
       implicit val codecValueForFieldReqTypeRules = JsonCodec.xmap(ValueForFieldReqTypeRules.apply)(_.value)
 
       implicit val decoderValue: Decoder[Value] = decodeSumBySoleKey {
         case ("name"    , c) => c.as[ValueForName]
         case ("desc"    , c) => c.as[ValueForDesc]
-        case ("min"     , c) => c.as[ValueForMin]
-        case ("max"     , c) => c.as[ValueForMax]
+        case ("range"   , c) => c.as[ValueForRange]
         case ("dp"      , c) => c.as[ValueForDecimalPlaces]
         case ("reqTypes", c) => c.as[ValueForFieldReqTypeRules]
       }
@@ -719,8 +717,7 @@ object Rev1 {
       implicit val encoderValue: Encoder[Value] = Encoder.instance {
         case a: ValueForName              => Json.obj("name"     -> a.asJson)
         case a: ValueForDesc              => Json.obj("desc"     -> a.asJson)
-        case a: ValueForMin               => Json.obj("min"      -> a.asJson)
-        case a: ValueForMax               => Json.obj("max"      -> a.asJson)
+        case a: ValueForRange             => Json.obj("range"    -> a.asJson)
         case a: ValueForDecimalPlaces     => Json.obj("dp"       -> a.asJson)
         case a: ValueForFieldReqTypeRules => Json.obj("reqTypes" -> a.asJson)
       }

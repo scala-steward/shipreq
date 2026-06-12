@@ -27,7 +27,7 @@ import shipreq.webapp.member.test.WebappTestUtil
 import shipreq.webapp.member.test.project.ApplicableEventGen.ObserveFn
 import shipreq.webapp.member.test.project.DataTestExt._
 import shipreq.webapp.member.test.project.RandomData
-import shipreq.webapp.member.test.project.RandomData.{TextGen, TextGenExt, customReqTypeName, desc, exclusivity, fieldName, fieldRefKey, filter, filterDead, genColour, hashRefKey, implicationRequired, mandatory, reqCode, reqTypeMnemonic, tagGroupName}
+import shipreq.webapp.member.test.project.RandomData.{TextGen, TextGenExt, customReqTypeName, desc, exclusivity, fieldName, fieldRefKey, filter, filterDead, genColour, hashRefKey, implicationRequired, mandatory, minMax, reqCode, reqTypeMnemonic, tagGroupName}
 import shipreq.webapp.member.test.project.RandomEventStream.{ProjectDepGen, State}
 
 final case class RandomEventStreamConfig(retiredEvents: Boolean,
@@ -489,13 +489,10 @@ final class ApplicableEventGen(emptyState: State, curState: State, config: Rando
     override def valueFor(a: Attr) = a match {
       case Name              => fieldName            map Name             .apply
       case Desc              => desc                 map Desc             .apply
-      case Min               => Gen.double           map Min              .apply
-      case Max               => Gen.double           map Max              .apply
+      case Range             => minMax               map Range            .apply
       case DecimalPlaces     => Gen.chooseInt(mdp)   map DecimalPlaces    .apply
       case FieldReqTypeRules => fieldReqTypeRulesNum map FieldReqTypeRules.apply
     }
-    override def fixValues(vs: gd.Values): gd.Values =
-      RandomData.events.customNumberFieldGD.fixValues(vs)
   }
 
   object customTextFieldGD extends GenericDataGen(CustomTextFieldGD) {

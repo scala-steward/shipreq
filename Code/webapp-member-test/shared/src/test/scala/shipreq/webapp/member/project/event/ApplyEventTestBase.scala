@@ -82,6 +82,7 @@ object ApplyEventTestFns {
          | _: FieldCustomTextCreate
          | _: FieldCustomTagCreateV1
          | _: FieldCustomTagCreate
+         | _: FieldCustomNumberCreate
          | _: FieldCustomImpCreateV1
          | _: FieldCustomImpCreate    => customFields += 1
       case _: TagGroupCreate
@@ -130,6 +131,7 @@ object ApplyEventTestFns {
          | _: FieldCustomDelete
          | _: FieldCustomImpUpdate
          | _: FieldCustomImpUpdateV1
+         | _: FieldCustomNumberUpdate
          | _: FieldCustomRestore
          | _: FieldCustomTagUpdate
          | _: FieldCustomTagUpdateV1
@@ -145,6 +147,7 @@ object ApplyEventTestFns {
          | _: ProjectNameSet
          | _: ProjectRestore.type
          | _: ReqCodesPatch
+         | _: ReqFieldCustomNumberSet
          | _: ReqFieldCustomTextSet
          | _: ReqImplicationsPatch
          | _: ReqTagsPatch

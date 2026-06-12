@@ -409,17 +409,19 @@ object CustomField {
   final case class Number(id               : Number.Id,
                           name             : String,
                           desc             : Option[String],
-                          min              : Double,
-                          max              : Double,
+                          range            : (Double, Double),
                           decimalPlaces    : Int,
                           fieldReqTypeRules: FieldReqTypeRules.ForNumField,
                           liveExplicitly   : Live) extends CustomField(CustomFieldType.Number) {
-    override def toString = s"CustomField.Number($id, $name, $desc, $min, $max, $decimalPlaces, $fieldReqTypeRules, $liveExplicitly)"
+    override def toString = s"CustomField.Number($id, $name, $desc, $range, $decimalPlaces, $fieldReqTypeRules, $liveExplicitly)"
     override def independentName = Some(name)
     override def live(cfg: ProjectConfig) = liveExplicitly
 
     // lazy val fieldReqTypeRulesByResolution =
     //   fieldReqTypeRules.byResolution
+
+    def min = range._1
+    def max = range._2
   }
 
   object Number {

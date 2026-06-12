@@ -95,8 +95,7 @@ val gens = List(
   Gen("CustomNumberFieldGD")(
     "Name"              -> "String",
     "Desc"              -> "Option[String]",
-    "Min"               -> "Double",
-    "Max"               -> "Double",
+    "Range"             -> "(Double, Double)",
     "DecimalPlaces"     -> "Int",
     "FieldReqTypeRules" -> "FieldReqTypeRules[Double]",
   ),

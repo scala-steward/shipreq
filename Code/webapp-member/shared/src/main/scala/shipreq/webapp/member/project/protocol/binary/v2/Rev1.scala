@@ -358,7 +358,7 @@ object Rev1 {
         val decimalPlaces     = state.unpickle[Int]
         val fieldReqTypeRules = state.unpickle[FieldReqTypeRules.ForNumField]
         val liveExplicitly    = state.unpickle[Live]
-        CustomField.Number(id, name, desc, min, max, decimalPlaces, fieldReqTypeRules, liveExplicitly)
+        CustomField.Number(id, name, desc, (min, max), decimalPlaces, fieldReqTypeRules, liveExplicitly)
       }
     }
 
@@ -1172,8 +1172,7 @@ object Rev1 {
 
     implicit val picklerValueForName              = transformPickler(ValueForName             .apply)(_.value)
     implicit val picklerValueForDesc              = transformPickler(ValueForDesc             .apply)(_.value)
-    implicit val picklerValueForMin               = transformPickler(ValueForMin              .apply)(_.value)
-    implicit val picklerValueForMax               = transformPickler(ValueForMax              .apply)(_.value)
+    implicit val picklerValueForRange             = transformPickler(ValueForRange            .apply)(_.value)
     implicit val picklerValueForDecimalPlaces     = transformPickler(ValueForDecimalPlaces    .apply)(_.value)
     implicit val picklerValueForFieldReqTypeRules = transformPickler(ValueForFieldReqTypeRules.apply)(_.value)
 
@@ -1181,16 +1180,14 @@ object Rev1 {
       new Pickler[Value] {
         private[this] final val KeyName          = 'n'
         private[this] final val KeyDesc          = 'd'
-        private[this] final val KeyMin           = 'm'
-        private[this] final val KeyMax           = 'M'
+        private[this] final val KeyRange         = 'r'
         private[this] final val KeyDecimalPlaces = 'p'
         private[this] final val KeyReqTypes      = 'R'
         override def pickle(a: Value)(implicit state: PickleState): Unit =
           a match {
             case b: ValueForName              => state.enc.writeByte(KeyName         ); state.pickle(b)
             case b: ValueForDesc              => state.enc.writeByte(KeyDesc         ); state.pickle(b)
-            case b: ValueForMin               => state.enc.writeByte(KeyMin          ); state.pickle(b)
-            case b: ValueForMax               => state.enc.writeByte(KeyMax          ); state.pickle(b)
+            case b: ValueForRange             => state.enc.writeByte(KeyRange        ); state.pickle(b)
             case b: ValueForDecimalPlaces     => state.enc.writeByte(KeyDecimalPlaces); state.pickle(b)
             case b: ValueForFieldReqTypeRules => state.enc.writeByte(KeyReqTypes     ); state.pickle(b)
           }
@@ -1198,8 +1195,7 @@ object Rev1 {
           state.dec.readByte match {
             case KeyName          => state.unpickle[ValueForName]
             case KeyDesc          => state.unpickle[ValueForDesc]
-            case KeyMin           => state.unpickle[ValueForMin]
-            case KeyMax           => state.unpickle[ValueForMax]
+            case KeyRange         => state.unpickle[ValueForRange]
             case KeyDecimalPlaces => state.unpickle[ValueForDecimalPlaces]
             case KeyReqTypes      => state.unpickle[ValueForFieldReqTypeRules]
           }

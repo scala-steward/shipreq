@@ -82,6 +82,7 @@ object UiText {
     def tagFieldSource       = "Tag Group"
     def min                  = "Min"
     def max                  = "Max"
+    def minMaxRange          = "Min/Max"
     def decimalPlaces        = "Decimal Places"
   }
 

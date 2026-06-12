@@ -460,12 +460,12 @@ object RandomData {
       id                <- customFieldNumberId
       name              <- fieldName
       desc              <- Gen.string.option
-      (min, max)        <- minMax
+      range             <- minMax
       decimalPlaces     <- Gen.chooseInt(4)
       fieldReqTypeRules <- genFieldReqTypeRules
       liveExplicitly    <- live
     } yield
-      CustomField.Number(id, name, desc, min, max, decimalPlaces, fieldReqTypeRules, liveExplicitly)
+      CustomField.Number(id, name, desc, range, decimalPlaces, fieldReqTypeRules, liveExplicitly)
 
   def customField(rulesAny: Gen[FieldReqTypeRules[Impossible]],
                   rulesNum: Gen[FieldReqTypeRules.ForNumField],
@@ -2577,17 +2577,10 @@ object RandomData {
       override def valueFor(a: Attr): Gen[Value] = a match {
         case Name              => fieldName            map Name             .apply
         case Desc              => desc                 map Desc             .apply
-        case Min               => Gen.double           map Min              .apply
-        case Max               => Gen.double           map Max              .apply
+        case Range             => minMax               map Range            .apply
         case DecimalPlaces     => Gen.chooseInt(mdp)   map DecimalPlaces    .apply
         case FieldReqTypeRules => fieldReqTypeRulesNum map FieldReqTypeRules.apply
       }
-      override def fixValues(vs: gd.Values): gd.Values =
-        (for {
-          vMin <- Min.get(vs)
-          vMax <- Max.get(vs)
-          if vMin.value > vMax.value
-        } yield vs + Min(vMax.value) + Max(vMin.value)).getOrElse(vs)
     }
 
     object customTextFieldGD extends GenericDataGen(CustomTextFieldGD) {

@@ -268,32 +268,6 @@ object CustomNumberFieldGD extends GenericData {
     }
   }
 
-  case object Max extends Attr {
-    override type Data = Double
-    override def apply(data: Data) = ValueForMax(data)
-    override val dataEquality: Eq[Data] = implicitly[Eq[Double]]
-  }
-  final case class ValueForMax(value: Max.Data) extends Value {
-    override val attr: Max.type = Max
-    override def equals(o: Any): Boolean = o match {
-      case v2: ValueForMax => Max.dataEquality.eqv(value, v2.value)
-      case _ => false
-    }
-  }
-
-  case object Min extends Attr {
-    override type Data = Double
-    override def apply(data: Data) = ValueForMin(data)
-    override val dataEquality: Eq[Data] = implicitly[Eq[Double]]
-  }
-  final case class ValueForMin(value: Min.Data) extends Value {
-    override val attr: Min.type = Min
-    override def equals(o: Any): Boolean = o match {
-      case v2: ValueForMin => Min.dataEquality.eqv(value, v2.value)
-      case _ => false
-    }
-  }
-
   case object Name extends Attr {
     override type Data = String
     override def apply(data: Data) = ValueForName(data)
@@ -307,15 +281,28 @@ object CustomNumberFieldGD extends GenericData {
     }
   }
 
+  case object Range extends Attr {
+    override type Data = (Double, Double)
+    override def apply(data: Data) = ValueForRange(data)
+    override val dataEquality: Eq[Data] = implicitly[Eq[(Double, Double)]]
+  }
+  final case class ValueForRange(value: Range.Data) extends Value {
+    override val attr: Range.type = Range
+    override def equals(o: Any): Boolean = o match {
+      case v2: ValueForRange => Range.dataEquality.eqv(value, v2.value)
+      case _ => false
+    }
+  }
+
   override implicit val equalityAttr: Order[Attr] with UnivEq[Attr] =
-    Util.univEqAndArbitraryOrder(Vector(DecimalPlaces, Desc, FieldReqTypeRules, Max, Min, Name))
+    Util.univEqAndArbitraryOrder(Vector(DecimalPlaces, Desc, FieldReqTypeRules, Name, Range))
 
   @inline override implicit def equalityValue: UnivEq[Value] = UnivEq.force
 
-  override val attrs = NonEmptySet[Attr](DecimalPlaces, Desc, FieldReqTypeRules, Max, Min, Name)
+  override val attrs = NonEmptySet[Attr](DecimalPlaces, Desc, FieldReqTypeRules, Name, Range)
 
-  def apply(name: String, desc: Option[String], min: Double, max: Double, decimalPlaces: Int, fieldReqTypeRules: FieldReqTypeRules[Double]): NonEmptyValues =
-    NonEmpty.force(emptyValues + ValueForName(name) + ValueForDesc(desc) + ValueForMin(min) + ValueForMax(max) + ValueForDecimalPlaces(decimalPlaces) + ValueForFieldReqTypeRules(fieldReqTypeRules))
+  def apply(name: String, desc: Option[String], range: (Double, Double), decimalPlaces: Int, fieldReqTypeRules: FieldReqTypeRules[Double]): NonEmptyValues =
+    NonEmpty.force(emptyValues + ValueForName(name) + ValueForDesc(desc) + ValueForRange(range) + ValueForDecimalPlaces(decimalPlaces) + ValueForFieldReqTypeRules(fieldReqTypeRules))
 }
 
 // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
