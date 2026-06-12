@@ -1145,10 +1145,23 @@ final class ApplicableEventGen(emptyState: State, curState: State, config: Rando
 
   val genReqFieldCustomNumberSet: Option[Gen[ReqFieldCustomNumberSet]] =
     for {
-      id  <- liveReqId
-      fid <- customFieldNumberId(Live)
+      genId  <- liveReqId
+      genFid <- customFieldNumberId(Live)
     } yield
-      Gen.apply3(ReqFieldCustomNumberSet)(id, fid, Gen.double.option)
+      for {
+        id  <- genId
+        fid <- genFid
+        v0  <- Gen.double.option
+      } yield {
+        var v = v0
+        val lens = Project.reqNums andThen ReqData.Numbers.at(fid, id)
+        if (v ==* lens.get(p))
+          v = v match {
+            case None    => Some(1)
+            case Some(d) => Some(d + 1)
+          }
+        ReqFieldCustomNumberSet(id, fid, v)
+      }
 
   private val possibleActiveEventGensWithNames: NonEmptyVector[(EventName, Option[Gen[ActiveEvent]])] =
     valuesForAdt[ActiveEvent, (EventName, Option[Gen[ActiveEvent]])] {
