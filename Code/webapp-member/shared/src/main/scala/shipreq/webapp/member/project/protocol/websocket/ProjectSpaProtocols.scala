@@ -73,7 +73,7 @@ object ProjectSpaProtocols {
   // When any of the following change, bump wsrrVersion
   import boopickle.DefaultBasic._
   import shipreq.webapp.base.protocol.binary.v1.BaseData._
-  import CreateContentCmd.CodecsV4._
+  import CreateContentCmd.CodecsV5._
   import ManualIssueCmd.CodecsV4._
   import SavedViewCmd.CodecsV5._
   import UpdateAccessCmd.CodecsV1._

@@ -28,12 +28,19 @@ object CreateContentCmd {
     }
   }
 
-  final case class CreateGenericReq(codes     : Set[ReqCode.Value],
-                                    customText: Map[CustomField.Text.Id, Text.CustomTextField.NonEmptyText],
-                                    imps      : Direction.Values[Set[ReqId]],
-                                    reqType   : CustomReqTypeId,
-                                    tags      : Set[ApplicableTagId],
-                                    title     : Text.GenericReqTitle.OptionalText) extends CreateContentCmd {
+  final case class CreateGenericReq(codes        : Set[ReqCode.Value],
+                                    customNumbers: Map[CustomField.Number.Id, Double],
+                                    customText   : Map[CustomField.Text.Id, Text.CustomTextField.NonEmptyText],
+                                    imps         : Direction.Values[Set[ReqId]],
+                                    reqType      : CustomReqTypeId,
+                                    tags         : Set[ApplicableTagId],
+                                    title        : Text.GenericReqTitle.OptionalText) extends CreateContentCmd {
+
+    def addCustomNumber(f: CustomField.Number.Id, v: Double): CreateGenericReq =
+      copy(customNumbers = customNumbers.updated(f, v))
+
+    def addCustomNumber(f: CustomField.Number.Id, v: Option[Double]): CreateGenericReq =
+      v.fold(this)(addCustomNumber(f, _))
 
     def addCustomText(f: CustomField.Text.Id, t: Text.CustomTextField.NonEmptyText): CreateGenericReq =
       copy(customText = customText.updated(f, t))
@@ -50,16 +57,23 @@ object CreateContentCmd {
 
   object CreateGenericReq {
     def empty(reqType: CustomReqTypeId): CreateGenericReq =
-      apply(Set.empty, UnivEq.emptyMap, Direction.Values.both(Set.empty), reqType, Set.empty, ArraySeq.empty)
+      apply(Set.empty, UnivEq.emptyMap, UnivEq.emptyMap, Direction.Values.both(Set.empty), reqType, Set.empty, ArraySeq.empty)
   }
 
   // -------------------------------------------------------------------------------------------------------------------
 
-  final case class CreateUseCase(codes     : Set[ReqCode.Value],
-                                 customText: Map[CustomField.Text.Id, Text.CustomTextField.NonEmptyText],
-                                 imps      : Direction.Values[Set[ReqId]],
-                                 tags      : Set[ApplicableTagId],
-                                 title     : Text.UseCaseTitle.OptionalText) extends CreateContentCmd {
+  final case class CreateUseCase(codes        : Set[ReqCode.Value],
+                                 customNumbers: Map[CustomField.Number.Id, Double],
+                                 customText   : Map[CustomField.Text.Id, Text.CustomTextField.NonEmptyText],
+                                 imps         : Direction.Values[Set[ReqId]],
+                                 tags         : Set[ApplicableTagId],
+                                 title        : Text.UseCaseTitle.OptionalText) extends CreateContentCmd {
+
+    def addCustomNumber(f: CustomField.Number.Id, v: Double): CreateUseCase =
+      copy(customNumbers = customNumbers.updated(f, v))
+
+    def addCustomNumber(f: CustomField.Number.Id, v: Option[Double]): CreateUseCase =
+      v.fold(this)(addCustomNumber(f, _))
 
     def addCustomText(f: CustomField.Text.Id, t: Text.CustomTextField.NonEmptyText): CreateUseCase =
       copy(customText = customText.updated(f, t))
@@ -76,7 +90,7 @@ object CreateContentCmd {
 
   object CreateUseCase {
     def empty: CreateUseCase =
-      apply(Set.empty, UnivEq.emptyMap, Direction.Values.both(Set.empty), Set.empty, ArraySeq.empty)
+      apply(Set.empty, UnivEq.emptyMap, UnivEq.emptyMap, Direction.Values.both(Set.empty), Set.empty, ArraySeq.empty)
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -85,50 +99,79 @@ object CreateContentCmd {
                                    title: Text.CodeGroupTitle.OptionalText) extends CreateContentCmd
 
   // ===================================================================================================================
-  object CodecsV4 {
+  object CodecsV5 {
     import boopickle.DefaultBasic._
+    import shipreq.webapp.base.protocol.binary.v1.BaseData._
     import shipreq.webapp.member.project.protocol.binary.v1.BaseMemberData1._
     import shipreq.webapp.member.project.protocol.binary.v1.BaseMemberData2._
     import shipreq.webapp.member.project.protocol.binary.v1.Rev6.AtomPicklers.instances._
+    import shipreq.webapp.member.project.protocol.binary.v2.Rev1._
     // REMEMBER: Don't forget to increment `CodecsVn` if you change these
 
     private implicit val picklerCreateGenericReq: Pickler[CreateGenericReq] =
       new Pickler[CreateGenericReq] {
         override def pickle(a: CreateGenericReq)(implicit state: PickleState): Unit = {
+          writeVersion(1)
           state.pickle(a.codes)
+          state.pickle(a.customNumbers)
           state.pickle(a.customText)
           state.pickle(a.imps)
           state.pickle(a.reqType)
           state.pickle(a.tags)
           state.pickle(a.title)
         }
-        override def unpickle(implicit state: UnpickleState): CreateGenericReq = {
-          val codes      = state.unpickle[Set[ReqCode.Value]]
-          val customText = state.unpickle[Map[CustomField.Text.Id, Text.CustomTextField.NonEmptyText]]
-          val imps       = state.unpickle[Direction.Values[Set[ReqId]]]
-          val reqType    = state.unpickle[CustomReqTypeId]
-          val tags       = state.unpickle[Set[ApplicableTagId]]
-          val title      = state.unpickle[Text.GenericReqTitle.OptionalText]
-          CreateGenericReq(codes, customText, imps, reqType, tags, title)
+        override def unpickle(implicit state: UnpickleState): CreateGenericReq =
+          readByVersion(1) {
+            case 0 =>
+              val codes         = state.unpickle[Set[ReqCode.Value]]
+              val customNumbers = Map.empty[CustomField.Number.Id, Double]
+              val customText    = state.unpickle[Map[CustomField.Text.Id, Text.CustomTextField.NonEmptyText]]
+              val imps          = state.unpickle[Direction.Values[Set[ReqId]]]
+              val reqType       = state.unpickle[CustomReqTypeId]
+              val tags          = state.unpickle[Set[ApplicableTagId]]
+              val title         = state.unpickle[Text.GenericReqTitle.OptionalText]
+              CreateGenericReq(codes, customNumbers, customText, imps, reqType, tags, title)
+            case 1 =>
+              val codes         = state.unpickle[Set[ReqCode.Value]]
+              val customNumbers = state.unpickle[Map[CustomField.Number.Id, Double]]
+              val customText    = state.unpickle[Map[CustomField.Text.Id, Text.CustomTextField.NonEmptyText]]
+              val imps          = state.unpickle[Direction.Values[Set[ReqId]]]
+              val reqType       = state.unpickle[CustomReqTypeId]
+              val tags          = state.unpickle[Set[ApplicableTagId]]
+              val title         = state.unpickle[Text.GenericReqTitle.OptionalText]
+              CreateGenericReq(codes, customNumbers, customText, imps, reqType, tags, title)
         }
       }
 
     private implicit val picklerCreateUseCase: Pickler[CreateUseCase] =
       new Pickler[CreateUseCase] {
         override def pickle(a: CreateUseCase)(implicit state: PickleState): Unit = {
+          writeVersion(1)
           state.pickle(a.codes)
+          state.pickle(a.customNumbers)
           state.pickle(a.customText)
           state.pickle(a.imps)
           state.pickle(a.tags)
           state.pickle(a.title)
         }
-        override def unpickle(implicit state: UnpickleState): CreateUseCase = {
-          val codes      = state.unpickle[Set[ReqCode.Value]]
-          val customText = state.unpickle[Map[CustomField.Text.Id, Text.CustomTextField.NonEmptyText]]
-          val imps       = state.unpickle[Direction.Values[Set[ReqId]]]
-          val tags       = state.unpickle[Set[ApplicableTagId]]
-          val title      = state.unpickle[Text.UseCaseTitle.OptionalText]
-          CreateUseCase(codes, customText, imps, tags, title)
+        override def unpickle(implicit state: UnpickleState): CreateUseCase =
+          readByVersion(1) {
+            case 0 =>
+              val codes         = state.unpickle[Set[ReqCode.Value]]
+              val customNumbers = Map.empty[CustomField.Number.Id, Double]
+              val customText    = state.unpickle[Map[CustomField.Text.Id, Text.CustomTextField.NonEmptyText]]
+              val imps          = state.unpickle[Direction.Values[Set[ReqId]]]
+              val tags          = state.unpickle[Set[ApplicableTagId]]
+              val title         = state.unpickle[Text.UseCaseTitle.OptionalText]
+              CreateUseCase(codes, customNumbers, customText, imps, tags, title)
+            case 1 =>
+              val codes         = state.unpickle[Set[ReqCode.Value]]
+              val customNumbers = state.unpickle[Map[CustomField.Number.Id, Double]]
+              val customText    = state.unpickle[Map[CustomField.Text.Id, Text.CustomTextField.NonEmptyText]]
+              val imps          = state.unpickle[Direction.Values[Set[ReqId]]]
+              val tags          = state.unpickle[Set[ApplicableTagId]]
+              val title         = state.unpickle[Text.UseCaseTitle.OptionalText]
+              CreateUseCase(codes, customNumbers, customText, imps, tags, title)
         }
       }
 
