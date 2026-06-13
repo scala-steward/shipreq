@@ -9,6 +9,10 @@
 * Number rendering:
   * Style `_number` in `ProjectWidgets`
 
+* Add to data prop:
+  * Ensure custom number field values (in data) are valid (i.e. in config)
+  * Same with the req ids
+
 * Number field value validation
   * At least on the server-side, it's currently legal to set fields with out-of-bounds numbers
     * This affects `RandomEventStream` too
