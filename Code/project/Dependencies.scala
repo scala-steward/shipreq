@@ -35,7 +35,7 @@ object Dependencies {
   }
 
   object Doobie {
-    private val mm = MultiModule.scala("org.tpolecat", "1.0.0-RC12")
+    private val mm = MultiModule.scala("org.tpolecat", "1.0.0-RC13")
     val core          = mm("doobie-core")
     val postgres      = mm("doobie-postgres")
     val postgresCirce = mm("doobie-postgres-circe")
