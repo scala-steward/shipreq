@@ -72,7 +72,7 @@ object NewEditor {
 
       def prepareGR(r: RowKey.GenericReq) = FieldKey.FoldForGenericReq[LogicPerField](
         codes             = _ => EditReqCodes.Multiple.apply,
-        customNumberField = f => EditNumbers(),
+        customNumberField = f => EditNumber(f.field),
         customTextField   = f => EditRichText.CustomTextField(PreviewId(r, f), Some(r.reqTypeId)),
         implications      = f => EditImplications(f.scope),
         otherTags         = _ => EditTags.otherTags(r.reqTypeId),
@@ -82,7 +82,7 @@ object NewEditor {
 
       def prepareUC(r: RowKey.UseCase.type) = FieldKey.FoldForUseCase[LogicPerField](
         codes             = _ => EditReqCodes.Multiple.apply,
-        customNumberField = f => EditNumbers(),
+        customNumberField = f => EditNumber(f.field),
         customTextField   = f => EditRichText.CustomTextField(PreviewId(r, f), Some(StaticReqType.UseCase)),
         implications      = f => EditImplications(f.scope),
         otherTags         = _ => EditTags.otherTags(r.reqTypeId),
@@ -132,6 +132,45 @@ object NewEditor {
 
     def newPropsMemo[I, P](f: I => P)(implicit r: Reusability[I]): I => P =
       LruMemo(f, 4).byReusability
+
+    // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████
+    object EditNumber extends ForValueType {
+      import shipreq.webapp.client.project.widgets.editors_with_controls.NumberEditor
+
+      override type Args  = EditorArgs.ForNumberEditor
+      override type Value = Option[Double]
+      type Props          = NumberEditor.Props
+      type PropsInputs    = (StateSnapshot[String], Args, AsyncState)
+
+      def apply(fid: CustomField.Number.Id): InitFn = {
+        val propsMemo = newPropsMemo[PropsInputs, Props] { in =>
+          val (ss, args, asyncState) = in
+          NumberEditor.Props(
+            initialValue = None,
+            edit         = ss,
+            asyncStatus  = EditorStatus.async(asyncState),
+            abort        = args.abort,
+            abortVerb    = args.abortVerb,
+            commitFn     = args.commit,
+            commitVerb   = args.commitVerb,
+            autoFocus    = args.autoFocus)
+        }
+
+        _.startWithStateSnapshot("")(new EditorAndState(_, propsMemo))
+      }
+
+      private class EditorAndState(ss: StateSnapshot[String],
+                                   propsMemo: PropsInputs => Props) extends EditorImpl {
+        override type Props              = NumberEditor.Props
+        override def renderImpl          = _.render
+        override def valueImpl           = _.parseResult
+        override val props               = (args, asyncState) => propsMemo((ss, args, asyncState))
+        override type State              = String
+        override val stateType           = implicitly[ClassTag[String]]
+        override val state               = ss.value
+        override def withState(s: State) = new EditorAndState(ss.withValue(s), propsMemo)
+      }
+    }
 
     // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████
     object EditReqCodes {

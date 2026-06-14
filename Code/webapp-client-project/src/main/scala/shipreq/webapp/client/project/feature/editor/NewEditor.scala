@@ -170,23 +170,25 @@ object NewEditor {
         f => EditRichText.CodeGroupTitle(r.id, PreviewId(r, f)))
 
       def prepareGR(r: RowKey.GenericReq) = FieldKey.FoldForGenericReq[LogicPerField](
-        codes           = _ => EditReqCodes.Multiple(r.id),
-        customTextField = f => EditRichText.CustomTextField(r.id, f.field, PreviewId(r, f)),
-        implications    = f => EditImplications(r.id, f.scope),
-        reqType         = _ => EditReqType(r.id),
-        allTags         = _ => EditTags.allTags(r.id),
-        otherTags       = _ => EditTags.otherTags(r.id),
-        customFieldTags = f => EditTags.customField(r.id, f.field),
-        title           = f => EditRichText.GenericReqTitle(r.id, PreviewId(r, f)))
+        codes             = _ => EditReqCodes.Multiple(r.id),
+        customNumberField = f => EditNumber(r.id, f.field),
+        customTextField   = f => EditRichText.CustomTextField(r.id, f.field, PreviewId(r, f)),
+        implications      = f => EditImplications(r.id, f.scope),
+        reqType           = _ => EditReqType(r.id),
+        allTags           = _ => EditTags.allTags(r.id),
+        otherTags         = _ => EditTags.otherTags(r.id),
+        customFieldTags   = f => EditTags.customField(r.id, f.field),
+        title             = f => EditRichText.GenericReqTitle(r.id, PreviewId(r, f)))
 
       def prepareUC(r: RowKey.UseCase) = FieldKey.FoldForUseCase[LogicPerField](
-        codes           = _ => EditReqCodes.Multiple(r.id),
-        customTextField = f => EditRichText.CustomTextField(r.id, f.field, PreviewId(r, f)),
-        implications    = f => EditImplications(r.id, f.scope),
-        allTags         = _ => EditTags.allTags(r.id),
-        otherTags       = _ => EditTags.otherTags(r.id),
-        customFieldTags = f => EditTags.customField(r.id, f.field),
-        title           = f => EditRichText.UseCaseTitle(r.id, PreviewId(r, f)))
+        codes             = _ => EditReqCodes.Multiple(r.id),
+        customNumberField = f => EditNumber(r.id, f.field),
+        customTextField   = f => EditRichText.CustomTextField(r.id, f.field, PreviewId(r, f)),
+        implications      = f => EditImplications(r.id, f.scope),
+        allTags           = _ => EditTags.allTags(r.id),
+        otherTags         = _ => EditTags.otherTags(r.id),
+        customFieldTags   = f => EditTags.customField(r.id, f.field),
+        title             = f => EditRichText.UseCaseTitle(r.id, PreviewId(r, f)))
 
       lazy val forUseCaseSteps = FieldKey.FoldForUseCaseSteps[ForEditor](
         f => logicToPerField(EditUseCaseStep(f.id, PreviewId(RowKey.UseCaseSteps, f))))
@@ -295,6 +297,71 @@ object NewEditor {
         v   <- CallbackOption.option(pva.accept(p))
         _   <- ss.setState(v).toCBO
       } yield ()
+
+    // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████
+    object EditNumber extends ForChangeType { base =>
+      import shipreq.webapp.client.project.widgets.editors_with_controls.NumberEditor
+
+      override type Args   = EditorArgs.ForNumberEditor
+      override type Change = Option[Double]
+      type Props           = NumberEditor.Props
+      type PropsInputs     = (StateSnapshot[String], Args, AsyncState)
+      type InitialValue    = Option[Double]
+
+      private val potentialValueAcceptor = CallbackTo(NumberEditor.potentialValueAcceptor)
+
+      def apply(id: ReqId, fid: CustomField.Number.Id): InitFn = ictx => args => {
+        import ictx._
+
+        val (abort, commitFn) =
+          makeAbortCommitFn(sspUpdateContent)(UpdateContentCmd.SetCustomNumberField(id, fid, _), args.hooks, None)
+
+        val initialValueCBO: CallbackOption[InitialValue] =
+          pxProject.toCallback.map(p => ReqData.Numbers.at(fid, id).get(p.content.reqNums)).toCBO
+
+        for {
+          initialValue <- initialValueCBO
+        } yield {
+
+          val someInitialValue = Some(initialValue)
+
+          val propsMemo =
+            newPropsMemo[PropsInputs, Props] { in =>
+              val (ss, args, asyncState) = in
+              NumberEditor.Props(
+                initialValue = someInitialValue,
+                edit         = ss,
+                asyncStatus  = EditorStatus.async(asyncState),
+                abort        = abort,
+                abortVerb    = abortVerb,
+                commitFn     = commitFn,
+                commitVerb   = commitVerb,
+                autoFocus    = args.autoFocus)
+            }
+
+          val editValue = initialValue.fold("")(_.toString)
+          State(editValue, ictx.ctx.stateAccess.toSetStateFn, propsMemo)
+        }
+      }
+
+      private case class State(editValue : String,
+                               setStateFn: SetStateFn,
+                               propsMemo : PropsInputs => Props) extends EditorImpl {
+
+        val ss = StateSnapshot(editValue)(setStateFn.contramap(e => copy(editValue = e).some))
+
+        override type Props     = base.Props
+        override def renderImpl = _.render
+        override def changeImpl = _.validated
+        override val props      = (args, asyncState) => propsMemo((ss, args, asyncState))
+
+        override def clipboardData: Option[ClipboardData] =
+          Some(ClipboardData(ss.value))
+
+        override def setPotentialValue(p: PotentialValue): CallbackOption[Unit] =
+          setPotentialValueStd(potentialValueAcceptor.toCBO)(p, ss)
+      }
+    }
 
     // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████
     object EditReqType extends ForChangeType { base =>

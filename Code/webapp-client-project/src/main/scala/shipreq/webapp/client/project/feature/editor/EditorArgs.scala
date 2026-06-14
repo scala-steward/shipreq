@@ -91,19 +91,20 @@ object EditorArgs {
     type Args[A, V] = A
 
     val fold = FieldKey.FoldAll[Args](
-      allTags         = forTagEditor,
-      code            = forReqCodeEditor,
-      codes           = forReqCodeEditor,
-      customFieldTags = forTagEditor,
-      customTextField = forTextEditor,
-      implications    = forImplicationEditor,
-      manualIssue     = forTextEditor,
-      otherTags       = forTagEditor,
-      reqType         = forReqTypeEditor,
-      titleCG         = forTextEditor,
-      titleGR         = forTextEditor,
-      titleUC         = forTextEditor,
-      useCaseStep     = forUseCaseStepEditor,
+      allTags           = forTagEditor,
+      code              = forReqCodeEditor,
+      codes             = forReqCodeEditor,
+      customFieldTags   = forTagEditor,
+      customNumberField = forNumberEditor,
+      customTextField   = forTextEditor,
+      implications      = forImplicationEditor,
+      manualIssue       = forTextEditor,
+      otherTags         = forTagEditor,
+      reqType           = forReqTypeEditor,
+      titleCG           = forTextEditor,
+      titleGR           = forTextEditor,
+      titleUC           = forTextEditor,
+      useCaseStep       = forUseCaseStepEditor,
     )
 
     f.fold(fold)

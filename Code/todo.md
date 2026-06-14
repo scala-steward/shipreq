@@ -17,5 +17,18 @@
   * At least on the server-side, it's currently legal to set fields with out-of-bounds numbers
     * This affects `RandomEventStream` too
 
+* MakeEvent for create{GR,UC}
+
+* Number editor
+  * Confirm reusability working
+  * Instructions
+  * Error: invalid input
+    * bad number (eg. "2..")
+    * number out of range (or should it be allowed?)
+
+* Number cell
+  * Copy
+  * Paste
+
 * Update the changelog
 * Run Scalafix
