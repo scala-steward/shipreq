@@ -230,7 +230,7 @@ object Dependencies {
 
   val commonsIo    = jvmOnly("org.apache.directory.studio" % "org.apache.commons.io" % "2.4")
   val commonsText  = jvmOnly("org.apache.commons"          % "commons-text"          % "1.15.0")
-  val hikariCP     = jvmOnly("com.zaxxer"                  % "HikariCP"              % "7.0.2")
+  val hikariCP     = jvmOnly("com.zaxxer"                  % "HikariCP"              % "7.1.0")
   val httpCore     = jvmOnly("org.apache.httpcomponents"   % "httpcore"              % "4.4.16")
   val jaegerClient = jvmOnly("io.jaegertracing"            % "jaeger-client"         % "1.8.1")
   val javaMail     = jvmOnly("com.sun.mail"                % "javax.mail"            % "1.6.2")
