@@ -214,7 +214,7 @@ abstract class ProjectText[+Ctx <: Context, Out](project: Project, final val ctx
           val field     = cfg.fields.custom(fid)
           val liveField = field.live(cfg)
           memoByReqId { req =>
-            val default = field.fieldReqTypeRules(req.reqTypeId).defaultOption
+            @inline def default = field.fieldReqTypeRules(req.reqTypeId).defaultOption
             reqNums.get(req.id)
               .orElse(default)
               .map { n =>

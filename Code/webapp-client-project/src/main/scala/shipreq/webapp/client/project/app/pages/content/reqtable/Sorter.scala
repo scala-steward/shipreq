@@ -4,6 +4,7 @@ import monocle.Optional
 import shipreq.base.util.{Applicable, NotApplicable}
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.data.derivation._
+import shipreq.webapp.member.project.data.DataImplicits._
 import shipreq.webapp.member.project.data.savedview._
 import shipreq.webapp.member.project.data.savedview.{Column => C, SortCriterion => SC}
 import shipreq.webapp.member.project.sort.Sorter._
@@ -116,6 +117,29 @@ object Sorter {
       case _: Row.ForCodeGroup => pt.deleteReasonForCodeGroup getOrElse ""
     })
 
+  def customNumberFieldSorter(fid: CustomField.Number.Id): SorterForSMCB =
+    SorterForSMCB(bp =>
+      sorter[Option[Double]](
+        prep = setup => {
+          import setup.p
+          p.content.reqNums.get(fid) match {
+            case Some(reqNums) =>
+              val field = p.config.fields.custom(fid)
+              ;{
+                case row: Row.ForReq =>
+                  import row.req
+                  @inline def default = field.fieldReqTypeRules(req.reqTypeId).defaultOption
+                  reqNums.get(req.id).orElse(default)
+                case _: Row.ForCodeGroup => None
+              }
+            case None =>
+              _ => None
+          }
+        },
+        sort = SortFn.double.option(bp),
+      )
+    )
+
   // ===================================================================================================================
   // Sort criteria
 
@@ -126,6 +150,7 @@ object Sorter {
   val inconclusiveCB: C.SortInconclusiveHasBlanks => SorterForSMCB = {
     case c: C.CustomField =>
       c.id match {
+        case id: CustomField.Number     .Id => customNumberFieldSorter(id)
         case id: CustomField.Text       .Id => customTextFieldSorter(id, c)
         case id: CustomField.Tag        .Id => tagSorter(Row.cfTag(id), _.p.config.tags.orderByPos)
         case id: CustomField.Implication.Id => pubidVectorSorter(Row.cfImp(id))

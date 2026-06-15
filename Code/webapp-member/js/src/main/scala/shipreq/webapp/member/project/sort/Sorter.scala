@@ -211,6 +211,9 @@ object Sorter {
     def fromOrdering[A](implicit o: Ordering[A]): SortFn[A] =
       SortFn(o.compare)
 
+    val double: SortFn[Double] =
+      SortFn((x, y) => if (x == y) 0 else if (x < y) -1 else 1)
+
     val int: SortFn[Int] =
       SortFn(_ - _)
 

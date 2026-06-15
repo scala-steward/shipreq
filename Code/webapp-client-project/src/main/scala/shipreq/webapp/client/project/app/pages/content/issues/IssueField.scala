@@ -24,7 +24,11 @@ object IssueField {
       case f: CustomField.Text        => customField(f)
       case f: CustomField.Tag         => customField(f)
       case f: CustomField.Implication => customField(f)
+      case f: CustomField.Number      => customField(f)
     }
+
+  def customField(id: CustomField.Number.Id)(implicit cfg: ProjectConfig): IssueField[FieldKey.CustomNumberField] =
+    customField(cfg.fields.custom(id))
 
   def customField(id: CustomField.Text.Id)(implicit cfg: ProjectConfig): IssueField[FieldKey.CustomTextField] =
     customField(cfg.fields.custom(id))
@@ -35,8 +39,11 @@ object IssueField {
   def customField(id: CustomField.Implication.Id)(implicit cfg: ProjectConfig): IssueField[FieldKey.Implications] =
     customField(cfg.fields.custom(id))
 
+  def customField(f: CustomField.Number): IssueField[FieldKey.CustomNumberField] =
+    IssueField(FieldKey.CustomNumberField(f.id), Some(f.name))
+
   def customField(f: CustomField.Text): IssueField[FieldKey.CustomTextField] =
-    IssueField(FieldKey.CustomTextField(f. id), Some(f.name))
+    IssueField(FieldKey.CustomTextField(f.id), Some(f.name))
 
   def customField(f: CustomField.Tag)(implicit cfg: ProjectConfig): IssueField[FieldKey.CustomFieldTags] =
     IssueField(FieldKey.CustomFieldTags(f.id), Some(f.name(cfg.tags.tree)))

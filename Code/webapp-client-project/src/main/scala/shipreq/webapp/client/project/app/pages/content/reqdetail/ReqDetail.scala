@@ -443,6 +443,14 @@ object ReqDetail {
                   dataLive   = dataLive,
                   field      = editorArgs.withField(FieldKey.Implications(-\/(id))),
                 )
+
+              case id: CustomField.Number.Id =>
+                genericEditableRow(
+                  name       = fieldName(id),
+                  headerLive = headerLive,
+                  dataLive   = dataLive,
+                  field      = editorArgs.withField(FieldKey.CustomNumberField(id)),
+                )
             }
 
           case Row.ReqType =>

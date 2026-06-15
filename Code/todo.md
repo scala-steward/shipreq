@@ -29,6 +29,14 @@
 * Number cell
   * Copy
   * Paste
+  * Displays defaults
+  * Uses set precision for both defaults and specified values
+  * Check rendering of out-of-bounds \&/ dead
+  * Test field rules apply (i.e. N/A, mandatory, optional, default)
+
+* ReqTable
+  * sorting by number
+    * respects applicability / defaults by reqType
 
 * Update the changelog
 * Run Scalafix
