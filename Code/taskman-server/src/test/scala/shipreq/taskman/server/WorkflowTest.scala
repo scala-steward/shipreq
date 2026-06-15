@@ -1,7 +1,7 @@
 package shipreq.taskman.server
 
-import doobie.implicits._
 import japgolly.microlibs.stdlib_ext.StdlibExt._
+import org.typelevel.doobie.implicits._
 import shipreq.taskman.api.Task.ReRegistrationAttempted
 import shipreq.taskman.api.{EmailAddr, TaskId, TaskStatus}
 import shipreq.taskman.server.logic.ServerOp._

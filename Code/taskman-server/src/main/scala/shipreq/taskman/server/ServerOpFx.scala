@@ -1,9 +1,9 @@
 package shipreq.taskman.server
 
 import cats.~>
-import doobie._
 import japgolly.clearconfig._
 import java.time.Duration
+import org.typelevel.doobie._
 import shipreq.base.db.{DbAccessor, XA}
 import shipreq.base.util.FxModule._
 import shipreq.taskman.api._

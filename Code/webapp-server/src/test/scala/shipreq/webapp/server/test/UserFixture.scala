@@ -1,8 +1,8 @@
 package shipreq.webapp.server.test
 
-import doobie._
-import doobie.implicits._
 import java.time.Instant
+import org.typelevel.doobie._
+import org.typelevel.doobie.implicits._
 import shipreq.base.db.BaseDoobieCodecs._
 import shipreq.base.db.DoobieHelpers._
 import shipreq.base.test.db.{ImperativeXA, TestDb}

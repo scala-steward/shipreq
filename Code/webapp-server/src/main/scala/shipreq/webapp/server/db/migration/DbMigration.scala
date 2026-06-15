@@ -3,10 +3,10 @@ package shipreq.webapp.server.db.migration
 import cats.Applicative
 import cats.effect.unsafe.implicits.global
 import cats.effect.{IO, Resource}
-import doobie._
-import doobie.implicits._
-import doobie.util.transactor.Strategy
 import org.flywaydb.core.api.migration.{BaseJavaMigration, Context}
+import org.typelevel.doobie._
+import org.typelevel.doobie.implicits._
+import org.typelevel.doobie.util.transactor.Strategy
 
 private[migration] abstract class DbMigration extends BaseJavaMigration {
 

@@ -3,16 +3,16 @@ package shipreq.base.test.db
 import cats.effect.Resource
 import cats.effect.unsafe.implicits.global
 import cats.syntax.apply._
-import doobie._
-import doobie.free.{connection => C}
-import doobie.implicits._
-import doobie.util.Colors
-import doobie.util.testing._
-import doobie.util.transactor.Strategy
 import japgolly.microlibs.testutil.TestUtil._
 import java.sql.Connection
 import java.util.concurrent.Semaphore
 import org.tpolecat.typename._
+import org.typelevel.doobie._
+import org.typelevel.doobie.free.{connection => C}
+import org.typelevel.doobie.implicits._
+import org.typelevel.doobie.util.Colors
+import org.typelevel.doobie.util.testing._
+import org.typelevel.doobie.util.transactor.Strategy
 import scala.concurrent.ExecutionContext
 import shipreq.base.db._
 import shipreq.base.ops.{JdbcLogging, SqlTracer}

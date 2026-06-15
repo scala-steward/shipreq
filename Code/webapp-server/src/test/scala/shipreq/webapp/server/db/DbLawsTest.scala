@@ -1,6 +1,6 @@
 package shipreq.webapp.server.db
 
-import doobie._
+import org.typelevel.doobie._
 import shipreq.base.test.db.{ImperativeXA, TestDb}
 import shipreq.webapp.base.data.{ProjectId, UserId}
 import shipreq.webapp.member.project.data.ProjectAccess

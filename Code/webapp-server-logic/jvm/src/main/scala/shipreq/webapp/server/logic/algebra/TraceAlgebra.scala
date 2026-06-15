@@ -2,7 +2,7 @@ package shipreq.webapp.server.logic.algebra
 
 import cats.syntax.all._
 import cats.{Monad, ~>}
-import doobie.ConnectionIO
+import org.typelevel.doobie.ConnectionIO
 import shipreq.base.ops.Trace
 import shipreq.base.ops.Trace.{Attr, AttrFor}
 import shipreq.base.util.Url

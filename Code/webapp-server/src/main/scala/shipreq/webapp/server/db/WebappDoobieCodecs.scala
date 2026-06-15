@@ -1,8 +1,8 @@
 package shipreq.webapp.server.db
 
-import doobie._
-import doobie.postgres.circe.jsonb.implicits._
-import doobie.postgres.implicits._
+import org.typelevel.doobie._
+import org.typelevel.doobie.postgres.circe.jsonb.implicits._
+import org.typelevel.doobie.postgres.implicits._
 import shipreq.base.db.BaseDoobieCodecs._
 import shipreq.base.db.DoobieHelpers._
 import shipreq.base.util.BinaryData

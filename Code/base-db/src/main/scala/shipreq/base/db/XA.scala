@@ -1,7 +1,7 @@
 package shipreq.base.db
 
 import cats.~>
-import doobie._
+import org.typelevel.doobie._
 import shipreq.base.util.FxModule._
 
 final class XA(private[db] val xa: Transactor[Fx]) {

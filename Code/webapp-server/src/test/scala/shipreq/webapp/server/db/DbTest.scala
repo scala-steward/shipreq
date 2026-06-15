@@ -2,10 +2,10 @@ package shipreq.webapp.server.db
 
 import cats.effect.unsafe.implicits.global
 import cats.implicits._
-import doobie._
-import doobie.implicits._
 import java.sql.Connection
 import java.time.{Duration, Instant, LocalDateTime, ZoneOffset}
+import org.typelevel.doobie._
+import org.typelevel.doobie.implicits._
 import shipreq.base.db.BaseDoobieCodecs._
 import shipreq.base.test.db.{ImperativeXA, TestDb}
 import shipreq.base.util.FxModule._

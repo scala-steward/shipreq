@@ -1,9 +1,9 @@
 package shipreq.webapp.server.config
 
 import cats.~>
-import doobie.ConnectionIO
 import java.util.concurrent.{Executors, TimeUnit}
 import org.redisson.api.RedissonClient
+import org.typelevel.doobie.ConnectionIO
 import shipreq.base.db._
 import shipreq.base.util.FxModule._
 import shipreq.base.util.ThreadUtils

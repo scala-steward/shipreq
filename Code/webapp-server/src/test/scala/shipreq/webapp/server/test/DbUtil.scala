@@ -1,7 +1,7 @@
 package shipreq.webapp.server.test
 
-import doobie._
-import doobie.implicits._
+import org.typelevel.doobie._
+import org.typelevel.doobie.implicits._
 import scala.util.Random
 import shipreq.base.db.DoobieHelpers._
 import shipreq.base.test.db._

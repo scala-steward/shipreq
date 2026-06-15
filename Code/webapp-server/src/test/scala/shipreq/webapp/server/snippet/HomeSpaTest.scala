@@ -1,6 +1,6 @@
 package shipreq.webapp.server.snippet
 
-import doobie.ConnectionIO
+import org.typelevel.doobie.ConnectionIO
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.event.Event.FieldStaticRemove
 import shipreq.webapp.server.logic.algebra.Crypto

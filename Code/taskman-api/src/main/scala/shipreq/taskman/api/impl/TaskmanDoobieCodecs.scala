@@ -1,10 +1,10 @@
 package shipreq.taskman.api.impl
 
 import cats.implicits._
-import doobie._
-import doobie.postgres.circe.jsonb.implicits._
 import io.circe.Json
 import japgolly.microlibs.adt_macros.AdtMacros
+import org.typelevel.doobie._
+import org.typelevel.doobie.postgres.circe.jsonb.implicits._
 import shipreq.base.util.JsonUtil
 import shipreq.taskman.api._
 

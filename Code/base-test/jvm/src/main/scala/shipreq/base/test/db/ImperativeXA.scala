@@ -1,8 +1,8 @@
 package shipreq.base.test.db
 
 import cats.effect.Resource
-import doobie._
 import japgolly.microlibs.stdlib_ext.StdlibExt._
+import org.typelevel.doobie._
 import shipreq.base.db._
 import shipreq.base.util.FxModule._
 

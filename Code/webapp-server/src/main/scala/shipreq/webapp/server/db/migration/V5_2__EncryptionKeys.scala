@@ -3,8 +3,8 @@ package shipreq.webapp.server.db.migration
 import cats.instances.list._
 import cats.syntax.traverse._
 import com.typesafe.scalalogging.StrictLogging
-import doobie._
-import doobie.implicits._
+import org.typelevel.doobie._
+import org.typelevel.doobie.implicits._
 import shipreq.base.db.BaseDoobieCodecs._
 import shipreq.base.util.BinaryData
 import shipreq.webapp.server.logic.algebra.Crypto

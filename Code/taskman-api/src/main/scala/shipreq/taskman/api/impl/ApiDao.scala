@@ -1,6 +1,6 @@
 package shipreq.taskman.api.impl
 
-import doobie._
+import org.typelevel.doobie._
 import shipreq.taskman.api._
 
 private[api] class ApiDao(prefix: String) {

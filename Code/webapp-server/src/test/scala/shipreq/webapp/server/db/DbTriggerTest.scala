@@ -1,6 +1,6 @@
 package shipreq.webapp.server.db
 
-import doobie._
+import org.typelevel.doobie._
 import shipreq.base.test.BaseTestUtil._
 import shipreq.base.test.db._
 import shipreq.webapp.base.data._

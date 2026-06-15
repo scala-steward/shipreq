@@ -2,10 +2,10 @@ package shipreq.base.test.db
 
 import cats.instances.list._
 import cats.syntax.traverse._
-import doobie._
-import doobie.implicits._
 import japgolly.microlibs.stdlib_ext.MutableArray
 import japgolly.microlibs.utils.AsciiTable
+import org.typelevel.doobie._
+import org.typelevel.doobie.implicits._
 import shipreq.base.db.DoobieHelpers._
 
 final case class DbTable(name: String) {

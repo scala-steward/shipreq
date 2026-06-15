@@ -2,10 +2,10 @@ package shipreq.taskman.server
 
 import cats.instances.all._
 import cats.syntax.all._
-import doobie._
-import doobie.implicits._
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import java.time.{Duration, Instant}
+import org.typelevel.doobie._
+import org.typelevel.doobie.implicits._
 import scala.util.Random
 import shipreq.base.db.BaseDoobieCodecs._
 import shipreq.base.test.BaseTestUtil._

@@ -3,11 +3,11 @@ package shipreq.base.db
 import cats.effect.syntax.all._
 import cats.free.Free
 import cats.implicits._
-import doobie._
-import doobie.free.{connection => C}
-import doobie.implicits._
 import java.sql.{Connection, SQLException}
 import java.time.{Duration, Instant}
+import org.typelevel.doobie._
+import org.typelevel.doobie.free.{connection => C}
+import org.typelevel.doobie.implicits._
 
 object DoobieHelpers {
 

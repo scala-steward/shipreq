@@ -1,9 +1,9 @@
 package shipreq.taskman.server.business
 
 import cats.~>
-import doobie.ConnectionIO
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import java.time.Duration
+import org.typelevel.doobie.ConnectionIO
 import shipreq.base.util.FxModule._
 import shipreq.base.util.log.HasLogger
 import shipreq.taskman.server.logic.business.BusinessOp._
@@ -42,4 +42,3 @@ final class BusinessOpFx(sendMailFx   : BusinessOp.SendEmail => Fx[Unit],
       case FindShipReqUsers(Some(c)) => dbRun(sri.findAllUsersW(c))
     }
 }
-

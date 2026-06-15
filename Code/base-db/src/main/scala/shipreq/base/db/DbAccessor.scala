@@ -2,9 +2,9 @@ package shipreq.base.db
 
 import cats.effect.Resource
 import com.zaxxer.hikari.HikariDataSource
-import doobie._
-import doobie.hikari.HikariTransactor
 import javax.sql.DataSource
+import org.typelevel.doobie._
+import org.typelevel.doobie.hikari.HikariTransactor
 import shipreq.base.util.FxModule._
 import shipreq.base.util.log.HasLogger
 

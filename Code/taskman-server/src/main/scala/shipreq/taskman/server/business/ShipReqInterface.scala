@@ -1,6 +1,6 @@
 package shipreq.taskman.server.business
 
-import doobie._
+import org.typelevel.doobie._
 import shipreq.base.db.DoobieHelpers._
 import shipreq.taskman.api.{EmailAddr, UserId}
 import shipreq.taskman.server.logic.business.ShipReqUser

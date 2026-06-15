@@ -3,9 +3,9 @@ package shipreq.webapp.server.db
 import cats.syntax.apply._
 import cats.~>
 import com.typesafe.scalalogging.StrictLogging
-import doobie.ConnectionIO
 import japgolly.clearconfig._
 import java.time.Duration
+import org.typelevel.doobie.ConnectionIO
 import shipreq.base.util.FxModule._
 import shipreq.base.util.ThreadUtils
 

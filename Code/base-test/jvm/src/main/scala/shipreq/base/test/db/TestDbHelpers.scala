@@ -1,11 +1,11 @@
 package shipreq.base.test.db
 
-import doobie._
-import doobie.free.{connection => C}
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.microlibs.testutil.TestUtil._
 import japgolly.microlibs.utils.AsciiTable
 import org.postgresql.util.PSQLException
+import org.typelevel.doobie._
+import org.typelevel.doobie.free.{connection => C}
 import sourcecode.Line
 
 trait TestDbHelpers {

@@ -1,7 +1,7 @@
 package shipreq.taskman.server.akka
 
-import doobie.implicits._
 import java.util.concurrent.{CountDownLatch, Executors, TimeUnit}
+import org.typelevel.doobie.implicits._
 import scala.concurrent._
 import scala.concurrent.duration._
 import shipreq.base.util.FxModule._

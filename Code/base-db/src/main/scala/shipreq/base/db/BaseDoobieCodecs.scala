@@ -1,9 +1,9 @@
 package shipreq.base.db
 
-import doobie._
-import doobie.postgres.implicits._
 import java.time._
 import org.postgresql.util.PGInterval
+import org.typelevel.doobie._
+import org.typelevel.doobie.postgres.implicits._
 import shipreq.base.util.BinaryData
 
 object BaseDoobieCodecs {
