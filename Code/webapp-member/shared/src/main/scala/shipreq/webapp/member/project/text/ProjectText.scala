@@ -173,11 +173,6 @@ abstract class ProjectText[+Ctx <: Context, Out](project: Project, final val ctx
 
   protected final def memoByReqId = Memo.by[Req, ReqId](_.id)
 
-  protected final def number(num: Double, decimalPlaces: Int, live: Live, validity: Validity): Out = {
-    val str = numberFmtMemo(decimalPlaces).format(num)
-    _number(str, live, validity)
-  }
-
   private val numberFmtMemo: Int => String =
     Memo.int(dp => "%,." + dp + "f")
 
@@ -227,6 +222,12 @@ abstract class ProjectText[+Ctx <: Context, Out](project: Project, final val ctx
           Function const None
       }
     }
+
+  // This is exposed so that defaults can be rendered from the Field Config page
+  final def number(num: Double, decimalPlaces: Int, live: Live, validity: Validity): Out = {
+    val str = numberFmtMemo(decimalPlaces).format(num)
+    _number(str, live, validity)
+  }
 
   final def customTextField(id: CustomField.Text.Id, req: Req, live: Live, mandatory: Mandatory): Out =
     customTextFieldOption(id)(req).getOrElse[Out] {

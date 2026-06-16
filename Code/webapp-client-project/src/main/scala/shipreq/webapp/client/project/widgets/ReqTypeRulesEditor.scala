@@ -30,6 +30,7 @@ object ReqTypeRulesEditor {
 
   val NoDefault            = new ReqTypeRulesEditor[Impossible](allowDefaults = false, keyFor = _.impossible)
   val ApplicableTagDefault = new ReqTypeRulesEditor[ApplicableTagId](allowDefaults = true, keyFor = _.value.toString)
+  val DoubleDefault        = new ReqTypeRulesEditor[Double](allowDefaults = true, keyFor = _.toString)
 
   // -------------------------------------------------------------------------------------------------------------------
 
@@ -108,9 +109,11 @@ object ReqTypeRulesEditor {
 
   // -------------------------------------------------------------------------------------------------------------------
 
+  type DefaultWidgetFn[D] = Reusable[(StateSnapshot[State.ResValue[D]], Enabled, D => String) => VdomNode]
+
   final case class Props[D](state        : StateSnapshot[State[D]],
                             reqTypes     : ReqTypes,
-                            defaultWidget: Reusable[(StateSnapshot[State.ResValue[D]], Enabled, D => String) => VdomNode],
+                            defaultWidget: DefaultWidgetFn[D],
                             filterDead   : FilterDead,
                             enabled      : Enabled)
 
@@ -123,25 +126,26 @@ object ReqTypeRulesEditor {
                                          filterDead   : FilterDead,
                                          enabled      : Enabled): Props[D] = {
 
-      val defaultWidget = Reusable.ap(Reusable.implicitly(defaults), renderDefault) { (defaults , renderDefault) =>
-        lazy val defaultSet = defaults.toSet
+      val defaultWidget: DefaultWidgetFn[D] =
+        Reusable.ap(Reusable.implicitly(defaults), renderDefault) { (defaults , renderDefault) =>
+          lazy val defaultSet = defaults.toSet
 
-        (ss: StateSnapshot[State.ResValue[D]], enabled: Enabled, keyFor: D => String) => {
-          val default = ss.value.validatedDefault(Valid when defaultSet.contains(_))
+          (ss, enabled, keyFor) => {
+            val default = ss.value.validatedDefault(Valid when defaultSet.contains(_))
 
-          val defaultItems =
-            defaults.map(d => Dropdown.Item(keyFor(d), renderDefault(d), d))
+            val defaultItems =
+              defaults.map(d => Dropdown.Item(keyFor(d), renderDefault(d), d))
 
-          Dropdown.Props.Optional(
-            items    = defaultItems,
-            enabled  = enabled,
-            tagMod   = *.rulesEditorDefault,
-            validity = Invalid when default.isEmpty,
-            selected = default.map(keyFor))(
-            onChange = o => ss.modState(_.copy(default = Some(o.value)))
-          ).render
+            Dropdown.Props.Optional(
+              items    = defaultItems,
+              enabled  = enabled,
+              tagMod   = *.rulesEditorDefault,
+              validity = Invalid when default.isEmpty,
+              selected = default.map(keyFor))(
+              onChange = o => ss.modState(_.copy(default = Some(o.value)))
+            ).render
+          }
         }
-      }
 
       apply[D](
         state         = state,

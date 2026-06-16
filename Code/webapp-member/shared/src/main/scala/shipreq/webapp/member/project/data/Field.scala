@@ -417,8 +417,8 @@ object CustomField {
     override def independentName = Some(name)
     override def live(cfg: ProjectConfig) = liveExplicitly
 
-    // lazy val fieldReqTypeRulesByResolution =
-    //   fieldReqTypeRules.byResolution
+    lazy val fieldReqTypeRulesByResolution =
+      fieldReqTypeRules.byResolution
 
     def min = range._1
     def max = range._2
