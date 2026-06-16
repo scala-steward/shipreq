@@ -69,29 +69,28 @@ object ReqTypeRulesEditor {
         }
       }.toVector
 
-    private def validateRes(value: State.ResValue[D], legalOptions: => Set[D]): Option[Resolution[D]] =
+    private def validateRes(value: State.ResValue[D], validateDefault: D => Validity): Option[Resolution[D]] =
       value.res match {
         case Resolution.NotApplicable => Some(Resolution.NotApplicable)
         case Resolution.Optional      => Some(Resolution.Optional)
         case Resolution.Mandatory     => Some(Resolution.Mandatory)
-        case Resolution.DefaultTo(_)  => value.legalDefault(legalOptions).map(Resolution.DefaultTo(_))
+        case Resolution.DefaultTo(_)  => value.validatedDefault(validateDefault).map(Resolution.DefaultTo(_))
       }
 
     def resultWhenValidI(implicit ev: D =:= Impossible): Option[FieldReqTypeRules[D]] =
-      resultWhenValid(Set.empty)
+      resultWhenValid(_.impossible)
 
-    def resultWhenValid(legalOptions: => Set[D]): Option[FieldReqTypeRules[D]] = {
-      lazy val _legalOptions = legalOptions
+    def resultWhenValid(validateDefault: D => Validity): Option[FieldReqTypeRules[D]] = {
 
       val deadO: Option[List[(Resolution[D], Set[ReqTypeId])]] =
-        state.dead.traverse(d => validateRes(d.res, _legalOptions).map((_, d.ids.whole)))
+        state.dead.traverse(d => validateRes(d.res, validateDefault).map((_, d.ids.whole)))
 
       def perReqTypeO: Option[List[(Resolution[D], Set[ReqTypeId])]] =
         results.indices.iterator.map { i =>
           for {
             reqTypeIds <- results(i).toOption
             row         = state.perReqType(i)
-            res        <- validateRes(row.res, _legalOptions)
+            res        <- validateRes(row.res, validateDefault)
           } yield (res, reqTypeIds)
         }
           .toList
@@ -100,7 +99,7 @@ object ReqTypeRulesEditor {
       for {
         dead       <- deadO
         perReqType <- perReqTypeO
-        otherwise  <- validateRes(state.otherwise, _legalOptions)
+        otherwise  <- validateRes(state.otherwise, validateDefault)
       } yield FieldReqTypeRules.ByResolution.build(perReqType.iterator ++ dead, otherwise).toRules
     }
   }
@@ -214,8 +213,8 @@ object ReqTypeRulesEditor {
     }
 
     final case class ResValue[D](res: Resolution[Unit], default: Option[D]) {
-      def legalDefault(legalOptions: Set[D]): Option[D] =
-        default.filter(legalOptions.contains)
+      def validatedDefault(validate: D => Validity): Option[D] =
+        default.filter(validate(_) is Valid)
     }
 
     object ResValue {
@@ -359,7 +358,7 @@ final class ReqTypeRulesEditor[D: Reusability: UnivEq](allowDefaults: Boolean, k
           ).render
 
         def defaultSelect = {
-          val default = ss.value.legalDefault(p.defaultSet)
+          val default = ss.value.validatedDefault(Valid when p.defaultSet.contains(_))
 
           val defaultItems =
             p.defaults.map(d => Dropdown.Item(keyFor(d), p.renderDefault(d), d))

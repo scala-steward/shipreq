@@ -8,7 +8,7 @@ import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.html_<^._
 import monocle.Lens
 import monocle.macros.Lenses
-import shipreq.base.util.{Enabled, Permission, PotentialChange}
+import shipreq.base.util._
 import shipreq.webapp.base.ui.widgets.{Dropdown, Form}
 import shipreq.webapp.base.validation.ValidationUX
 import shipreq.webapp.client.project.app.pages.root.Routes
@@ -91,7 +91,8 @@ object TagFieldEditor {
 
     protected final def pcReqTypeRules(cfg: ProjectConfig): PotentialChange[Unit, FieldReqTypeRules.ForTagField] = {
       val ds = legalDefaultIterator(this, cfg).toSet
-      PotentialChange.needFromOption(reqTypeRules.validation(cfg.reqTypes).resultWhenValid(ds))
+      val validate: ApplicableTagId => Validity = Valid when ds.contains(_)
+      PotentialChange.needFromOption(reqTypeRules.validation(cfg.reqTypes).resultWhenValid(validate))
     }
 
     protected final def pcDerivativeTags(cfg: ProjectConfig): PotentialChange[Unit, DerivativeTags] =
