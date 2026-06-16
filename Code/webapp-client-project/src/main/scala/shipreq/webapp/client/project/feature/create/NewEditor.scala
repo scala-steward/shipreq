@@ -72,7 +72,7 @@ object NewEditor {
 
       def prepareGR(r: RowKey.GenericReq) = FieldKey.FoldForGenericReq[LogicPerField](
         codes             = _ => EditReqCodes.Multiple.apply,
-        customNumberField = f => EditNumber(f.field),
+        customNumberField = _ => EditNumber.initFn,
         customTextField   = f => EditRichText.CustomTextField(PreviewId(r, f), Some(r.reqTypeId)),
         implications      = f => EditImplications(f.scope),
         otherTags         = _ => EditTags.otherTags(r.reqTypeId),
@@ -82,7 +82,7 @@ object NewEditor {
 
       def prepareUC(r: RowKey.UseCase.type) = FieldKey.FoldForUseCase[LogicPerField](
         codes             = _ => EditReqCodes.Multiple.apply,
-        customNumberField = f => EditNumber(f.field),
+        customNumberField = _ => EditNumber.initFn,
         customTextField   = f => EditRichText.CustomTextField(PreviewId(r, f), Some(StaticReqType.UseCase)),
         implications      = f => EditImplications(f.scope),
         otherTags         = _ => EditTags.otherTags(r.reqTypeId),
@@ -142,7 +142,7 @@ object NewEditor {
       type Props          = NumberEditor.Props
       type PropsInputs    = (StateSnapshot[String], Args, AsyncState)
 
-      def apply(fid: CustomField.Number.Id): InitFn = {
+      val initFn: InitFn = {
         val propsMemo = newPropsMemo[PropsInputs, Props] { in =>
           val (ss, args, asyncState) = in
           NumberEditor.Props(
