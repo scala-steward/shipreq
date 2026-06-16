@@ -245,6 +245,7 @@ object LogicPropTest extends TestSuite {
       case C.CustomField(id) =>
         id match {
           case _: CustomField.Implication.Id => nop
+          case _: CustomField.Number     .Id => nop
           case _: CustomField.Tag        .Id => nop
           case _: CustomField.Text       .Id => nop
         }
