@@ -199,7 +199,7 @@ object TagFieldEditor {
 
       val reqTypeRules =
         ReqTypeRulesEditor.ApplicableTagDefault.Component(
-          ReqTypeRulesEditor.Props(
+          ReqTypeRulesEditor.Props.discreteDefaults(
             state         = p.state.zoomStateL(State.reqTypeRules),
             reqTypes      = p.cfg.reqTypes,
             renderDefault = renderDefault,

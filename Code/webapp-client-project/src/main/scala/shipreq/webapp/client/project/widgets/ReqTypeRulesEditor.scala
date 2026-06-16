@@ -31,6 +31,8 @@ object ReqTypeRulesEditor {
   val NoDefault            = new ReqTypeRulesEditor[Impossible](allowDefaults = false, keyFor = _.impossible)
   val ApplicableTagDefault = new ReqTypeRulesEditor[ApplicableTagId](allowDefaults = true, keyFor = _.value.toString)
 
+  // -------------------------------------------------------------------------------------------------------------------
+
   final class Validation[D](state: State[D], reqTypes: ReqTypes) {
     import shipreq.webapp.base.validation.lib.Simple.Invalidity
     import shipreq.webapp.base.validation.lib._
@@ -108,15 +110,47 @@ object ReqTypeRulesEditor {
 
   final case class Props[D](state        : StateSnapshot[State[D]],
                             reqTypes     : ReqTypes,
-                            renderDefault: D ~=> VdomNode,
-                            defaults     : ArraySeq[D],
+                            defaultWidget: Reusable[(StateSnapshot[State.ResValue[D]], Enabled, D => String) => VdomNode],
                             filterDead   : FilterDead,
-                            enabled      : Enabled) {
-
-    lazy val defaultSet = defaults.toSet
-  }
+                            enabled      : Enabled)
 
   object Props {
+
+    def discreteDefaults[D: Reusability](state        : StateSnapshot[State[D]],
+                                         reqTypes     : ReqTypes,
+                                         renderDefault: D ~=> VdomNode,
+                                         defaults     : ArraySeq[D],
+                                         filterDead   : FilterDead,
+                                         enabled      : Enabled): Props[D] = {
+
+      val defaultWidget = Reusable.ap(Reusable.implicitly(defaults), renderDefault) { (defaults , renderDefault) =>
+        lazy val defaultSet = defaults.toSet
+
+        (ss: StateSnapshot[State.ResValue[D]], enabled: Enabled, keyFor: D => String) => {
+          val default = ss.value.validatedDefault(Valid when defaultSet.contains(_))
+
+          val defaultItems =
+            defaults.map(d => Dropdown.Item(keyFor(d), renderDefault(d), d))
+
+          Dropdown.Props.Optional(
+            items    = defaultItems,
+            enabled  = enabled,
+            tagMod   = *.rulesEditorDefault,
+            validity = Invalid when default.isEmpty,
+            selected = default.map(keyFor))(
+            onChange = o => ss.modState(_.copy(default = Some(o.value)))
+          ).render
+        }
+      }
+
+      apply[D](
+        state         = state,
+        reqTypes      = reqTypes,
+        defaultWidget = defaultWidget,
+        filterDead    = filterDead,
+        enabled       = enabled,
+      )
+    }
 
     def noDefaults(state     : StateSnapshot[State[Impossible]],
                    reqTypes  : ReqTypes,
@@ -125,16 +159,15 @@ object ReqTypeRulesEditor {
       apply(
         state         = state,
         reqTypes      = reqTypes,
-        renderDefault = renderImpossible,
-        defaults      = ArraySeq.empty,
+        defaultWidget = noDefaultWidget,
         filterDead    = filterDead,
         enabled       = enabled,
       )
 
-    private val renderImpossible: Impossible ~=> VdomNode =
-      Reusable.always(_.impossible)
+    private val noDefaultWidget: Reusable[(Any, Any, Any) => VdomNode] =
+      Reusable.always((_, _, _) => EmptyVdom)
 
-    implicit def reusabilityProps[D: Reusability]: Reusability[Props[D]] =
+    implicit def reusabilityProps[D]: Reusability[Props[D]] =
       Reusability.derive
   }
 
@@ -357,24 +390,10 @@ final class ReqTypeRulesEditor[D: Reusability: UnivEq](allowDefaults: Boolean, k
             onChange = o => ss.modState(_.copy(res = o.value))
           ).render
 
-        def defaultSelect = {
-          val default = ss.value.validatedDefault(Valid when p.defaultSet.contains(_))
-
-          val defaultItems =
-            p.defaults.map(d => Dropdown.Item(keyFor(d), p.renderDefault(d), d))
-
-          Dropdown.Props.Optional(
-            items    = defaultItems,
-            enabled  = enabled,
-            tagMod   = *.rulesEditorDefault,
-            validity = Invalid when default.isEmpty,
-            selected = default.map(keyFor))(
-            onChange = o => ss.modState(_.copy(default = Some(o.value)))
-          ).render
-        }
+        def defaultWidget = p.defaultWidget(ss, enabled, keyFor)
 
         if (ss.value.res.isDefault)
-          TagMod(resSelect, defaultSelect)
+          TagMod(resSelect, defaultWidget)
         else
           resSelect
       }
