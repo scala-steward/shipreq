@@ -32,7 +32,7 @@ object StaticFieldType {
 
 object CustomFieldType {
   case object Implication extends CustomFieldType("Implication")
-  case object Number      extends CustomFieldType("Number")
+  case object Number      extends CustomFieldType("Numeric")
   case object Tag         extends CustomFieldType("Tag")
   case object Text        extends CustomFieldType("Text")
 
