@@ -56,8 +56,7 @@ object NumberEditor {
   private def render(p: Props): VdomNode = {
 
     def editor(validity: Validity): VdomElement =
-      <.input(
-        ^.`type`    := "text",
+      <.input.text(
         ^.value     := p.edit.value,
         ^.autoFocus := p.autoFocus,
         ^.onChange ==> ((e: ReactEventFromInput) => {

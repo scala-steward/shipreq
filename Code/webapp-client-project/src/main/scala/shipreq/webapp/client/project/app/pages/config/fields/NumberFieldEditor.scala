@@ -53,7 +53,7 @@ object NumberFieldEditor {
           _desc  <- PotentialChange.fromDisjunction(DataValidators.numberField.desc.unnamed(desc).leftMap(_ => ()))
           range  <- PotentialChange.fromDisjunction(DataValidators.numberField.range.unnamed((min, max)).leftMap(_ => ()))
           dp     <- PotentialChange.fromDisjunction(DataValidators.numberField.decimalPlaces.unnamed(decimalPlaces).leftMap(_ => ()))
-          _rules <- PotentialChange.needFromOption(rules.validation(cfg.reqTypes).resultWhenValid(_ => Valid))
+          _rules <- PotentialChange.needFromOption(rules.validation(cfg.reqTypes).resultWhenValid(validateByRange(range)))
         } yield (_name, _desc, range, dp, _rules)
 
       pass1.flatMap { case (name, desc, range, decimalPlaces, rules) =>
@@ -117,25 +117,14 @@ object NumberFieldEditor {
 
   // ===================================================================================================================
 
-  private val reqTypeRulesEditorDefaultWidget: ReqTypeRulesEditor.DefaultWidgetFn[Double] =
-    Reusable.byRef(
-      (ss, enabled, _) => {
-        <.div(^.cls := "ui input",
-          *.reqTypeRuleDefaultEditor,
-          (^.cls := "error").when(ss.value.default.isEmpty),
-          <.input.text(
-            ^.value := ss.value.textValue,
-            ^.onChange ==> ((e: ReactEventFromInput) => {
-              val newTxt   = CommonValidation.optionalDouble.corrector.live(e.target.value)
-              val newDbl   = CommonValidation.optionalDouble(newTxt).toOption.flatten
-              val newState = ss.value.copy(textValue = newTxt, default = newDbl)
-              ss.setState(newState)
-            }),
-            ^.disabled := enabled.is(Disabled),
-          )
-        )
-      }
-    )
+  private def validateByRange(range: (Double, Double)): Double => Validity =
+    validateByRange(range._1, range._2)
+
+  private def validateByRange(min: Double, max: Double): Double => Validity =
+    if (min <= max)
+      d => Valid.when(d >= min && d <= max)
+    else
+      _ => Valid
 
   private def render(p: Props): VdomNode = {
 
@@ -188,6 +177,44 @@ object NumberFieldEditor {
         .withState(p.state.zoomStateL(State.decimalPlaces))
         .withValidator(DataValidators.numberField.decimalPlaces.unnamed)
         .withEnabled(p.enabled)
+
+    val reqTypeRulesEditorDefaultWidget: ReqTypeRulesEditor.DefaultWidgetFn[Double] =
+      Reusable.implicitly((minValueOption, maxValueOption)).map { _ =>
+
+        var validator = CommonValidation.double
+        (minValueOption, maxValueOption) match {
+          case (Some(min), Some(max)) =>
+            val isValid = validateByRange(min, max)
+            validator = validator.appendInvalidator(Invalidator(d =>
+              Option.when(isValid(d) is Invalid)(Invalidity("Out of range."))
+            ))
+          case _ =>
+        }
+
+        (ss, enabled, _) => {
+          def onChange(e: ReactEventFromInput): Callback = {
+            val newTxt   = validator.corrector.live(e.target.value)
+            val newDbl   = validator(newTxt).toOption
+            val newState = ss.value.copy(textValue = newTxt, default = newDbl)
+            ss.setState(newState)
+          }
+
+          val validated = validator(ss.value.textValue)
+
+          <.div(^.cls := "ui input",
+            *.reqTypeRuleDefaultEditor,
+            (^.cls := "error").when(validated.isLeft),
+
+            <.input.text(
+              ^.value := ss.value.textValue,
+              ^.onChange ==> onChange,
+              ^.disabled := enabled.is(Disabled),
+            ),
+
+            validated.swap.toOption.map(err => <.div(*.applicableReqTypesErrMsg, Invalidity.toText(err)))
+          )
+        }
+      }
 
     val rules =
       ReqTypeRulesEditor.DoubleDefault.Component(

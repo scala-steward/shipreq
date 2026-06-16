@@ -2090,7 +2090,12 @@ object Style extends StyleSheet.Inline {
 
     val reqTypeRuleDefaultEditor = style(
       marginTop(1 em),
+      display.flex,
+      flexDirection.column,
     )
+
+    def applicableReqTypesErrMsg = widgets.applicableReqTypesErrMsg
+
   }
 
   // ===================================================================================================================

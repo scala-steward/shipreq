@@ -16,6 +16,8 @@
 * Number field value validation
   * At least on the server-side, it's currently legal to set fields with out-of-bounds numbers
     * This affects `RandomEventStream` too
+  * On the server-side, it's currently legal to set fields with out-of-bounds defaults in reqTypeRules
+    * This affects `RandomEventStream` too
 
 * MakeEvent for create{GR,UC}
 
@@ -37,9 +39,6 @@
 * ReqTable
   * sorting by number
     * respects applicability / defaults by reqType
-
-* Issues
-  * Field defaults that are out of range
 
 * Update the changelog
 * Run Scalafix
