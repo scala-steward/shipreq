@@ -113,7 +113,7 @@ object ImpFieldEditor {
 
     def initUpdate(id: CustomField.Implication.Id, cfg: ProjectConfig): ForUpdate = {
       val f = cfg.fields.custom(id)
-      ForUpdate(id, ReqTypeRulesEditor.State.init(cfg, f.fieldReqTypeRulesByResolution))
+      ForUpdate(id, ReqTypeRulesEditor.State.init(cfg, f.fieldReqTypeRulesByResolution)(_ => ""))
     }
 
     def init(id: Option[CustomField.Implication.Id], cfg: ProjectConfig): State =

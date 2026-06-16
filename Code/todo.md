@@ -38,5 +38,8 @@
   * sorting by number
     * respects applicability / defaults by reqType
 
+* Issues
+  * Field defaults that are out of range
+
 * Update the changelog
 * Run Scalafix

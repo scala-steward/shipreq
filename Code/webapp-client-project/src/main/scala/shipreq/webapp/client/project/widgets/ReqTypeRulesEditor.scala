@@ -199,13 +199,13 @@ object ReqTypeRulesEditor {
     def empty[D]: State[D] =
       apply(Nil, Vector.empty, State.ResValue.empty)
 
-    def init[D](cfg: ProjectConfig, rules: FieldReqTypeRules.ByResolution[D]): State[D] = {
+    def init[D](cfg: ProjectConfig, rules: FieldReqTypeRules.ByResolution[D])(toText: D => String): State[D] = {
       val dead: List[DeadRow[D]] =
         MutableArray(
           rules.perRes.iterator.flatMap { case (res, ids) =>
             val deadIds = ids.whole.filter(cfg.reqTypes.live(_, Live) is Dead)
             NonEmptySet.option(deadIds).iterator.map(i =>
-              DeadRow(i, ResValue.from(res), keyGen.next())
+              DeadRow(i, ResValue.from(res)(toText), keyGen.next())
             )
           }
         )
@@ -217,7 +217,7 @@ object ReqTypeRulesEditor {
         MutableArray(
           rules.perRes
             .iterator
-            .map { case (res, ids) => PerReqType.from(cfg, ids, res) }
+            .map { case (res, ids) => PerReqType.from(cfg, ids, res)(toText) }
             .filter(_.text.nonEmpty)
         )
           .sortBy(_.text)
@@ -225,7 +225,7 @@ object ReqTypeRulesEditor {
           .toVector
 
       val otherwise =
-        ResValue.from(rules.otherwise)
+        ResValue.from(rules.otherwise)(toText)
 
       apply(dead, rows, otherwise)
     }
@@ -242,28 +242,28 @@ object ReqTypeRulesEditor {
       def empty[D]: PerReqType[D] =
         apply("", ResValue.empty, keyGen.next())
 
-      def from[D](cfg: ProjectConfig, ids: NonEmptySet[ReqTypeId], res: Resolution[D]): PerReqType[D] = {
+      def from[D](cfg: ProjectConfig, ids: NonEmptySet[ReqTypeId], res: Resolution[D])(toText: D => String): PerReqType[D] = {
         def reqTypes(live: Live) = ids.iterator.flatMap(cfg.reqTypes.get).filter(_.live is live)
         val txt = cfg.reqTypes.mkString(reqTypes(Live), ", ")
-        apply(txt, ResValue.from(res), keyGen.next())
+        apply(txt, ResValue.from(res)(toText), keyGen.next())
       }
     }
 
-    final case class ResValue[D](res: Resolution[Unit], default: Option[D]) {
+    final case class ResValue[D](res: Resolution[Unit], textValue: String, default: Option[D]) {
       def validatedDefault(validate: D => Validity): Option[D] =
         default.filter(validate(_) is Valid)
     }
 
     object ResValue {
       def empty[D]: ResValue[D] =
-        apply(Resolution.default, None)
+        apply(Resolution.default, "", None)
 
-      def from[D](res: Resolution[D]): ResValue[D] =
+      def from[D](res: Resolution[D])(toText: D => String): ResValue[D] =
         res match {
-          case Resolution.DefaultTo(d)          => apply(Resolution.DefaultTo(()), Some(d))
-          case r: Resolution.Mandatory.type     => apply(r, None)
-          case r: Resolution.Optional.type      => apply(r, None)
-          case r: Resolution.NotApplicable.type => apply(r, None)
+          case Resolution.DefaultTo(d)          => apply(Resolution.DefaultTo(()), toText(d), Some(d))
+          case r: Resolution.Mandatory.type     => apply(r, "", None)
+          case r: Resolution.Optional.type      => apply(r, "", None)
+          case r: Resolution.NotApplicable.type => apply(r, "", None)
         }
     }
 

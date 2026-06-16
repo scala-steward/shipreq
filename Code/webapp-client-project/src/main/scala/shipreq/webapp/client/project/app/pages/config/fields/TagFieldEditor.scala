@@ -178,7 +178,7 @@ object TagFieldEditor {
       val f = cfg.fields.custom(id)
       ForUpdate(
         id,
-        ReqTypeRulesEditor.State.init(cfg, f.fieldReqTypeRulesByResolution),
+        ReqTypeRulesEditor.State.init(cfg, f.fieldReqTypeRulesByResolution)(_ => ""),
         DerivativeTagsEditor.State.init(f.derivativeTags, f.tagId, cfg.tags),
       )
     }

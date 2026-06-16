@@ -2086,6 +2086,15 @@ object Style extends StyleSheet.Inline {
 
   // ===================================================================================================================
 
+  object numberFieldEditor {
+
+    val reqTypeRuleDefaultEditor = style(
+      marginTop(1 em),
+    )
+  }
+
+  // ===================================================================================================================
+
   initInnerObjects(
     accessPage.existingUserSegment.segment,
     accessPage.leaveProjectSegment.segment,
@@ -2100,6 +2109,7 @@ object Style extends StyleSheet.Inline {
     issueConfig.sectionTitle,
     issues.rowspanOuter,
     navBar.connected,
+    numberFieldEditor.reqTypeRuleDefaultEditor,
     reqdetail.detailTable,
     reqdetail.impGraph.container,
     reqdetail.useCaseStep.container,

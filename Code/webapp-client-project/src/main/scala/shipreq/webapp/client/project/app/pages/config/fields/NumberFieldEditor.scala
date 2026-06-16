@@ -14,8 +14,9 @@ import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.event.CustomNumberFieldGD
 import shipreq.webapp.member.project.protocol.websocket.UpdateConfigCmd
 import shipreq.webapp.base.validation.lib.CommonValidation
-import shipreq.webapp.base.validation.lib.Simple.Invalidity
-import shipreq.webapp.base.validation.lib.Simple.Invalidator
+import shipreq.webapp.base.validation.lib.Simple.{Invalidity, Invalidator}
+import shipreq.webapp.client.project.app.Style.{numberFieldEditor => *}
+import scalacss.ScalaCssReact._
 
 object NumberFieldEditor {
   import DataImplicits._
@@ -106,7 +107,7 @@ object NumberFieldEditor {
         min           = f.min.toString,
         max           = f.max.toString,
         decimalPlaces = f.decimalPlaces.toString,
-        rules         = ReqTypeRulesEditor.State.init(cfg, f.fieldReqTypeRulesByResolution),
+        rules         = ReqTypeRulesEditor.State.init(cfg, f.fieldReqTypeRulesByResolution)(_.toString),
       )
     }
 
@@ -118,8 +119,21 @@ object NumberFieldEditor {
 
   private val reqTypeRulesEditorDefaultWidget: ReqTypeRulesEditor.DefaultWidgetFn[Double] =
     Reusable.byRef(
-      (ss, enabled, keyFor) => {
-        <.div("TODO: " + ss)
+      (ss, enabled, _) => {
+        <.div(^.cls := "ui input",
+          *.reqTypeRuleDefaultEditor,
+          (^.cls := "error").when(ss.value.default.isEmpty),
+          <.input.text(
+            ^.value := ss.value.textValue,
+            ^.onChange ==> ((e: ReactEventFromInput) => {
+              val newTxt   = CommonValidation.optionalDouble.corrector.live(e.target.value)
+              val newDbl   = CommonValidation.optionalDouble(newTxt).toOption.flatten
+              val newState = ss.value.copy(textValue = newTxt, default = newDbl)
+              ss.setState(newState)
+            }),
+            ^.disabled := enabled.is(Disabled),
+          )
+        )
       }
     )
 
