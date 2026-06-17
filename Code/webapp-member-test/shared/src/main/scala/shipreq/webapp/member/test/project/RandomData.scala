@@ -455,26 +455,26 @@ object RandomData {
     } yield
       if (x <= y) (x, y) else (y, x)
 
-  def customFieldNumber(genFieldReqTypeRules: Gen[FieldReqTypeRules.ForNumField]): Gen[CustomField.Number] =
+  def customFieldNumber(genReqTypeId: Option[Gen[ReqTypeId]]): Gen[CustomField.Number] =
     for {
       id                <- customFieldNumberId
       name              <- fieldName
       desc              <- Gen.string.option
       range             <- minMax
       decimalPlaces     <- Gen.chooseInt(4)
-      fieldReqTypeRules <- genFieldReqTypeRules
+      fieldReqTypeRules <- fieldReqTypeRules(genReqTypeId, Some(Gen.chooseDouble(range._1, range._2)))
       liveExplicitly    <- live
     } yield
       CustomField.Number(id, name, desc, range, decimalPlaces, fieldReqTypeRules, liveExplicitly)
 
-  def customField(rulesAny: Gen[FieldReqTypeRules[Impossible]],
-                  rulesNum: Gen[FieldReqTypeRules.ForNumField],
+  def customField(genReqTypeId: Option[Gen[ReqTypeId]],
+                  rulesAny: Gen[FieldReqTypeRules[Impossible]],
                   rulesTag: Gen[FieldReqTypeRules.ForTagField],
                   derivTags: Gen[DerivativeTags],
                   impFields: Boolean,
                   tagFields: Boolean): Gen[CustomField] = {
     lazy val txt: Gen[CustomField] = customFieldText(rulesAny)
-    lazy val num: Gen[CustomField] = customFieldNumber(rulesNum)
+    lazy val num: Gen[CustomField] = customFieldNumber(genReqTypeId)
     customFieldType.flatMap {
       case CustomFieldType.Text        => txt
       case CustomFieldType.Number      => num
@@ -485,13 +485,14 @@ object RandomData {
 
   def customFields(reqTypeIds: Set[ReqTypeId],
                    tagIds    : Set[TagGroupId],
-                   appTagIds : Set[ApplicableTagId],
-                   rulesAny  : Gen[FieldReqTypeRules[Impossible]],
-                   rulesNum  : Gen[FieldReqTypeRules.ForNumField],
-                   rulesTag  : Gen[FieldReqTypeRules.ForTagField]): Gen[IMap[CustomFieldId, CustomField]] = {
+                   appTagIds : Set[ApplicableTagId]): Gen[IMap[CustomFieldId, CustomField]] = {
+    val genReqTypeId = NonEmptySet.option(reqTypeIds).map(Gen.chooseNE(_))
+    val genApTagId   = NonEmptySet.option(appTagIds).map(Gen.chooseNE(_))
+    val rulesAny     = fieldReqTypeRules[Impossible](genReqTypeId, None)
+    val rulesTag     = fieldReqTypeRules(genReqTypeId, genApTagId)
     val deriv = derivativeTags(appTagIds)
     val cf = for {
-      f1 <- customField(rulesAny, rulesNum, rulesTag, deriv, false, false).list
+      f1 <- customField(genReqTypeId, rulesAny, rulesTag, deriv, false, false).list
       f2 <- customFieldTagSome(tagIds, rulesTag, deriv)
       f3 <- customFieldImplicationSome(reqTypeIds, rulesAny)
     } yield f3.toList ::: f2.toList ::: f1
@@ -502,15 +503,10 @@ object RandomData {
   }
 
   def fieldSet(reqTypeIds: Set[ReqTypeId], tagIds: Set[TagId]): Gen[FieldSet] = {
-    val tagGroupIds  = tagIds.iterator.filterSubType[TagGroupId].toSet
-    val appTagIds    = tagIds.iterator.filterSubType[ApplicableTagId].toSet
-    val genApTagId   = NonEmptySet.option(appTagIds).map(Gen.chooseNE(_))
-    val genReqTypeId = NonEmptySet.option(reqTypeIds).map(Gen.chooseNE(_))
-    val rulesAny     = fieldReqTypeRules[Impossible](genReqTypeId, None)
-    val rulesNum     = fieldReqTypeRules(genReqTypeId, Some(Gen.double))
-    val rulesTag     = fieldReqTypeRules(genReqTypeId, genApTagId)
+    val tagGroupIds = tagIds.iterator.filterSubType[TagGroupId].toSet
+    val appTagIds   = tagIds.iterator.filterSubType[ApplicableTagId].toSet
     for {
-      cf           <- customFields(reqTypeIds, tagGroupIds, appTagIds, rulesAny, rulesNum, rulesTag)
+      cf           <- customFields(reqTypeIds, tagGroupIds, appTagIds)
       mandatoryIds = cf.keySet.map(f => f: FieldId) ++ StaticField.mandatory.iterator
       optionalIds  <- Gen.subset(StaticField.optional.whole)
       order        <- Gen.shuffle((mandatoryIds ++ optionalIds).toVector)
