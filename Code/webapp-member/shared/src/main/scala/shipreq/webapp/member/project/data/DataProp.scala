@@ -139,10 +139,18 @@ object DataProp {
     def noDuplicateTagFieldReqTypeResolutions =
       Prop.distinctI("TagField/ReqTypeResolution", filteredFields { case t: CustomField.Tag => t.fieldReqTypeRules.resolutionIterator() })
 
+    def numFieldDefaultsInRange =
+      Prop.atom[CustomField.Number]("Default in range", n => {
+        val bad = n.fieldReqTypeRules.resolutionIterator().flatMap(_.defaultOption).filter(d => d < n.min || d > n.max).toList
+        Option.when(bad.nonEmpty)(
+          s"Defaults for ${n.name} field are out of range [${n.min}, ${n.max}]: ${bad.mkString(", ")}")
+      }).forall(filteredFields { case n: CustomField.Number => n })
+
     def fieldSet = "FieldSet" rename_: (
       ids ∧ fields ∧
       orderNoDups ∧ orderCustomFieldsIso ∧ orderHasAllMandatoryStaticFields ∧
-      tagFieldsUnique ∧ implicationFieldsUnique ∧ noDuplicateTagFieldReqTypeResolutions
+      tagFieldsUnique ∧ implicationFieldsUnique ∧ noDuplicateTagFieldReqTypeResolutions ∧
+      numFieldDefaultsInRange
     )
 
     val all =

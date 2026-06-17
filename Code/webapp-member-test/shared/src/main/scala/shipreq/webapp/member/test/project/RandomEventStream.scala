@@ -17,6 +17,7 @@ import shipreq.webapp.base.data.{ProjectCreator, ProjectRole, UserId}
 import shipreq.webapp.base.test.RandomBaseData
 import shipreq.webapp.base.test.RandomBaseData.unicodeString1
 import shipreq.webapp.member.project.data._
+import shipreq.webapp.member.project.data.DataImplicits._
 import shipreq.webapp.member.project.data.savedview.SavedView
 import shipreq.webapp.member.project.event.Event._
 import shipreq.webapp.member.project.event.RetiredGenericData._
@@ -315,8 +316,8 @@ final class ApplicableEventGen(emptyState: State, curState: State, config: Rando
   lazy val fieldReqTypeRules_ : Gen[FieldReqTypeRules[Impossible]] =
     RandomData.fieldReqTypeRules(existingReqTypeId, None)
 
-  lazy val fieldReqTypeRulesNum: Gen[FieldReqTypeRules[Double]] =
-    RandomData.fieldReqTypeRules(existingReqTypeId, Some(Gen.double))
+  def fieldReqTypeRulesNum(genDefault: Option[Gen[Double]]): Gen[FieldReqTypeRules[Double]] =
+    RandomData.fieldReqTypeRules(existingReqTypeId, genDefault)
 
   lazy val fieldReqTypeRulesTag: Gen[FieldReqTypeRules[ApplicableTagId]] =
     RandomData.fieldReqTypeRules(existingReqTypeId, existingApplicableTagId)
@@ -483,15 +484,15 @@ final class ApplicableEventGen(emptyState: State, curState: State, config: Rando
     }
   }
 
-  object customNumberFieldGD extends GenericDataGen(CustomNumberFieldGD) {
+  case class customNumberFieldGD(genDefault: Option[Gen[Double]]) extends GenericDataGen(CustomNumberFieldGD) {
     import gd._
     private def mdp = DataValidators.numberField.maxDecimalPlaces
     override def valueFor(a: Attr) = a match {
-      case Name              => fieldName            map Name             .apply
-      case Desc              => desc                 map Desc             .apply
-      case Range             => minMax               map Range            .apply
-      case DecimalPlaces     => Gen.chooseInt(mdp)   map DecimalPlaces    .apply
-      case FieldReqTypeRules => fieldReqTypeRulesNum map FieldReqTypeRules.apply
+      case Name              => fieldName                        map Name             .apply
+      case Desc              => desc                             map Desc             .apply
+      case Range             => minMax                           map Range            .apply
+      case DecimalPlaces     => Gen.chooseInt(mdp)               map DecimalPlaces    .apply
+      case FieldReqTypeRules => fieldReqTypeRulesNum(genDefault) map FieldReqTypeRules.apply
     }
   }
 
@@ -744,7 +745,18 @@ final class ApplicableEventGen(emptyState: State, curState: State, config: Rando
   }
 
   def genFieldCustomNumberCreate: Gen[FieldCustomNumberCreate] =
-    Gen.apply2(FieldCustomNumberCreate)(nextCustomFieldNumberId, customNumberFieldGD.allValues)
+    minMax.flatMap { rangeDoubles =>
+      import CustomNumberFieldGD._
+      val range = Range(rangeDoubles)
+      val genDefault = Gen.chooseDouble(rangeDoubles._1, rangeDoubles._2)
+      for {
+        fid <- nextCustomFieldNumberId
+        vs1 <- customNumberFieldGD(Some(genDefault)).allValues
+      } yield {
+        val vs2 = NonEmpty.force(vs1 + range)
+        FieldCustomNumberCreate(fid, vs2)
+      }
+    }
 
   def genFieldCustomTextCreateV1: Gen[FieldCustomTextCreateV1] =
     Gen.apply2(FieldCustomTextCreateV1)(nextCustomFieldTextId, customTextFieldGDv1.allValues)
@@ -1009,8 +1021,23 @@ final class ApplicableEventGen(emptyState: State, curState: State, config: Rando
       Gen.apply2(FieldCustomTextUpdateV1)(id, customTextFieldGDv1.nonEmptyValues))
 
   def genFieldCustomNumberUpdate: Option[Gen[FieldCustomNumberUpdate]] =
-    customFieldNumberId(Live).map(id =>
-      Gen.apply2(FieldCustomNumberUpdate)(id, customNumberFieldGD.nonEmptyValues))
+    customFieldNumberId(Live).map { genId =>
+      genId.flatMap { fid =>
+        val f = p.config.fields.custom(fid)
+        val genDefault = Gen.chooseDouble(f.min, f.max)
+        customNumberFieldGD(Some(genDefault)).nonEmptyValues.flatMap { nev =>
+          import CustomNumberFieldGD.{FieldReqTypeRules, Range}
+          if (nev.containsK(Range))
+            // Range updated; wipe out any default values (because they could be out-of-range)
+            fieldReqTypeRulesNum(None).map { newRules =>
+              val nev2 = NonEmpty.force(nev + FieldReqTypeRules(newRules))
+              FieldCustomNumberUpdate(fid, nev2)
+            }
+          else
+            Gen pure FieldCustomNumberUpdate(fid, nev)
+        }
+      }
+    }
 
   def genFieldCustomTextUpdate: Option[Gen[FieldCustomTextUpdate]] =
     customFieldTextId(Live).map(id =>
