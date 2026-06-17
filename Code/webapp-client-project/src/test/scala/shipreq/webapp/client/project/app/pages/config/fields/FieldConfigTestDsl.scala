@@ -11,19 +11,27 @@ object FieldConfigTestDsl {
   val invariants: *.Invariants =
     *.emptyInvariant
 
-  val newChoices          = *.focus("New choices"          ).collection(_.obs.newButton.dropdown.items.map(_.text))
-  val fieldList           = *.focus("Field list"           ).collection(_.obs.fieldList.rows.map(_.name))
-  val filterDead          = *.focus("FilterDead"           ).value(_.obs.filterDead)
-  val isEditorOpen        = *.focus("isEditorOpen"         ).value(_.obs.isEditorOpen)
-  val buttonsEnabled      = *.focus("buttonsEnabled"       ).value(_.obs.buttonsEnabled)
-  val editorName          = *.focus("Editor name"          ).option(_.obs.editor.flatMap(_.nameValue))
-  val editorNameError     = *.focus("Editor name error"    ).option(_.obs.editor.flatMap(_.nameError))
-  val editorRules         = *.focus("Editor rules"         ).collection(_.obs.editor.flatMap(_.rules).fold(Vector.empty[RuleRow])(_.rows.map(_.desc)))
-  val editorDropdown      = *.focus("Editor dropdown"      ).option(_.obs.editor.flatMap(_.dropdown.flatMap(_.selected)))
-  val editorDropdownItems = *.focus("Editor dropdown items").collection(_.obs.editor.iterator.flatMap(_.dropdown).flatMap(_.items).map(_.text).toVector)
-  val editorDropdownError = *.focus("Editor dropdown error").value(_.obs.editor.flatMap(_.dropdown.map(_.hasError)).getOrElse(false))
-  val messageHeader       = *.focus("Message header"       ).option(_.obs.editor.flatMap(_.message.map(_.header)))
-  val editorEditables     = *.focus("Editor editables"     ).value(_.obs.editor.fold(0)(_.editables.length))
+  val newChoices           = *.focus("New choices"          ).collection(_.obs.newButton.dropdown.items.map(_.text))
+  val fieldList            = *.focus("Field list"           ).collection(_.obs.fieldList.rows.map(_.name))
+  val filterDead           = *.focus("FilterDead"           ).value(_.obs.filterDead)
+  val isEditorOpen         = *.focus("isEditorOpen"         ).value(_.obs.isEditorOpen)
+  val buttonsEnabled       = *.focus("buttonsEnabled"       ).value(_.obs.buttonsEnabled)
+  val editorName           = *.focus("Editor name"          ).option(_.obs.editor.flatMap(_.nameValue))
+  val editorNameError      = *.focus("Editor name error"    ).option(_.obs.editor.flatMap(_.nameError))
+  val editorDesc           = *.focus("Editor desc"          ).option(_.obs.editor.flatMap(_.descValue))
+  val editorDescError      = *.focus("Editor desc error"    ).option(_.obs.editor.flatMap(_.descError))
+  val editorMin            = *.focus("Editor min"           ).option(_.obs.editor.flatMap(_.minValue))
+  val editorMinError       = *.focus("Editor min error"     ).option(_.obs.editor.flatMap(_.minError))
+  val editorMax            = *.focus("Editor max"           ).option(_.obs.editor.flatMap(_.maxValue))
+  val editorMaxError       = *.focus("Editor max error"     ).option(_.obs.editor.flatMap(_.maxError))
+  val editorDecPlaces      = *.focus("Editor dp"            ).option(_.obs.editor.flatMap(_.decimalPlacesValue))
+  val editorDecPlacesError = *.focus("Editor dp error"      ).option(_.obs.editor.flatMap(_.decimalPlacesError))
+  val editorRules          = *.focus("Editor rules"         ).collection(_.obs.editor.flatMap(_.rules).fold(Vector.empty[RuleRow])(_.rows.map(_.desc)))
+  val editorDropdown       = *.focus("Editor dropdown"      ).option(_.obs.editor.flatMap(_.dropdown.flatMap(_.selected)))
+  val editorDropdownItems  = *.focus("Editor dropdown items").collection(_.obs.editor.iterator.flatMap(_.dropdown).flatMap(_.items).map(_.text).toVector)
+  val editorDropdownError  = *.focus("Editor dropdown error").value(_.obs.editor.flatMap(_.dropdown.map(_.hasError)).getOrElse(false))
+  val messageHeader        = *.focus("Message header"       ).option(_.obs.editor.flatMap(_.message.map(_.header)))
+  val editorEditables      = *.focus("Editor editables"     ).value(_.obs.editor.fold(0)(_.editables.length))
 
   def fieldDetail(name: String) =
     *.focus(s"$name detail").value(_.obs.fieldList(name).detail)
@@ -79,6 +87,18 @@ object FieldConfigTestDsl {
   def setEditorName(name: String): *.Actions =
     *.action(s"Set editor name to: $name")(SimEvent.Change(name) simulate _.obs.editor.get.nameDom.get)
 
+  def setEditorDesc(desc: String): *.Actions =
+    *.action(s"Set editor desc to: $desc")(SimEvent.Change(desc) simulate _.obs.editor.get.descDom.get)
+
+  def setEditorMin(min: String): *.Actions =
+    *.action(s"Set editor min to: $min")(SimEvent.Change(min) simulate _.obs.editor.get.minDom.get)
+
+  def setEditorMax(max: String): *.Actions =
+    *.action(s"Set editor max to: $max")(SimEvent.Change(max) simulate _.obs.editor.get.maxDom.get)
+
+  def setEditorDecPlaces(dp: String): *.Actions =
+    *.action(s"Set editor dec places to: $dp")(SimEvent.Change(dp) simulate _.obs.editor.get.decimalPlacesDom.get)
+
   val addEditorRule: *.Actions =
     *.action("Add editor rule")(Simulate click _.obs.editor.get.rules.get.rows.last.addButton.get)
 
@@ -92,7 +112,13 @@ object FieldConfigTestDsl {
     *.action(s"Set rules[$rowIdx].res to: $res")(_.obs.editor.get.rules.get.rows(rowIdx).res.select(res))
 
   def setRuleDefault(rowIdx: Int, default: String): *.Actions =
-    *.action(s"Set rules[$rowIdx].default to: $default")(_.obs.editor.get.rules.get.rows(rowIdx).default.get.select(default))
+    *.action(s"Set rules[$rowIdx].default to: $default")(x => {
+      val row = x.obs.editor.get.rules.get.rows(rowIdx)
+      row.default match {
+        case Some(d) => d.select(default)
+        case None    => SimEvent.Change(default) simulate row.defaultInputDom.get
+      }
+    })
 
   def selectNew(name: String): *.Actions =
     *.action(s"New button: select $name")(_.obs.newButton.dropdown.select(name))

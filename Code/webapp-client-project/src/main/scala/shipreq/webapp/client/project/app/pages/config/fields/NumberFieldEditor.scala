@@ -21,6 +21,11 @@ import scalacss.ScalaCssReact._
 object NumberFieldEditor {
   import DataImplicits._
 
+  def FieldNameDesc          = "Description"
+  def FieldNameMin           = "Minimum Value (inclusive)"
+  def FieldNameMax           = "Maximum Value (inclusive)"
+  def FieldNameDecimalPlaces = "Decimal Places"
+
   final case class Props(state     : StateSnapshot[State],
                          cfg       : ProjectConfig,
                          filterDead: FilterDead,
@@ -137,7 +142,7 @@ object NumberFieldEditor {
 
     val descField =
       Form.Field.text
-        .withLabel("Description")
+        .withLabel(FieldNameDesc)
         .withState(p.state.zoomStateL(State.desc))
         .withValidator(DataValidators.numberField.desc.unnamed)
         .withEnabled(p.enabled)
@@ -149,7 +154,7 @@ object NumberFieldEditor {
       CommonValidation.double
         .appendInvalidator(Invalidator(min =>
           maxValueOption.flatMap(max =>
-            Option.when(min > max)(Invalidity("Can't be larger than the maximum.")))))
+            Option.when(min > max)(Invalidity("Can't be greater than the maximum.")))))
 
     val maxValidator =
       CommonValidation.double
@@ -159,21 +164,21 @@ object NumberFieldEditor {
 
     val minField =
       Form.Field.text
-        .withLabel("Minimum Value (inclusive)")
+        .withLabel(FieldNameMin)
         .withState(p.state.zoomStateL(State.min))
         .withValidator(minValidator)
         .withEnabled(p.enabled)
 
     val maxField =
       Form.Field.text
-        .withLabel("Maximum Value (inclusive)")
+        .withLabel(FieldNameMax)
         .withState(p.state.zoomStateL(State.max))
         .withValidator(maxValidator)
         .withEnabled(p.enabled)
 
     val decimalPlacesField =
       Form.Field.text
-        .withLabel("Decimal Places")
+        .withLabel(FieldNameDecimalPlaces)
         .withState(p.state.zoomStateL(State.decimalPlaces))
         .withValidator(DataValidators.numberField.decimalPlaces.unnamed)
         .withEnabled(p.enabled)
