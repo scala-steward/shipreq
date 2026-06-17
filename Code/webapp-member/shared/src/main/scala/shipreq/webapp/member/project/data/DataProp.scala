@@ -718,6 +718,8 @@ object DataProp {
       ∧ validReqIds    ("ReqCode ReqIds (inactive)",  _.content.reqCodes.inactiveIdsByReqId.keys)
       ∧ validFieldIds  ("ReqData.text TextField ids", _.content.reqText.data.keys)
       ∧ validReqIds    ("ReqData.text.*.reqIds",      _.content.reqText.data.valuesIterator.flatMap(_.keysIterator))
+      ∧ validFieldIds  ("ReqData.nums NumField ids",  _.content.reqNums.keys)
+      ∧ validReqIds    ("ReqData.nums.*.reqIds",      _.content.reqNums.valuesIterator.flatMap(_.keysIterator))
       ∧ validReqIds    ("ReqData.config.tags keys",   _.content.reqTags.keys)
       ∧ validTagIds    ("ReqData.config.tags values", _.content.reqTags.valueIterator)
       ∧ validReqIds    ("ReqData.implications",       _.content.implications.members)
