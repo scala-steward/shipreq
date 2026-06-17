@@ -1,7 +1,5 @@
 * Manually test
   * changes to FilterAlgebra
-  * decimal places exceeding Int.MaxValue
-  * "The maximum can't be larger than the minimum" from UI
 
 * Automated test
   * protocol tests for new events
@@ -10,7 +8,7 @@
   * Style `_number` in `ProjectWidgets`
 
 * Add to data prop:
-  * Ensure custom number field values (in data) are valid (i.e. in config)
+  * Ensure custom number field ids (in data) are valid (i.e. exist in config)
   * Same with the req ids
 
 * Number field value validation
@@ -39,6 +37,9 @@
 * ReqTable
   * sorting by number
     * respects applicability / defaults by reqType
+
+* Issues
+  * Out-of-range numbers in req data
 
 * Update the changelog
 * Run Scalafix
