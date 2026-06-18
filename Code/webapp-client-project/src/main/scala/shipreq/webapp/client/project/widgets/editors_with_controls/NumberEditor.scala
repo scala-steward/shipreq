@@ -7,9 +7,10 @@ import shipreq.base.util._
 import shipreq.webapp.base.feature.EditorStatus
 import shipreq.webapp.base.validation.lib.CommonValidation
 import shipreq.webapp.base.validation.lib.Simple.Invalidity
+import shipreq.webapp.client.project.feature.editor.PotentialValueAcceptor
 import shipreq.webapp.member.feature.EditControlsFeature
 import shipreq.webapp.member.project.text.SingleLine
-import shipreq.webapp.client.project.feature.editor.PotentialValueAcceptor
+import shipreq.webapp.member.ui.AutosizeTextarea
 
 object NumberEditor {
 
@@ -48,32 +49,56 @@ object NumberEditor {
   val potentialValueAcceptor: PotentialValueAcceptor[String] =
     PotentialValueAcceptor.correct(CommonValidation.optionalDouble.corrector.live)
 
-  private val editControls =
-    EditControlsFeature.Controls[Props](SingleLine)
-      .abortWhenDefined(_.abort, _.abortVerb)
-      .commitWhenDefined(_.status.getCommit, _.commitVerb)
+  final class Backend($: BackendScope[Props, Unit]) {
+    private val editorRef = Ref.toScalaComponent(AutosizeTextarea.Component)
 
-  private def render(p: Props): VdomNode = {
+    private val editControls =
+      EditControlsFeature.Controls[Props](SingleLine)
+        .abortWhenDefined(_.abort, _.abortVerb)
+        .commitWhenDefined(_.status.getCommit, _.commitVerb)
 
-    def editor(validity: Validity): VdomElement =
-      <.input.text(
-        ^.value     := p.edit.value,
-        ^.autoFocus := p.autoFocus,
-        ^.onChange ==> ((e: ReactEventFromInput) => {
+    private val keys = editControls.keyHandlers($.props)
+
+    def render(p: Props): VdomNode = {
+      val updateState: ReactEventFromTextArea => Callback =
+        e => {
           val newVal = CommonValidation.optionalDouble.corrector.live(e.target.value)
           p.status.wrapEdit(p.edit.setState(newVal))
-        }),
-        (^.cls := "error").when(validity.is(Invalid)))
+        }
 
-    EditControlsFeature.renderEditor(
-      status       = p.status,
-      editor       = editor,
-      readOnlyView = p.edit.value,
-      instructions = editControls.instructions(p))
+      def editor(validity: Validity): VdomElement = {
+        val base = TagMod(
+          keys,
+          ^.autoFocus := p.autoFocus,
+          ^.onChange ==> updateState,
+          RichTextEditor.minRows(SingleLine),
+        )
+
+        val autosizeProps = EditControlsFeature.autosizeTextareaProps(
+          position = Some(EditControlsFeature.Style.default.position),
+          mode     = EditControlsFeature.Mode.Inline,
+          enabled  = Enabled,
+          validity = validity,
+          value    = p.edit.value,
+          tagMod   = base,
+        )
+        editorRef.component(autosizeProps)
+      }
+
+      EditControlsFeature.renderEditor(
+        status       = p.status,
+        editor       = editor,
+        readOnlyView = p.edit.value,
+        instructions = editControls.instructions(p))
+    }
+
+    def onMount(p: Props): Callback =
+      EditControlsFeature.onTextareaEditorMount(editorRef, p.autoFocus)
   }
 
   val Component = ScalaComponent.builder[Props]
-    .render_P(render)
+    .renderBackend[Backend]
     .configure(Reusability.shouldComponentUpdate)
+    .componentDidMount($ => $.backend.onMount($.props))
     .build
 }
