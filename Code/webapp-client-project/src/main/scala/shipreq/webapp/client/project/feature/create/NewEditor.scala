@@ -11,6 +11,7 @@ import shipreq.webapp.base.util.{LastValueMemo, LruMemo}
 import shipreq.webapp.client.project.feature.create.Feature.{AsyncState, Editor, PreviewId, State}
 import shipreq.webapp.member.feature._
 import shipreq.webapp.member.project.data._
+import shipreq.webapp.member.project.data.DataImplicits._
 import shipreq.webapp.member.project.text._
 import shipreq.webapp.member.project.util.DataReusability._
 
@@ -72,7 +73,7 @@ object NewEditor {
 
       def prepareGR(r: RowKey.GenericReq) = FieldKey.FoldForGenericReq[LogicPerField](
         codes             = _ => EditReqCodes.Multiple.apply,
-        customNumberField = _ => EditNumber.initFn,
+        customNumberField = f => EditNumber(f.field),
         customTextField   = f => EditRichText.CustomTextField(PreviewId(r, f), Some(r.reqTypeId)),
         implications      = f => EditImplications(f.scope),
         otherTags         = _ => EditTags.otherTags(r.reqTypeId),
@@ -82,7 +83,7 @@ object NewEditor {
 
       def prepareUC(r: RowKey.UseCase.type) = FieldKey.FoldForUseCase[LogicPerField](
         codes             = _ => EditReqCodes.Multiple.apply,
-        customNumberField = _ => EditNumber.initFn,
+        customNumberField = f => EditNumber(f.field),
         customTextField   = f => EditRichText.CustomTextField(PreviewId(r, f), Some(StaticReqType.UseCase)),
         implications      = f => EditImplications(f.scope),
         otherTags         = _ => EditTags.otherTags(r.reqTypeId),
@@ -142,13 +143,15 @@ object NewEditor {
       type Props          = NumberEditor.Props
       type PropsInputs    = (StateSnapshot[String], Args, AsyncState)
 
-      val initFn: InitFn = {
+      def apply(fid: CustomField.Number.Id): InitFn = {
+
         val propsMemo = newPropsMemo[PropsInputs, Props] { in =>
           val (ss, args, asyncState) = in
           NumberEditor.Props(
             initialValue = None,
             edit         = ss,
             asyncStatus  = EditorStatus.async(asyncState),
+            legalRange   = args.project.config.fields.custom(fid).range,
             abort        = args.abort,
             abortVerb    = args.abortVerb,
             commitFn     = args.commit,

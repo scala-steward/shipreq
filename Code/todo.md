@@ -7,10 +7,6 @@
 * Number rendering:
   * Style `_number` in `ProjectWidgets`
 
-* Number editor
-  * Error: invalid input
-    * number out of range
-
 * Number cell
   * Displays defaults
   * Check rendering of out-of-bounds \&/ dead

@@ -6,7 +6,7 @@ import japgolly.scalajs.react.vdom.html_<^._
 import shipreq.base.util._
 import shipreq.webapp.base.feature.EditorStatus
 import shipreq.webapp.base.validation.lib.CommonValidation
-import shipreq.webapp.base.validation.lib.Simple.Invalidity
+import shipreq.webapp.base.validation.lib.Simple.{Invalidity, Invalidator}
 import shipreq.webapp.client.project.feature.editor.PotentialValueAcceptor
 import shipreq.webapp.member.feature.EditControlsFeature
 import shipreq.webapp.member.project.text.SingleLine
@@ -19,14 +19,25 @@ object NumberEditor {
   final case class Props(initialValue: Option[Value],
                          edit        : StateSnapshot[String],
                          asyncStatus : Option[EditorStatus.Async],
+                         legalRange  : (Double, Double),
                          abort       : Option[Callback],
                          abortVerb   : String,
                          commitFn    : Option[Value => Callback],
                          commitVerb  : String,
                          autoFocus   : Boolean) {
 
+    private def validator = {
+      def min = legalRange._1
+      def max = legalRange._2
+      def invalidator(f: Double => Option[String]): Invalidator[Option[Double]] =
+        Invalidator(_.flatMap(f).map(Invalidity.apply))
+      CommonValidation.optionalDouble
+        .appendInvalidator(invalidator(d => Option.when(d < min)("Cannot be less than " + min)))
+        .appendInvalidator(invalidator(d => Option.when(d > max)("Cannot be greater than " + max)))
+    }
+
     val parseResult: Invalidity \/ Value =
-      CommonValidation.optionalDouble(edit.value)
+      validator(edit.value)
 
     val validated: PotentialChange[Invalidity, Value] =
       PotentialChange.fromDisjunction(parseResult)

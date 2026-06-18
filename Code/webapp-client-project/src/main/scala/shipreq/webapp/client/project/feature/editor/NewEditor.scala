@@ -17,6 +17,7 @@ import shipreq.webapp.client.project.feature.editor.Feature.{AsyncError, AsyncSt
 import shipreq.webapp.client.project.widgets.ProjectWidgets
 import shipreq.webapp.member.feature._
 import shipreq.webapp.member.project.data._
+import shipreq.webapp.member.project.data.DataImplicits._
 import shipreq.webapp.member.project.event.UseCaseStepGD
 import shipreq.webapp.member.project.protocol.websocket.{ManualIssueCmd, UpdateContentCmd}
 import shipreq.webapp.member.project.text._
@@ -319,8 +320,12 @@ object NewEditor {
         val initialValueCBO: CallbackOption[InitialValue] =
           pxProject.toCallback.map(p => ReqData.Numbers.at(fid, id).get(p.content.reqNums)).toCBO
 
+        val rangeCBO: CallbackOption[(Double, Double)] =
+          pxProject.toCallback.map(p => p.config.fields.custom(fid).range).toCBO
+
         for {
           initialValue <- initialValueCBO
+          range        <- rangeCBO
         } yield {
 
           val someInitialValue = Some(initialValue)
@@ -332,6 +337,7 @@ object NewEditor {
                 initialValue = someInitialValue,
                 edit         = ss,
                 asyncStatus  = EditorStatus.async(asyncState),
+                legalRange   = range,
                 abort        = abort,
                 abortVerb    = abortVerb,
                 commitFn     = commitFn,
