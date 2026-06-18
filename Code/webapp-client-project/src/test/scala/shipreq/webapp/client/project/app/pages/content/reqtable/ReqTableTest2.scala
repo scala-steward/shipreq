@@ -6,7 +6,7 @@ import shipreq.webapp.client.project.app.ProjectSpaTestDsl
 import shipreq.webapp.client.project.app.pages.root.Routes.Page
 import shipreq.webapp.client.project.test._
 import shipreq.webapp.member.project.data._
-import shipreq.webapp.member.project.event.{Event, GenericReqGD}
+import shipreq.webapp.member.project.event.{CustomNumberFieldGD, Event, GenericReqGD}
 import shipreq.webapp.member.test.WebappTestUtil._
 import shipreq.webapp.member.test.project.{SampleProject3, SampleProject4, SampleProject7}
 import utest._
@@ -397,6 +397,44 @@ object ReqTableTest2 extends TestSuite {
     runTest(Plan.action(test) withInitialState SampleProject7.project)
   }
 
+  def testNumericFields()(implicit path: TestPath) = {
+    import shipreq.webapp.member.test.project.SampleProject7.Values._
+    import shipreq.webapp.member.test.project.UnsafeTypes._
+
+    val numField = 88.CFNum
+
+    val project = applyEventsSuccessfully(
+      SampleProject7.project,
+      Event.FieldCustomNumberCreate(numField, CustomNumberFieldGD(
+        name = "My Number",
+        desc = None,
+        range = (0.0, 100.0),
+        decimalPlaces = 2,
+        fieldReqTypeRules = FieldReqTypeRules.optional.defaultTo(10.0)(br).defaultTo(1.0)(mf)
+      ))
+    )
+
+    val plan = Plan.action(
+      enterFilter("MF-1 | BR-1")
+        >> showAllColumns
+
+        >> sortBy("My Number")
+        +> cellEditor("MF-1", "My Number").text.assert("1.00")
+        +> cellEditor("BR-1", "My Number").text.assert("10.00")
+        +> tablePubids.assert.equal("MF-1", "BR-1")
+
+        >> cellEditor("MF-1", "My Number").set("2")
+        +> cellEditor("MF-1", "My Number").text.assert("2.00")
+        +> tablePubids.assert.equal("MF-1", "BR-1")
+
+        >> cellEditor("MF-1", "My Number").set("20.1")
+        +> cellEditor("MF-1", "My Number").text.assert("20.10")
+        +> tablePubids.assert.equal("BR-1", "MF-1")
+    )
+
+    runTest(plan withInitialState project)
+  }
+
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   override def tests = Tests {
@@ -434,5 +472,7 @@ object ReqTableTest2 extends TestSuite {
       "basic" - testSavedViewsBasic()
       "deadCol" - testSavedViewsDeadCol()
     }
+
+    "numericFields" - testNumericFields()
   }
 }
