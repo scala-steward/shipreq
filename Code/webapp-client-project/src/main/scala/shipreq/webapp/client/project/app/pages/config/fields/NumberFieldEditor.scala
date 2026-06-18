@@ -1,22 +1,23 @@
 package shipreq.webapp.client.project.app.pages.config.fields
 
-import japgolly.scalajs.react.ReactMonocle._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
+import japgolly.scalajs.react.ReactMonocle._
 import japgolly.scalajs.react.vdom.html_<^._
 import monocle.macros.Lenses
+import scalacss.ScalaCssReact._
 import shipreq.base.util._
 import shipreq.webapp.base.ui.widgets.Form
+import shipreq.webapp.base.validation.lib.CommonValidation
+import shipreq.webapp.base.validation.lib.Simple.{Invalidity, Invalidator}
 import shipreq.webapp.base.validation.ValidationUX
+import shipreq.webapp.client.project.app.Style.{numberFieldEditor => *}
 import shipreq.webapp.client.project.util.DataReusability._
 import shipreq.webapp.client.project.widgets.ReqTypeRulesEditor
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.event.CustomNumberFieldGD
 import shipreq.webapp.member.project.protocol.websocket.UpdateConfigCmd
-import shipreq.webapp.base.validation.lib.CommonValidation
-import shipreq.webapp.base.validation.lib.Simple.{Invalidity, Invalidator}
-import shipreq.webapp.client.project.app.Style.{numberFieldEditor => *}
-import scalacss.ScalaCssReact._
+import shipreq.webapp.member.ui.AutosizeTextarea
 
 object NumberFieldEditor {
   import DataImplicits._
@@ -142,6 +143,7 @@ object NumberFieldEditor {
 
     val descField =
       Form.Field.text
+        .withEditor(AutosizeTextarea.editor)
         .withLabel(FieldNameDesc)
         .withState(p.state.zoomStateL(State.desc))
         .withValidator(DataValidators.numberField.desc.unnamed)
