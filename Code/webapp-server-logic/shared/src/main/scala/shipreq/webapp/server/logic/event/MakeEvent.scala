@@ -393,6 +393,7 @@ object MakeEvent {
             val v = cs.map(c => ApReqCodeId.AndValue(nextCodeId.ap(), c))
             vs += GenericReqGD.Codes(v)
           }
+          for (v <- NonEmpty(i.customNumbers))             vs += GenericReqGD.CustomNums(v)
           for (v <- NonEmpty(i.customText))                vs += GenericReqGD.CustomText(v)
           for (v <- NonEmptySet.option(i.imps(Backwards))) vs += GenericReqGD.ImpSrcs(v)
           for (v <- NonEmptySet.option(i.imps(Forwards)))  vs += GenericReqGD.ImpTgts(v)
@@ -408,6 +409,7 @@ object MakeEvent {
             val v = cs.map(c => ApReqCodeId.AndValue(nextCodeId.ap(), c))
             vs += UseCaseGD.Codes(v)
           }
+          for (v <- NonEmpty(i.customNumbers))             vs += UseCaseGD.CustomNums(v)
           for (v <- NonEmpty(i.customText))                vs += UseCaseGD.CustomText(v)
           for (v <- NonEmptySet.option(i.imps(Backwards))) vs += UseCaseGD.ImpSrcs(v)
           for (v <- NonEmptySet.option(i.imps(Forwards)))  vs += UseCaseGD.ImpTgts(v)

@@ -15,6 +15,7 @@ object Rev1 {
   import shipreq.webapp.member.project.protocol.json.v1.BaseData._
   import shipreq.webapp.member.project.protocol.json.v1.BaseMemberData1._
   import shipreq.webapp.member.project.protocol.json.v1.BaseMemberData1.SavedViewCodecs._
+  import shipreq.webapp.member.project.protocol.json.v1.Events._
   import shipreq.webapp.member.project.protocol.json.v1.Events.EventData._
   import shipreq.webapp.member.project.protocol.json.v1.PostEvents._
   import shipreq.webapp.member.project.protocol.json.v1.Rev1._
@@ -23,6 +24,7 @@ object Rev1 {
   import shipreq.webapp.member.project.protocol.json.v1.Rev4._
   import shipreq.webapp.member.project.protocol.json.v1.Rev6.AtomCodecs.instances._
   import shipreq.webapp.member.project.protocol.json.v1.Rev6.EventData._
+  import shipreq.webapp.member.project.protocol.json.v1.Rev6._
   import shipreq.webapp.member.project.protocol.json.v2.Rev0._
   import shipreq.webapp.member.project.protocol.json.v2.Rev0.EventData._
   import this.EventData._
@@ -642,6 +644,77 @@ object Rev1 {
     codecNonEmptyMono[Values]
   }
 
+  private[json] implicit val codecEventNonEmptyCustomNumberMap: JsonCodec[Event.NonEmptyCustomNumberMap] =
+    codecNonEmptyMono
+
+  private[json] implicit val codecGenericReqGD: JsonCodec[GenericReqGD.Values] = {
+    import GenericReqGD._
+
+    implicit val codecValueForCodes      = JsonCodec.xmap(ValueForCodes     .apply)(_.value)
+    implicit val codecValueForCustomNums = JsonCodec.xmap(ValueForCustomNums.apply)(_.value)
+    implicit val codecValueForCustomText = JsonCodec.xmap(ValueForCustomText.apply)(_.value)
+    implicit val codecValueForImpSrcs    = JsonCodec.xmap(ValueForImpSrcs   .apply)(_.value)
+    implicit val codecValueForImpTgts    = JsonCodec.xmap(ValueForImpTgts   .apply)(_.value)
+    implicit val codecValueForTags       = JsonCodec.xmap(ValueForTags      .apply)(_.value)
+    implicit val codecValueForTitle      = JsonCodec.xmap(ValueForTitle     .apply)(_.value)
+
+    implicit val decoderValue: Decoder[Value] = decodeSumBySoleKey {
+      case ("codes"     , c) => c.as[ValueForCodes]
+      case ("customNums", c) => c.as[ValueForCustomNums]
+      case ("customText", c) => c.as[ValueForCustomText]
+      case ("impSrcs"   , c) => c.as[ValueForImpSrcs]
+      case ("impTgts"   , c) => c.as[ValueForImpTgts]
+      case ("tags"      , c) => c.as[ValueForTags]
+      case ("title"     , c) => c.as[ValueForTitle]
+    }
+
+    implicit val encoderValue: Encoder[Value] = Encoder.instance {
+      case a: ValueForCodes      => Json.obj("codes"      -> a.asJson)
+      case a: ValueForCustomNums => Json.obj("customNums" -> a.asJson)
+      case a: ValueForCustomText => Json.obj("customText" -> a.asJson)
+      case a: ValueForImpSrcs    => Json.obj("impSrcs"    -> a.asJson)
+      case a: ValueForImpTgts    => Json.obj("impTgts"    -> a.asJson)
+      case a: ValueForTags       => Json.obj("tags"       -> a.asJson)
+      case a: ValueForTitle      => Json.obj("title"      -> a.asJson)
+    }
+
+    codecIMap(emptyValues)
+  }
+
+  private[json] implicit val codecUseCaseGD: JsonCodec[UseCaseGD.Values] = {
+    import UseCaseGD._
+
+    implicit val codecValueForCodes      = JsonCodec.xmap(ValueForCodes     .apply)(_.value)
+    implicit val codecValueForCustomNums = JsonCodec.xmap(ValueForCustomNums.apply)(_.value)
+    implicit val codecValueForCustomText = JsonCodec.xmap(ValueForCustomText.apply)(_.value)
+    implicit val codecValueForImpSrcs    = JsonCodec.xmap(ValueForImpSrcs   .apply)(_.value)
+    implicit val codecValueForImpTgts    = JsonCodec.xmap(ValueForImpTgts   .apply)(_.value)
+    implicit val codecValueForTags       = JsonCodec.xmap(ValueForTags      .apply)(_.value)
+    implicit val codecValueForTitle      = JsonCodec.xmap(ValueForTitle     .apply)(_.value)
+
+    implicit val decoderValue: Decoder[Value] = decodeSumBySoleKey {
+      case ("codes"     , c) => c.as[ValueForCodes]
+      case ("customNums", c) => c.as[ValueForCustomNums]
+      case ("customText", c) => c.as[ValueForCustomText]
+      case ("impSrcs"   , c) => c.as[ValueForImpSrcs]
+      case ("impTgts"   , c) => c.as[ValueForImpTgts]
+      case ("tags"      , c) => c.as[ValueForTags]
+      case ("title"     , c) => c.as[ValueForTitle]
+    }
+
+    implicit val encoderValue: Encoder[Value] = Encoder.instance {
+      case a: ValueForCodes      => Json.obj("codes"      -> a.asJson)
+      case a: ValueForCustomNums => Json.obj("customNums" -> a.asJson)
+      case a: ValueForCustomText => Json.obj("customText" -> a.asJson)
+      case a: ValueForImpSrcs    => Json.obj("impSrcs"    -> a.asJson)
+      case a: ValueForImpTgts    => Json.obj("impTgts"    -> a.asJson)
+      case a: ValueForTags       => Json.obj("tags"       -> a.asJson)
+      case a: ValueForTitle      => Json.obj("title"      -> a.asJson)
+    }
+
+    codecIMap(emptyValues)
+  }
+
   object EventData {
 
     implicit val decoderEventProjectDelete: Decoder[Event.ProjectDelete] =
@@ -743,6 +816,18 @@ object Rev1 {
 
     implicit val encoderEventReqFieldCustomNumberSet: Encoder[Event.ReqFieldCustomNumberSet] =
       Encoder.forProduct3("id", "fid", "value")(a => (a.id, a.fid, a.value))
+
+    implicit val decoderEventGenericReqCreate: Decoder[Event.GenericReqCreate] =
+      Decoder.forProduct3("reqId", "reqTypeId", "values")(Event.GenericReqCreate.apply)
+
+    implicit val encoderEventGenericReqCreate: Encoder[Event.GenericReqCreate] =
+      Encoder.forProduct3("reqId", "reqTypeId", "values")(a => (a.id, a.rt, a.vs))
+
+    implicit val decoderEventUseCaseCreate: Decoder[Event.UseCaseCreate] =
+      Decoder.forProduct3("id", "stepId", "values")(Event.UseCaseCreate.apply)
+
+    implicit val encoderEventUseCaseCreate: Encoder[Event.UseCaseCreate] =
+      Encoder.forProduct3("id", "stepId", "values")(a => (a.id, a.stepId, a.vs))
   }
 
   implicit lazy val decoderEvent: Decoder[Event] = decodeSumBySoleKey {

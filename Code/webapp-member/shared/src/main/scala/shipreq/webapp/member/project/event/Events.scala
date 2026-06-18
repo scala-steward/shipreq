@@ -28,6 +28,8 @@ sealed trait RetiredEvent extends Event
 
 object Event {
 
+  type NonEmptyCustomNumberMap = NonEmpty[Map[CustomField.Number.Id, Double]]
+
   type NonEmptyCustomTextMap = NonEmpty[Map[CustomField.Text.Id, CustomTextField.NonEmptyText]]
 
   /*

@@ -131,6 +131,17 @@ trait ApplyContentEvent {
         _  <- Project.reqCodeTrie replace t3
       } yield ()
 
+    def setCustomNumValue(id   : ReqId,
+                          fid  : CustomField.Number.Id,
+                          value: Option[Double]): Eval[Unit] =
+      ensureLiveNumberFieldId(fid) >> (Project.reqNums andThen ReqData.Numbers.at(fid, id)).replace(value)
+
+    def setCustomNumValueMap(id: ReqId,
+                             values: NonEmpty[Map[CustomField.Number.Id, Double]]): Eval[Unit] =
+      values.iterator
+        .map { case (fid, value) => setCustomNumValue(id, fid, Some(value)) }
+        .reduce(_ >> _)
+
     def setCustomTextValue(id   : ReqId,
                            fid  : CustomField.Text.Id,
                            value: Text.CustomTextField.OptionalText): Eval[Unit] =
@@ -193,6 +204,7 @@ trait ApplyContentEvent {
       def foreachValue(id: GenericReqId, vs: ^.Values): Eval[Unit] =
         Eval.foldMapRun(vs.values) {
           case ^.ValueForCodes     (v) => setReqCodes          (id, v)
+          case ^.ValueForCustomNums(v) => setCustomNumValueMap (id, v)
           case ^.ValueForCustomText(v) => setCustomTextValueMap(id, v)
           case ^.ValueForImpSrcs   (v) => setReqImpSrcs        (id, v)
           case ^.ValueForImpTgts   (v) => setReqImpTgts        (id, v)
@@ -301,6 +313,7 @@ trait ApplyContentEvent {
       def foreachValue(id: UseCaseId, vs: ^.Values): Eval[Unit] =
         Eval.foldMapRun(vs.values) {
           case ^.ValueForCodes     (v) => setReqCodes          (id, v)
+          case ^.ValueForCustomNums(v) => setCustomNumValueMap (id, v)
           case ^.ValueForCustomText(v) => setCustomTextValueMap(id, v)
           case ^.ValueForImpSrcs   (v) => setReqImpSrcs        (id, v)
           case ^.ValueForImpTgts   (v) => setReqImpTgts        (id, v)

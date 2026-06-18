@@ -484,6 +484,19 @@ object GenericReqGD extends GenericData {
     }
   }
 
+  case object CustomNums extends Attr {
+    override type Data = Event.NonEmptyCustomNumberMap
+    override def apply(data: Data) = ValueForCustomNums(data)
+    override val dataEquality: Eq[Data] = implicitly[Eq[Event.NonEmptyCustomNumberMap]]
+  }
+  final case class ValueForCustomNums(value: CustomNums.Data) extends Value {
+    override val attr: CustomNums.type = CustomNums
+    override def equals(o: Any): Boolean = o match {
+      case v2: ValueForCustomNums => CustomNums.dataEquality.eqv(value, v2.value)
+      case _ => false
+    }
+  }
+
   case object CustomText extends Attr {
     override type Data = Event.NonEmptyCustomTextMap
     override def apply(data: Data) = ValueForCustomText(data)
@@ -550,14 +563,14 @@ object GenericReqGD extends GenericData {
   }
 
   override implicit val equalityAttr: Order[Attr] with UnivEq[Attr] =
-    Util.univEqAndArbitraryOrder(Vector(Codes, CustomText, ImpSrcs, ImpTgts, Tags, Title))
+    Util.univEqAndArbitraryOrder(Vector(Codes, CustomNums, CustomText, ImpSrcs, ImpTgts, Tags, Title))
 
   @inline override implicit def equalityValue: UnivEq[Value] = UnivEq.force
 
-  override val attrs = NonEmptySet[Attr](Codes, CustomText, ImpSrcs, ImpTgts, Tags, Title)
+  override val attrs = NonEmptySet[Attr](Codes, CustomNums, CustomText, ImpSrcs, ImpTgts, Tags, Title)
 
-  def apply(codes: NonEmptySet[ApReqCodeId.AndValue], customText: Event.NonEmptyCustomTextMap, impSrcs: NonEmptySet[ReqId], impTgts: NonEmptySet[ReqId], tags: NonEmptySet[ApplicableTagId], title: Text.GenericReqTitle.NonEmptyText): NonEmptyValues =
-    NonEmpty.force(emptyValues + ValueForCodes(codes) + ValueForCustomText(customText) + ValueForImpSrcs(impSrcs) + ValueForImpTgts(impTgts) + ValueForTags(tags) + ValueForTitle(title))
+  def apply(codes: NonEmptySet[ApReqCodeId.AndValue], customNums: Event.NonEmptyCustomNumberMap, customText: Event.NonEmptyCustomTextMap, impSrcs: NonEmptySet[ReqId], impTgts: NonEmptySet[ReqId], tags: NonEmptySet[ApplicableTagId], title: Text.GenericReqTitle.NonEmptyText): NonEmptyValues =
+    NonEmpty.force(emptyValues + ValueForCodes(codes) + ValueForCustomNums(customNums) + ValueForCustomText(customText) + ValueForImpSrcs(impSrcs) + ValueForImpTgts(impTgts) + ValueForTags(tags) + ValueForTitle(title))
 }
 
 // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
@@ -764,6 +777,19 @@ object UseCaseGD extends GenericData {
     }
   }
 
+  case object CustomNums extends Attr {
+    override type Data = Event.NonEmptyCustomNumberMap
+    override def apply(data: Data) = ValueForCustomNums(data)
+    override val dataEquality: Eq[Data] = implicitly[Eq[Event.NonEmptyCustomNumberMap]]
+  }
+  final case class ValueForCustomNums(value: CustomNums.Data) extends Value {
+    override val attr: CustomNums.type = CustomNums
+    override def equals(o: Any): Boolean = o match {
+      case v2: ValueForCustomNums => CustomNums.dataEquality.eqv(value, v2.value)
+      case _ => false
+    }
+  }
+
   case object CustomText extends Attr {
     override type Data = Event.NonEmptyCustomTextMap
     override def apply(data: Data) = ValueForCustomText(data)
@@ -830,14 +856,14 @@ object UseCaseGD extends GenericData {
   }
 
   override implicit val equalityAttr: Order[Attr] with UnivEq[Attr] =
-    Util.univEqAndArbitraryOrder(Vector(Codes, CustomText, ImpSrcs, ImpTgts, Tags, Title))
+    Util.univEqAndArbitraryOrder(Vector(Codes, CustomNums, CustomText, ImpSrcs, ImpTgts, Tags, Title))
 
   @inline override implicit def equalityValue: UnivEq[Value] = UnivEq.force
 
-  override val attrs = NonEmptySet[Attr](Codes, CustomText, ImpSrcs, ImpTgts, Tags, Title)
+  override val attrs = NonEmptySet[Attr](Codes, CustomNums, CustomText, ImpSrcs, ImpTgts, Tags, Title)
 
-  def apply(codes: NonEmptySet[ApReqCodeId.AndValue], customText: Event.NonEmptyCustomTextMap, impSrcs: NonEmptySet[ReqId], impTgts: NonEmptySet[ReqId], tags: NonEmptySet[ApplicableTagId], title: Text.UseCaseTitle.NonEmptyText): NonEmptyValues =
-    NonEmpty.force(emptyValues + ValueForCodes(codes) + ValueForCustomText(customText) + ValueForImpSrcs(impSrcs) + ValueForImpTgts(impTgts) + ValueForTags(tags) + ValueForTitle(title))
+  def apply(codes: NonEmptySet[ApReqCodeId.AndValue], customNums: Event.NonEmptyCustomNumberMap, customText: Event.NonEmptyCustomTextMap, impSrcs: NonEmptySet[ReqId], impTgts: NonEmptySet[ReqId], tags: NonEmptySet[ApplicableTagId], title: Text.UseCaseTitle.NonEmptyText): NonEmptyValues =
+    NonEmpty.force(emptyValues + ValueForCodes(codes) + ValueForCustomNums(customNums) + ValueForCustomText(customText) + ValueForImpSrcs(impSrcs) + ValueForImpTgts(impTgts) + ValueForTags(tags) + ValueForTitle(title))
 }
 
 // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████

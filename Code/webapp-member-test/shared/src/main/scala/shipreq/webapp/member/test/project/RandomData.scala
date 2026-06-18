@@ -2497,6 +2497,9 @@ object RandomData {
     val deletionReason: Gen[Text.DeletionReason.OptionalText] =
       TextGen.deletionReasonAtom(r, u, c, a).text
 
+    val nonEmptyCustomNumberMap: Gen[Event.NonEmptyCustomNumberMap] =
+      Gen.double.mapBy(customFieldNumberId)(1 to 3).map(NonEmpty.force)
+
     val nonEmptyCustomTextMap: Gen[Event.NonEmptyCustomTextMap] =
       customTextField1.mapBy(customFieldTextId)(1 to 3).map(NonEmpty.force)
 
@@ -2606,24 +2609,26 @@ object RandomData {
     object genericReqGD extends GenericDataGen(GenericReqGD) {
       import gd._
       override def valueFor(a: Attr): Gen[Value] = a match {
-        case Codes      => reqCodeIdAndValue.nes map Codes     .apply
-        case CustomText => nonEmptyCustomTextMap map CustomText.apply
-        case ImpSrcs    => reqId.nes             map ImpSrcs   .apply
-        case ImpTgts    => reqId.nes             map ImpTgts   .apply
-        case Tags       => applicableTagId.nes   map Tags      .apply
-        case Title      => genericReqTitle1      map Title     .apply
+        case Codes      => reqCodeIdAndValue.nes   map Codes     .apply
+        case CustomNums => nonEmptyCustomNumberMap map CustomNums.apply
+        case CustomText => nonEmptyCustomTextMap   map CustomText.apply
+        case ImpSrcs    => reqId.nes               map ImpSrcs   .apply
+        case ImpTgts    => reqId.nes               map ImpTgts   .apply
+        case Tags       => applicableTagId.nes     map Tags      .apply
+        case Title      => genericReqTitle1        map Title     .apply
       }
     }
 
     object useCaseGD extends GenericDataGen(UseCaseGD) {
       import gd._
       override def valueFor(a: Attr): Gen[Value] = a match {
-        case Codes      => reqCodeIdAndValue.nes map Codes     .apply
-        case CustomText => nonEmptyCustomTextMap map CustomText.apply
-        case ImpSrcs    => reqId.nes             map ImpSrcs   .apply
-        case ImpTgts    => reqId.nes             map ImpTgts   .apply
-        case Tags       => applicableTagId.nes   map Tags      .apply
-        case Title      => useCaseTitle1         map Title     .apply
+        case Codes      => reqCodeIdAndValue.nes   map Codes     .apply
+        case CustomNums => nonEmptyCustomNumberMap map CustomNums.apply
+        case CustomText => nonEmptyCustomTextMap   map CustomText.apply
+        case ImpSrcs    => reqId.nes               map ImpSrcs   .apply
+        case ImpTgts    => reqId.nes               map ImpTgts   .apply
+        case Tags       => applicableTagId.nes     map Tags      .apply
+        case Title      => useCaseTitle1           map Title     .apply
       }
     }
 

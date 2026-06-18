@@ -418,6 +418,9 @@ final class ApplicableEventGen(emptyState: State, curState: State, config: Rando
   lazy val nonEmptyCustomTextMap: Option[Gen[Event.NonEmptyCustomTextMap]] =
     customFieldTextId(Live).map(_.mapTo(customTextFieldText1)(1 to 3).map(NonEmpty.force))
 
+  lazy val nonEmptyCustomNumberMap: Option[Gen[Event.NonEmptyCustomNumberMap]] =
+    customFieldNumberId(Live).map(_.mapTo(Gen.double)(1 to 3).map(NonEmpty.force))
+
   object customIssueTypeGD extends GenericDataGen(CustomIssueTypeGD) {
     import gd._
     override def valueFor(a: Attr) = a match {
@@ -522,12 +525,13 @@ final class ApplicableEventGen(emptyState: State, curState: State, config: Rando
   object createGenericReqGD extends GenericDataOptionGen(GenericReqGD) {
     import gd._
     override def valueFor(a: Attr) = a match {
-      case Codes      => newReqCodeIdAndValue        .nes map Codes     .apply
-      case CustomText => nonEmptyCustomTextMap map (_     map CustomText.apply)
-      case ImpSrcs    => liveReqId             map (_.nes map ImpSrcs   .apply)
-      case ImpTgts    => liveReqId             map (_.nes map ImpTgts   .apply)
-      case Tags       => applicableTagId(Live) map (_.nes map Tags      .apply)
-      case Title      => genericReqTitle1                 map Title     .apply
+      case Codes      => newReqCodeIdAndValue          .nes map Codes     .apply
+      case CustomNums => nonEmptyCustomNumberMap map (_     map CustomNums.apply)
+      case CustomText => nonEmptyCustomTextMap   map (_     map CustomText.apply)
+      case ImpSrcs    => liveReqId               map (_.nes map ImpSrcs   .apply)
+      case ImpTgts    => liveReqId               map (_.nes map ImpTgts   .apply)
+      case Tags       => applicableTagId(Live)   map (_.nes map Tags      .apply)
+      case Title      => genericReqTitle1                   map Title     .apply
     }
   }
 
@@ -576,12 +580,13 @@ final class ApplicableEventGen(emptyState: State, curState: State, config: Rando
   object createUseCaseGD extends GenericDataOptionGen(UseCaseGD) {
     import gd._
     override def valueFor(a: Attr) = a match {
-      case Codes      => newReqCodeIdAndValue        .nes map Codes     .apply
-      case CustomText => nonEmptyCustomTextMap map (_     map CustomText.apply)
-      case ImpSrcs    => liveReqId             map (_.nes map ImpSrcs   .apply)
-      case ImpTgts    => liveReqId             map (_.nes map ImpTgts   .apply)
-      case Tags       => applicableTagId(Live) map (_.nes map Tags      .apply)
-      case Title      => useCaseTitle1                    map Title     .apply
+      case Codes      => newReqCodeIdAndValue          .nes map Codes     .apply
+      case CustomNums => nonEmptyCustomNumberMap map (_     map CustomNums.apply)
+      case CustomText => nonEmptyCustomTextMap   map (_     map CustomText.apply)
+      case ImpSrcs    => liveReqId               map (_.nes map ImpSrcs   .apply)
+      case ImpTgts    => liveReqId               map (_.nes map ImpTgts   .apply)
+      case Tags       => applicableTagId(Live)   map (_.nes map Tags      .apply)
+      case Title      => useCaseTitle1                      map Title     .apply
     }
   }
 

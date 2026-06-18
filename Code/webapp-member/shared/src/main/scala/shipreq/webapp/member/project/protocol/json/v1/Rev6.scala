@@ -288,68 +288,6 @@ object Rev6 {
     codecNonEmptyMono[Values]
   }
 
-  private[json] implicit val codecGenericReqGD: JsonCodec[GenericReqGD.Values] = {
-    import GenericReqGD._
-
-    implicit val codecValueForCodes      = JsonCodec.xmap(ValueForCodes     .apply)(_.value)
-    implicit val codecValueForCustomText = JsonCodec.xmap(ValueForCustomText.apply)(_.value)
-    implicit val codecValueForImpSrcs    = JsonCodec.xmap(ValueForImpSrcs   .apply)(_.value)
-    implicit val codecValueForImpTgts    = JsonCodec.xmap(ValueForImpTgts   .apply)(_.value)
-    implicit val codecValueForTags       = JsonCodec.xmap(ValueForTags      .apply)(_.value)
-    implicit val codecValueForTitle      = JsonCodec.xmap(ValueForTitle     .apply)(_.value)
-
-    implicit val decoderValue: Decoder[Value] = decodeSumBySoleKey {
-      case ("codes"     , c) => c.as[ValueForCodes]
-      case ("customText", c) => c.as[ValueForCustomText]
-      case ("impSrcs"   , c) => c.as[ValueForImpSrcs]
-      case ("impTgts"   , c) => c.as[ValueForImpTgts]
-      case ("tags"      , c) => c.as[ValueForTags]
-      case ("title"     , c) => c.as[ValueForTitle]
-    }
-
-    implicit val encoderValue: Encoder[Value] = Encoder.instance {
-      case a: ValueForCodes      => Json.obj("codes"      -> a.asJson)
-      case a: ValueForCustomText => Json.obj("customText" -> a.asJson)
-      case a: ValueForImpSrcs    => Json.obj("impSrcs"    -> a.asJson)
-      case a: ValueForImpTgts    => Json.obj("impTgts"    -> a.asJson)
-      case a: ValueForTags       => Json.obj("tags"       -> a.asJson)
-      case a: ValueForTitle      => Json.obj("title"      -> a.asJson)
-    }
-
-    codecIMap(emptyValues)
-  }
-
-  private[json] implicit val codecUseCaseGD: JsonCodec[UseCaseGD.Values] = {
-    import UseCaseGD._
-
-    implicit val codecValueForCodes      = JsonCodec.xmap(ValueForCodes     .apply)(_.value)
-    implicit val codecValueForCustomText = JsonCodec.xmap(ValueForCustomText.apply)(_.value)
-    implicit val codecValueForImpSrcs    = JsonCodec.xmap(ValueForImpSrcs   .apply)(_.value)
-    implicit val codecValueForImpTgts    = JsonCodec.xmap(ValueForImpTgts   .apply)(_.value)
-    implicit val codecValueForTags       = JsonCodec.xmap(ValueForTags      .apply)(_.value)
-    implicit val codecValueForTitle      = JsonCodec.xmap(ValueForTitle     .apply)(_.value)
-
-    implicit val decoderValue: Decoder[Value] = decodeSumBySoleKey {
-      case ("codes"     , c) => c.as[ValueForCodes]
-      case ("customText", c) => c.as[ValueForCustomText]
-      case ("impSrcs"   , c) => c.as[ValueForImpSrcs]
-      case ("impTgts"   , c) => c.as[ValueForImpTgts]
-      case ("tags"      , c) => c.as[ValueForTags]
-      case ("title"     , c) => c.as[ValueForTitle]
-    }
-
-    implicit val encoderValue: Encoder[Value] = Encoder.instance {
-      case a: ValueForCodes      => Json.obj("codes"      -> a.asJson)
-      case a: ValueForCustomText => Json.obj("customText" -> a.asJson)
-      case a: ValueForImpSrcs    => Json.obj("impSrcs"    -> a.asJson)
-      case a: ValueForImpTgts    => Json.obj("impTgts"    -> a.asJson)
-      case a: ValueForTags       => Json.obj("tags"       -> a.asJson)
-      case a: ValueForTitle      => Json.obj("title"      -> a.asJson)
-    }
-
-    codecIMap(emptyValues)
-  }
-
   private[json] implicit val codecUseCaseStepGD: JsonCodec[UseCaseStepGD.NonEmptyValues] = {
     import UseCaseStepGD._
 
@@ -386,12 +324,6 @@ object Rev6 {
 
     implicit val encoderEventFieldCustomTagUpdate: Encoder[Event.FieldCustomTagUpdate] =
       Encoder.forProduct2("id", "values")(a => (a.id, a.vs))
-
-    implicit val decoderEventGenericReqCreate: Decoder[Event.GenericReqCreate] =
-      Decoder.forProduct3("reqId", "reqTypeId", "values")(Event.GenericReqCreate.apply)
-
-    implicit val encoderEventGenericReqCreate: Encoder[Event.GenericReqCreate] =
-      Encoder.forProduct3("reqId", "reqTypeId", "values")(a => (a.id, a.rt, a.vs))
 
     implicit val decoderEventCodeGroupCreate: Decoder[Event.CodeGroupCreate] =
       Decoder.forProduct2("id", "values")(Event.CodeGroupCreate.apply)
@@ -434,12 +366,6 @@ object Rev6 {
 
     implicit val encoderEventGenericReqTitleSet: Encoder[Event.GenericReqTitleSet] =
       Encoder.forProduct2("id", "value")(a => (a.id, a.value))
-
-    implicit val decoderEventUseCaseCreate: Decoder[Event.UseCaseCreate] =
-      Decoder.forProduct3("id", "stepId", "values")(Event.UseCaseCreate.apply)
-
-    implicit val encoderEventUseCaseCreate: Encoder[Event.UseCaseCreate] =
-      Encoder.forProduct3("id", "stepId", "values")(a => (a.id, a.stepId, a.vs))
 
     implicit val decoderEventUseCaseStepUpdate: Decoder[Event.UseCaseStepUpdate] =
       Decoder.forProduct2("id", "values")(Event.UseCaseStepUpdate.apply)
