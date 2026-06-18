@@ -310,7 +310,7 @@ object NewEditor {
 
       private val potentialValueAcceptor = CallbackTo(NumberEditor.potentialValueAcceptor)
 
-      def apply(id: ReqId, fid: CustomField.Number.Id): InitFn = ictx => args => {
+      def apply(id: ReqId, fid: CustomField.Number.Id): InitFn = ictx => Internal.init(potentialValueAcceptor) { ivo => args => {
         import ictx._
 
         val (abort, commitFn) =
@@ -339,10 +339,10 @@ object NewEditor {
                 autoFocus    = args.autoFocus)
             }
 
-          val editValue = initialValue.fold("")(_.toString)
+          val editValue = ivo.getOrElse(initialValue.fold("")(_.toString))
           State(editValue, ictx.ctx.stateAccess.toSetStateFn, propsMemo)
         }
-      }
+      }}
 
       private case class State(editValue : String,
                                setStateFn: SetStateFn,
