@@ -180,8 +180,13 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]],
               case Column.DeletionReason => Live // Don't render this title with strike-through
               case _                     => c.live
             }
+            val rightAlign = c.column match {
+              case Column.CustomField(_: CustomField.Number.Id) => true
+              case _                                            => false
+            }
             <.th(
               *.columnHeader((live, i.status)),
+              (^.textAlign.right).when(rightAlign),
               i.mod,
               ^.tabIndex   := -1,
               ^.onKeyDown ==> dataColKeyDown(c),
