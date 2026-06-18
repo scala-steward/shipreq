@@ -1556,6 +1556,10 @@ object Style extends StyleSheet.Inline {
   // ===================================================================================================================
   object widgets {
 
+    val numberCell = style(
+      textAlign.right,
+    )
+
     val richCodeBlockError = style(
       backgroundColor(c"#ddd"),
       padding(1 ex, 2 ex),
@@ -2095,7 +2099,6 @@ object Style extends StyleSheet.Inline {
     )
 
     def applicableReqTypesErrMsg = widgets.applicableReqTypesErrMsg
-
   }
 
   // ===================================================================================================================

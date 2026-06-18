@@ -194,7 +194,7 @@ abstract class ProjectText[+Ctx <: Context, Out](project: Project, final val ctx
     Memo.by((_: CodeGroup).id)(g =>
       text(g.title, g.live, Valid.always, Optional))
 
-  final def customNumberField(id: CustomField.Number.Id, req: Req, live: Live, mandatory: Mandatory): Out =
+  def customNumberField(id: CustomField.Number.Id, req: Req, live: Live, mandatory: Mandatory): Out =
     customNumberFieldOption(id)(req).getOrElse[Out] {
       if (live.is(Live) && mandatory.is(Mandatory))
         whenBlankButMandatory

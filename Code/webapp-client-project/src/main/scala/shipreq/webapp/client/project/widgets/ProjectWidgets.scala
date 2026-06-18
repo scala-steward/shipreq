@@ -553,6 +553,12 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
       ProjectWidgets(project, plainText withCtx newCtx, viewTags, reqDetailRC, webWorker)
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // Overrides
+
+  override def customNumberField(id: CustomField.Number.Id, req: Req, live: Live, mandatory: Mandatory): VdomTag =
+    <.div(*.numberCell, super.customNumberField(id, req, live, mandatory))
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // Public additions not part of ProjectText
 
   def useCaseStepTextAndMaybeInvalidFlow[C[x] <: Iterable[x]](s: UseCaseStepFlowText.TextAndFlow[AnyOptional, C[String \/ UseCaseStepId]],
