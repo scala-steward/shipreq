@@ -180,10 +180,7 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]],
               case Column.DeletionReason => Live // Don't render this title with strike-through
               case _                     => c.live
             }
-            val rightAlign = c.column match {
-              case Column.CustomField(_: CustomField.Number.Id) => true
-              case _                                            => false
-            }
+            val rightAlign = isRightAlign(c.column)
             <.th(
               *.columnHeader((live, i.status)),
               (^.textAlign.right).when(rightAlign),
@@ -267,7 +264,7 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]],
       def mkProps(c: Column, ok: Reusable[TagMod] => Cell.Props): Cell.Props =
         p.applicability(row, c) match {
           case Applicable    => ok(mkViewWhenApplicable(c))
-          case NotApplicable => Cell.Props.`n/a`(rowSelected)
+          case NotApplicable => Cell.Props.`n/a`(rowSelected)(isRightAlign(c))
         }
 
       def mkColumnCells(columnEditor: Column => EditorFeature.ReadWrite.ForEditor[Unit, Any]): VdomArray =
@@ -275,7 +272,7 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]],
           val col    = colPlus.column
           def editor = columnEditor(col)
           val cs     = cellStateFn(row.live & colPlus.live)
-          val cp     = mkProps(col, Cell.Props(cs, editor, _))
+          val cp     = mkProps(col, Cell.Props(cs, editor, _, isRightAlign(col)))
           Cell.Component.withKey(ColumnLogic key col)(cp)
         }
 
@@ -442,18 +439,19 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]],
 
     case class Props(cellState: CellState,
                      editor   : EditorFeature.ReadWrite.ForEditor[Unit, Any],
-                     view     : Reusable[TagMod])
+                     view     : Reusable[TagMod],
+                     rightAlign: Boolean)
 
     object Props {
       implicit val reusability: Reusability[Props] =
         Reusability.derive
 
-      val `n/a`: On => Props =
-        On.memo(on =>
-          Props(
-            CellState(on)(Dead),
-            EditorFeature.ReadWrite.ForEditor.doNothing,
-            reusableNA))
+      val `n/a`: On => Boolean => Props =
+        On.memo(on => {
+          val f = Props(CellState(on)(Dead), EditorFeature.ReadWrite.ForEditor.doNothing, reusableNA, rightAlign = false)
+          val t = Props(CellState(on)(Dead), EditorFeature.ReadWrite.ForEditor.doNothing, reusableNA, rightAlign = true)
+          rightAlign => if (rightAlign) t else f
+        })
     }
 
     type RenderScope = ScalaComponent.Lifecycle.RenderScope[Props, Unit, Unit]
@@ -469,6 +467,7 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]],
       val editor = p.editor.onClose($.mountedPure.getDOMNode.map(_.toHtml).asCBO.flatMapCB(focusParentOnChildClose))
       cellBase(
         *.dataCell(p.cellState),
+        (^.textAlign.right).when(p.rightAlign),
         ^.onKeyDown ==> onKeyDown(editor),
         editor.themedRenderOr(())(p.view))
     }
@@ -483,6 +482,20 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]],
 // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
 object Table {
+
+  def isRightAlign(c: Column): Boolean =
+    c match {
+      case Column.CustomField(_: CustomField.Number.Id) => true
+      case Column.CustomField(_)
+         | Column.Pubid
+         | Column.Code
+         | Column.Title
+         | Column.ReqType
+         | Column.DeletionReason
+         | Column.Implications(_)
+         | Column.OtherTags
+         | Column.AllTags                               => false
+    }
 
   sealed abstract class Mode
   object Mode {
