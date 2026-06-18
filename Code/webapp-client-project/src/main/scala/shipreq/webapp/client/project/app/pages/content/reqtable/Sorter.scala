@@ -122,18 +122,15 @@ object Sorter {
       sorter[Option[Double]](
         prep = setup => {
           import setup.p
-          p.content.reqNums.get(fid) match {
-            case Some(reqNums) =>
-              val field = p.config.fields.custom(fid)
-              ;{
-                case row: Row.ForReq =>
-                  import row.req
-                  @inline def default = field.fieldReqTypeRules(req.reqTypeId).defaultOption
-                  reqNums.get(req.id).orElse(default)
-                case _: Row.ForCodeGroup => None
-              }
-            case None =>
-              _ => None
+          val field = p.config.fields.custom(fid)
+          val reqNums = p.content.reqNums.getOrElse(fid, Map.empty)
+
+          {
+            case row: Row.ForReq =>
+              @inline def default = field.fieldReqTypeRules(row.req.reqTypeId).defaultOption
+              reqNums.get(row.req.id).orElse(default)
+            case _: Row.ForCodeGroup =>
+              None
           }
         },
         sort = SortFn.double.option(bp),

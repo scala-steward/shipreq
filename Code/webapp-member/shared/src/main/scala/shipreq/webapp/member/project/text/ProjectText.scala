@@ -204,22 +204,18 @@ abstract class ProjectText[+Ctx <: Context, Out](project: Project, final val ctx
 
   private final val customNumberFieldOption: CustomField.Number.Id => Req => Option[Out] =
     Memo { fid =>
-      project.content.reqNums.get(fid) match {
-        case Some(reqNums) =>
-          val field     = cfg.fields.custom(fid)
-          val liveField = field.live(cfg)
-          memoByReqId { req =>
-            @inline def default = field.fieldReqTypeRules(req.reqTypeId).defaultOption
-            reqNums.get(req.id)
-              .orElse(default)
-              .map { n =>
-                val live     = liveField & req.live(cfg.reqTypes)
-                val validity = Valid.when(n >= field.min && n <= field.max)
-                number(n, field.decimalPlaces, live, validity)
-              }
+      val reqNums   = project.content.reqNums.getOrElse(fid, Map.empty)
+      val field     = cfg.fields.custom(fid)
+      val liveField = field.live(cfg)
+      memoByReqId { req =>
+        @inline def default = field.fieldReqTypeRules(req.reqTypeId).defaultOption
+        reqNums.get(req.id)
+          .orElse(default)
+          .map { n =>
+            val live     = liveField & req.live(cfg.reqTypes)
+            val validity = Valid.when(n >= field.min && n <= field.max)
+            number(n, field.decimalPlaces, live, validity)
           }
-        case None =>
-          Function const None
       }
     }
 
