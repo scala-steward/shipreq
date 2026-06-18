@@ -3,18 +3,10 @@
 
 * Automated test
   * protocol tests for new events
+  * numeric cells in reqtable
 
-* Number rendering:
-  * Style `_number` in `ProjectWidgets`
-
-* Number cell
-  * Displays defaults
-  * Check rendering of out-of-bounds \&/ dead
-  * Test field rules apply (i.e. N/A, mandatory, optional, default)
-
-* ReqTable
-  * sorting by number
-    * respects applicability / defaults by reqType
+* Show numeric field desc on hover
+* Right-align numeric field headers
 
 * Issues
   * Out-of-range numbers in req data

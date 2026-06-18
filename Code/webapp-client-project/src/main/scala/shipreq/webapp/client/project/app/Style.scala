@@ -1560,6 +1560,11 @@ object Style extends StyleSheet.Inline {
       textAlign.right,
     )
 
+    val number = styleF(D.`live * validity`) { case (live, validity) => styleS(
+      mixinIf(live is Dead)(deadMaybeValid(validity)),
+      mixinIf(live.is(Live) && validity.is(Invalid))(hasErrorColor),
+    )}
+
     val richCodeBlockError = style(
       backgroundColor(c"#ddd"),
       padding(1 ex, 2 ex),

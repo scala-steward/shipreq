@@ -111,7 +111,7 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
     <.span(richText(text, live, tagValidity))
 
   override protected def _number(num: String, live: Live, validity: Validity): VdomTag =
-    <.span(num) // TODO style Dead and Invalid
+    <.span(*.number((live, validity)), num)
 
   // Keep in sync with PlainText because it's used together for sorting/rendering in ReqTable
   override protected def deletionReasonWhenNoneGiven: VdomTag =
