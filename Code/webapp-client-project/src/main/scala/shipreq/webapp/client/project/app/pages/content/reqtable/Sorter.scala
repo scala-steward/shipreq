@@ -117,18 +117,24 @@ object Sorter {
       case _: Row.ForCodeGroup => pt.deleteReasonForCodeGroup getOrElse ""
     })
 
-  def customNumberFieldSorter(fid: CustomField.Number.Id): SorterForSMCB =
+  def customNumberFieldSorter(fid: CustomField.Number.Id, c: Column): SorterForSMCB =
     SorterForSMCB(bp =>
       sorter[Option[Double]](
         prep = setup => {
           import setup.p
           val field = p.config.fields.custom(fid)
           val reqNums = p.content.reqNums.getOrElse(fid, Map.empty)
+          val rowApplicability = setup.applicability.byField(c)
 
           {
             case row: Row.ForReq =>
-              @inline def default = field.fieldReqTypeRules(row.req.reqTypeId).defaultOption
-              reqNums.get(row.req.id).orElse(default)
+              rowApplicability(row) match {
+                case Applicable =>
+                  @inline def default = field.fieldReqTypeRules(row.req.reqTypeId).defaultOption
+                  reqNums.get(row.req.id).orElse(default)
+                case NotApplicable =>
+                  None
+              }
             case _: Row.ForCodeGroup =>
               None
           }
@@ -147,7 +153,7 @@ object Sorter {
   val inconclusiveCB: C.SortInconclusiveHasBlanks => SorterForSMCB = {
     case c: C.CustomField =>
       c.id match {
-        case id: CustomField.Number     .Id => customNumberFieldSorter(id)
+        case id: CustomField.Number     .Id => customNumberFieldSorter(id, c)
         case id: CustomField.Text       .Id => customTextFieldSorter(id, c)
         case id: CustomField.Tag        .Id => tagSorter(Row.cfTag(id), _.p.config.tags.orderByPos)
         case id: CustomField.Implication.Id => pubidVectorSorter(Row.cfImp(id))

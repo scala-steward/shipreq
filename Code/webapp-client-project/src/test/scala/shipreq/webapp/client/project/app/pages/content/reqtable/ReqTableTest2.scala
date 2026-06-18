@@ -430,6 +430,12 @@ object ReqTableTest2 extends TestSuite {
         >> cellEditor("MF-1", "My Number").set("20.1")
         +> cellEditor("MF-1", "My Number").text.assert("20.10")
         +> tablePubids.assert.equal("BR-1", "MF-1")
+
+        >> receiveExternalEvent(Event.FieldCustomNumberUpdate(numField, CustomNumberFieldGD.ValueForFieldReqTypeRules(
+          FieldReqTypeRules.optional.defaultTo(1.0)(mf).notApplicable(br)
+        )))
+        +> cellEditor("BR-1", "My Number").isNA.assert(true)
+        +> tablePubids.assert.equal("MF-1", "BR-1")
     )
 
     runTest(plan withInitialState project)
