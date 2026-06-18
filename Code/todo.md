@@ -5,6 +5,9 @@
   * protocol tests for new events
   * numeric cells in reqtable
 
+* Right-align numeric cells in ReqTable (including N/A cells)
+* Ensure they remain left-aligned in ReqDetail
+
 * Show numeric field desc on hover
 
 * Issues

@@ -1556,10 +1556,6 @@ object Style extends StyleSheet.Inline {
   // ===================================================================================================================
   object widgets {
 
-    val numberCell = style(
-      textAlign.right,
-    )
-
     val number = styleF(D.`live * validity`) { case (live, validity) => styleS(
       mixinIf(live is Dead)(deadMaybeValid(validity)),
       mixinIf(live.is(Live) && validity.is(Invalid))(hasErrorColor),
