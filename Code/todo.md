@@ -8,17 +8,11 @@
   * Style `_number` in `ProjectWidgets`
 
 * Number editor
-  * Confirm reusability working
-  * Instructions
   * Error: invalid input
-    * bad number (eg. "2..")
     * number out of range
 
 * Number cell
-  * Copy
-  * Paste
   * Displays defaults
-  * Uses set precision for both defaults and specified values
   * Check rendering of out-of-bounds \&/ dead
   * Test field rules apply (i.e. N/A, mandatory, optional, default)
 
