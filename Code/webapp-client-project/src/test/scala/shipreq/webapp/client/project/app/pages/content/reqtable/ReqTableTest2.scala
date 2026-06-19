@@ -480,6 +480,60 @@ object ReqTableTest2 extends TestSuite {
     runTest(plan withInitialState project)
   }
 
+  /** Tests that numbers are rounded to the field's specified precision before sorting.
+    * This avoids surprises where numbers look the same but sort differently.
+    */
+  def testNumericFieldsSortRounded()(implicit path: TestPath) = {
+    import shipreq.webapp.member.test.project.SampleProject7.Values._
+    import shipreq.webapp.member.test.project.UnsafeTypes._
+
+    val numField = 88.CFNum
+
+    val project = applyEventsSuccessfully(
+      SampleProject7.project,
+      Event.FieldCustomNumberCreate(numField, CustomNumberFieldGD(
+        name = "Rating",
+        desc = None,
+        range = (0.0, 10.0),
+        decimalPlaces = 0,
+        fieldReqTypeRules = FieldReqTypeRules.optional.defaultTo(5.0)(mf)
+      ))
+    )
+
+    // mf6: 4 <-- 4.0
+    // mf1: 5 <-- 5.4
+    // mf2: 5 <-- 5.0
+    // mf3: 5 <-- 5.0 (default)
+    // mf5: 5 <-- 5.4
+    // mf4: 6 <-- 5.9
+
+    val plan = Plan.action(
+      enterFilter("MF-1 | MF-2 | MF-3 | MF-4 | MF-5 | MF-6")
+        >> showHideColumn("Rating")
+        >> sortBy("Rating")
+        +> tablePubids.assert.equal("MF-1", "MF-2", "MF-3", "MF-4", "MF-5", "MF-6")
+
+        >> cellEditor("MF-6", "Rating").set("4.0")
+        +> cellEditor("MF-6", "Rating").text.assert("4")
+
+        >> cellEditor("MF-1", "Rating").set("5.4")
+        +> cellEditor("MF-1", "Rating").text.assert("5")
+
+        >> cellEditor("MF-2", "Rating").set("5")
+        +> cellEditor("MF-2", "Rating").text.assert("5")
+
+        >> cellEditor("MF-5", "Rating").set("5.4")
+        +> cellEditor("MF-5", "Rating").text.assert("5")
+
+        >> cellEditor("MF-4", "Rating").set("5.9")
+        +> cellEditor("MF-4", "Rating").text.assert("6")
+
+        +> tablePubids.assert.equal("MF-6", "MF-1", "MF-2", "MF-3", "MF-5", "MF-4")
+    )
+
+    runTest(plan withInitialState project)
+  }
+
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   override def tests = Tests {
@@ -521,6 +575,7 @@ object ReqTableTest2 extends TestSuite {
     "numericFields" - {
       "core" - testNumericFieldsCore()
       "filter" - testNumericFieldsFilter()
+      "sortRounded" - testNumericFieldsSortRounded()
     }
   }
 }
