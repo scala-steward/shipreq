@@ -3,6 +3,7 @@
 ### Large Features
 
 * Projects can now be (soft) deleted — they will be hidden by default, and read-only when viewed
+* Numeric fields — you can now create fields whose values are numbers
 
 ### Small Changes
 
