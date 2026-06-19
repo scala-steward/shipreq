@@ -20,7 +20,7 @@ jobs:
       CI: 1
       MODE: release
       DOCKER_BUILDKIT: 1
-      NODE_OPTIONS: --max-old-space-size=3072
+      NODE_OPTIONS: --max-old-space-size=4096
       SBT: >-
         sbt
         --no-server

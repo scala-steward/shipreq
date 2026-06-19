@@ -19,7 +19,7 @@ jobs:
     env:
       CI: 1
       # MODE: release # Add this to CD but not CI
-      NODE_OPTIONS: --max-old-space-size=3072
+      NODE_OPTIONS: --max-old-space-size=4096
       SBT: >-
         sbt
         --no-server
