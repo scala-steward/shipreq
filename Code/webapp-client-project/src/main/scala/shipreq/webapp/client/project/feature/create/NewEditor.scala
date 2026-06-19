@@ -10,8 +10,8 @@ import shipreq.webapp.base.feature._
 import shipreq.webapp.base.util.{LastValueMemo, LruMemo}
 import shipreq.webapp.client.project.feature.create.Feature.{AsyncState, Editor, PreviewId, State}
 import shipreq.webapp.member.feature._
-import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.data.DataImplicits._
+import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.text._
 import shipreq.webapp.member.project.util.DataReusability._
 

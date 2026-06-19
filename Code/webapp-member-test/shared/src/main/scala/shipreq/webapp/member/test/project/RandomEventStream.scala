@@ -16,8 +16,8 @@ import shipreq.base.util._
 import shipreq.webapp.base.data.{ProjectCreator, ProjectRole, UserId}
 import shipreq.webapp.base.test.RandomBaseData
 import shipreq.webapp.base.test.RandomBaseData.unicodeString1
-import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.data.DataImplicits._
+import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.data.savedview.SavedView
 import shipreq.webapp.member.project.event.Event._
 import shipreq.webapp.member.project.event.RetiredGenericData._

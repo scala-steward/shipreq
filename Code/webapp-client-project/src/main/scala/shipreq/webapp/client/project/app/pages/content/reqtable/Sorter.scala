@@ -1,12 +1,11 @@
 package shipreq.webapp.client.project.app.pages.content.reqtable
 
-import java.math.BigDecimal
-import java.math.RoundingMode
+import java.math.{BigDecimal, RoundingMode}
 import monocle.Optional
 import shipreq.base.util.{Applicable, NotApplicable}
+import shipreq.webapp.member.project.data.DataImplicits._
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.data.derivation._
-import shipreq.webapp.member.project.data.DataImplicits._
 import shipreq.webapp.member.project.data.savedview._
 import shipreq.webapp.member.project.data.savedview.{Column => C, SortCriterion => SC}
 import shipreq.webapp.member.project.sort.Sorter._

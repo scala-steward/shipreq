@@ -1,16 +1,16 @@
 package shipreq.webapp.client.project.app.pages.config.fields
 
+import japgolly.scalajs.react.ReactMonocle._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
-import japgolly.scalajs.react.ReactMonocle._
 import japgolly.scalajs.react.vdom.html_<^._
 import monocle.macros.Lenses
 import scalacss.ScalaCssReact._
 import shipreq.base.util._
 import shipreq.webapp.base.ui.widgets.Form
-import shipreq.webapp.base.validation.lib.CommonValidation
-import shipreq.webapp.base.validation.lib.Simple.{Invalidity, Invalidator}
 import shipreq.webapp.base.validation.ValidationUX
+import shipreq.webapp.base.validation.lib.CommonValidation
+import shipreq.webapp.base.validation.lib.Simple.{Invalidator, Invalidity}
 import shipreq.webapp.client.project.app.Style.{numberFieldEditor => *}
 import shipreq.webapp.client.project.util.DataReusability._
 import shipreq.webapp.client.project.widgets.ReqTypeRulesEditor

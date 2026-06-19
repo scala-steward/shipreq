@@ -6,7 +6,7 @@ import japgolly.scalajs.react.vdom.html_<^._
 import shipreq.base.util._
 import shipreq.webapp.base.feature.EditorStatus
 import shipreq.webapp.base.validation.lib.CommonValidation
-import shipreq.webapp.base.validation.lib.Simple.{Invalidity, Invalidator}
+import shipreq.webapp.base.validation.lib.Simple.{Invalidator, Invalidity}
 import shipreq.webapp.client.project.feature.editor.PotentialValueAcceptor
 import shipreq.webapp.member.feature.EditControlsFeature
 import shipreq.webapp.member.project.text.SingleLine

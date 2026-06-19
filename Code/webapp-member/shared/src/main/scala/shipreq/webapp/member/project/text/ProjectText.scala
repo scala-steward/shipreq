@@ -4,8 +4,8 @@ import japgolly.microlibs.stdlib_ext.MutableArray
 import japgolly.microlibs.utils.{Memo, Utils}
 import scala.collection.immutable.SortedSet
 import shipreq.base.util._
-import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.data.DataImplicits._
+import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.util.Must._
 import shipreq.webapp.member.project.util.ReqCodeTreeItem
 

@@ -2,6 +2,7 @@ package shipreq.webapp.member.project.event
 
 import shipreq.base.util._
 import shipreq.webapp.member.project.data._
+import shipreq.webapp.member.project.data.{FieldReqTypeRules => FRTR}
 import shipreq.webapp.member.project.event.ApplyEventTestFns._
 import shipreq.webapp.member.project.event.ContentEventTestHelp.CustomTextMap
 import shipreq.webapp.member.project.event.Event._
@@ -9,7 +10,6 @@ import shipreq.webapp.member.project.event.RetiredGenericData._
 import shipreq.webapp.member.project.text.{Text => T}
 import shipreq.webapp.member.test.WebappTestUtil._
 import shipreq.webapp.member.test.project.UnsafeTypes._
-import shipreq.webapp.member.project.data.{FieldReqTypeRules => FRTR}
 
 case class DetachedGenericReq(req       : GenericReq,
                               customText: CustomTextMap,

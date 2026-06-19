@@ -16,8 +16,8 @@ import shipreq.webapp.base.util.{LastValueMemo, LruMemo}
 import shipreq.webapp.client.project.feature.editor.Feature.{AsyncError, AsyncState, Editor, PreviewId, State}
 import shipreq.webapp.client.project.widgets.ProjectWidgets
 import shipreq.webapp.member.feature._
-import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.data.DataImplicits._
+import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.event.UseCaseStepGD
 import shipreq.webapp.member.project.protocol.websocket.{ManualIssueCmd, UpdateContentCmd}
 import shipreq.webapp.member.project.text._
