@@ -617,9 +617,17 @@ object FilterAlgebra {
           val lookup = p.dataLogic.customFieldImps(filterDead)(id)
           reqOnly(req => lookup.getReqIds(req.id).exists(criteria.contains))
 
-        case (FieldCriteria.Attr(Blank), \/-(f: CustomField.Number.Id)) =>
-          val nums = p.content.reqNumsFor(f)
-          fieldApplicableReqOnly(f)(req => !nums.contains(req.id))
+        case (FieldCriteria.Attr(Blank), \/-(fid: CustomField.Number.Id)) =>
+          val reqNums = p.content.reqNumsFor(fid)
+          fieldApplicableReqOnly(fid) { req =>
+            if (reqNums.contains(req.id))
+              false
+            else {
+              val field = p.config.fields.need(fid)
+              val res = field.fieldReqTypeRules(req.reqTypeId)
+              !res.isDefault
+            }
+          }
 
         case (FieldCriteria.Attr(Blank), \/-(f: CustomField.Text.Id)) =>
           val text = p.content.reqTextFor(f)
@@ -660,8 +668,17 @@ object FilterAlgebra {
               .isEmpty
           }
 
-        case (FieldCriteria.Attr(DefaultInUse), \/-(f: CustomField.Number.Id)) =>
-          fieldApplicableReqOnly(f)(req => !p.content.reqNumsFor(f).contains(req.id))
+        case (FieldCriteria.Attr(DefaultInUse), \/-(fid: CustomField.Number.Id)) =>
+          val reqNums = p.content.reqNumsFor(fid)
+          fieldApplicableReqOnly(fid) { req =>
+            if (reqNums.contains(req.id))
+              false
+            else {
+              val field = p.config.fields.need(fid)
+              val res = field.fieldReqTypeRules(req.reqTypeId)
+              res.isDefault
+            }
+          }
 
         case (FieldCriteria.Attr(DefaultInUse), \/-(f: CustomField.Tag.Id)) =>
           fieldApplicableReqOnly(f)(req => tags(req.id, filterDead).defaults.contains(f))

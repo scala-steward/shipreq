@@ -397,7 +397,7 @@ object ReqTableTest2 extends TestSuite {
     runTest(Plan.action(test) withInitialState SampleProject7.project)
   }
 
-  def testNumericFields()(implicit path: TestPath) = {
+  def testNumericFieldsCore()(implicit path: TestPath) = {
     import shipreq.webapp.member.test.project.SampleProject7.Values._
     import shipreq.webapp.member.test.project.UnsafeTypes._
 
@@ -441,6 +441,45 @@ object ReqTableTest2 extends TestSuite {
     runTest(plan withInitialState project)
   }
 
+  def testNumericFieldsFilter()(implicit path: TestPath) = {
+    import shipreq.webapp.member.test.project.SampleProject7.Values._
+    import shipreq.webapp.member.test.project.UnsafeTypes._
+
+    val numField = 88.CFNum
+
+    val project = applyEventsSuccessfully(
+      SampleProject7.project,
+      Event.FieldCustomNumberCreate(numField, CustomNumberFieldGD(
+        name = "Rating",
+        desc = None,
+        range = (0.0, 100.0),
+        decimalPlaces = 2,
+        fieldReqTypeRules = FieldReqTypeRules.optional.defaultTo(10.0)(br).defaultTo(1.0)(mf)
+      ))
+    )
+
+    val idFilter = "(MF-1 | BR-1 | UC-1)"
+
+    val plan = Plan.action(
+      showHideColumn("Rating")
+
+        >> enterFilter(idFilter)
+        +> tablePubids.assert.equal("BR-1", "MF-1", "UC-1")
+
+        >> cellEditor("MF-1", "Rating").set("2")
+        +> cellEditor("MF-1", "Rating").text.assert("2.00")
+        +> tablePubids.assert.equal("BR-1", "MF-1", "UC-1")
+
+        >> enterFilter(idFilter + " field:Rating=default")
+        +> tablePubids.assert.equal("BR-1")
+
+        >> enterFilter(idFilter + " field:Rating=blank")
+        +> tablePubids.assert.equal("UC-1")
+    )
+
+    runTest(plan withInitialState project)
+  }
+
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   override def tests = Tests {
@@ -479,6 +518,9 @@ object ReqTableTest2 extends TestSuite {
       "deadCol" - testSavedViewsDeadCol()
     }
 
-    "numericFields" - testNumericFields()
+    "numericFields" - {
+      "core" - testNumericFieldsCore()
+      "filter" - testNumericFieldsFilter()
+    }
   }
 }
