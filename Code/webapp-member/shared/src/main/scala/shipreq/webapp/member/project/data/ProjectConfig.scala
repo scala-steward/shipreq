@@ -127,6 +127,9 @@ final case class ProjectConfig(customIssueTypes: CustomIssueTypeIMap,
   lazy val liveCustomFields: List[CustomField] =
     fields.customFields.valuesIterator.filter(_.live(this) is Live).toList
 
+  lazy val liveCustomNumberFields: List[CustomField.Number] =
+    fields.customNumberFields.filter(_.live(this) is Live)
+
   lazy val liveCustomTextFields: List[CustomField.Text] =
     fields.customTextFields.filter(_.live(this) is Live)
 

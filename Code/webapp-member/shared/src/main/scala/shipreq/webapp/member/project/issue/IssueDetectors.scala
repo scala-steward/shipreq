@@ -414,6 +414,29 @@ object IssueDetectors {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+  case object NumberOutOfRange extends Instance {
+
+    override val detect = ctx => {
+      val fields = ctx.project.config.liveCustomNumberFields
+
+      if (fields.nonEmpty)
+        ctx.foreachLiveReq(() => {
+          val content = ctx.project.content
+          req => {
+            for {
+              field <- fields
+              num   <- content.reqNumsFor(field.id).get(req.id)
+            } {
+              if (num < field.min || num > field.max)
+                ctx.add(Issue.NumberOutOfRange(req, field))
+            }
+          }
+        })
+    }
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
   case object UninhabitableTagField extends Instance {
 
     override val detect = ctx => {

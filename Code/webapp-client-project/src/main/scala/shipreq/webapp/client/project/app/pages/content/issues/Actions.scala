@@ -164,6 +164,7 @@ object Actions {
          | _: Issue.FieldDefaultTagNotApplicable
          | _: Issue.FieldDefaultTagUnrelated
          | _: Issue.NonApplicableField
+         | _: Issue.NumberOutOfRange
             => linkTo(Routes.Page.CfgFields)
 
       case i: Issue.DeadIssueTagInRcg            => restoreIssueTag(i.issue.typ)

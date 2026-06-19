@@ -166,6 +166,9 @@ object UiText {
     def descBlankCustomField(field: String): String =
       "Mandatory field is blank: " + field
 
+    def numberOutOfRange(field: String): String =
+      "Number is out of range: " + field
+
     def descBlankTitle: String =
       "Title is blank"
 

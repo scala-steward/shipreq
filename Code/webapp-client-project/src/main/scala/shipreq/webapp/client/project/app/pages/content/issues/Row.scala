@@ -349,6 +349,10 @@ object Row {
         val desc = UI.descNonApplicableTag(tag)
         forReqAndLoc(i, desc, i.req, i.loc)
 
+      case i: Issue.NumberOutOfRange =>
+        val desc = UI.numberOutOfRange(cfg.fieldName(i.field.id))
+        forReqA(i, desc, i.req, IssueField.customField(i.field.id))
+
       case i: Issue.UninhabitableTagField =>
         val fieldName = cfg.fieldName(i.field.id)
         val desc = UI.descUninhabitableTagField(fieldName)
