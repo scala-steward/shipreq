@@ -56,10 +56,13 @@ object FieldConfigObs {
     def fieldInputDom(label: String): Option[html.Input] =
       fieldByLabel(label).flatMap(_.collect01("input").domsAs[html.Input])
 
+    def fieldTextareaDom(label: String): Option[html.TextArea] =
+      fieldByLabel(label).flatMap(_.collect01("textarea").domsAs[html.TextArea])
+
     def fieldError(label: String): Option[String] =
       fieldByLabel(label).flatMap(_.collect01("span").zippers.map(_.domAsHtml.textContent.trim))
 
-    val descDom: Option[html.Input] = fieldInputDom(NumberFieldEditor.FieldNameDesc)
+    val descDom: Option[html.TextArea] = fieldTextareaDom(NumberFieldEditor.FieldNameDesc)
     val descValue: Option[String] = descDom.map(_.value)
     val descError: Option[String] = fieldError(NumberFieldEditor.FieldNameDesc)
 
