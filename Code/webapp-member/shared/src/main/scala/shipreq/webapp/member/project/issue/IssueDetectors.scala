@@ -34,6 +34,12 @@ object IssueDetectors {
         f => tags(_, HideDead).set(f.id).isEmpty
       }
 
+      // Check numbers
+      run(ctx, fields.nums) { f =>
+        val numMap = ctx.project.content.reqNumsFor(f.id)
+        !numMap.contains(_)
+      }
+
       // Check text
       run(ctx, fields.text) { f =>
         val textMap = ctx.project.content.reqTextFor(f.id)

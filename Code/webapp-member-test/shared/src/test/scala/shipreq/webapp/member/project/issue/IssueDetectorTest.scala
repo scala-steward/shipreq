@@ -170,6 +170,28 @@ object IssueDetectorTest extends TestSuite {
       IssueLite.BlankCustomField(uc1, priField),
       IssueLite.BlankCustomField(uc1, mfField),
     )
+
+    def numbers() = {
+      val numField = 9.CFNum
+      test(p4)(
+        Event.FieldCustomNumberCreate(numField, CustomNumberFieldGD(
+          name = "Cost",
+          desc = None,
+          range = (0.0, 100.0),
+          decimalPlaces = 2,
+          fieldReqTypeRules = FieldReqTypeRules.notApplicable.mandatory(fr, StaticReqType.UseCase)
+        )),
+        Event.ReqFieldCustomNumberSet(frs(1), numField, 50.0)
+      )(
+        // pri fields
+        IssueLite.BlankCustomField(frs(1), priField),
+        IssueLite.BlankCustomField(frs(2), priField),
+        IssueLite.BlankCustomField(uc1, priField),
+        // num fields
+        IssueLite.BlankCustomField(frs(2), numField),
+        IssueLite.BlankCustomField(uc1, numField),
+      )
+    }
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -634,6 +656,7 @@ object IssueDetectorTest extends TestSuite {
       "notAllReqTypes" - notAllReqTypes()
       "imps1"          - imps1()
       "imps2"          - imps2()
+      "numbers"        - numbers()
     }
 
     "ConflictingTag" - {
