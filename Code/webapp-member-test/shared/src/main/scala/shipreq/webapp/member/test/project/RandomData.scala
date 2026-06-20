@@ -461,7 +461,7 @@ object RandomData {
       name              <- fieldName
       desc              <- Gen.string.option
       range             <- minMax
-      decimalPlaces     <- Gen.chooseInt(4)
+      decimalPlaces     <- Gen.chooseInt(DataValidators.numberField.maxDecimalPlaces)
       fieldReqTypeRules <- fieldReqTypeRules(genReqTypeId, Some(Gen.chooseDouble(range._1, range._2)))
       liveExplicitly    <- live
     } yield

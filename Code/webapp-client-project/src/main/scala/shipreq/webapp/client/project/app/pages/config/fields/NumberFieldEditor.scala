@@ -7,6 +7,7 @@ import japgolly.scalajs.react.vdom.html_<^._
 import monocle.macros.Lenses
 import scalacss.ScalaCssReact._
 import shipreq.base.util._
+import shipreq.webapp.base.ui.semantic.UsesSemanticUiManually
 import shipreq.webapp.base.ui.widgets.Form
 import shipreq.webapp.base.validation.ValidationUX
 import shipreq.webapp.base.validation.lib.CommonValidation
@@ -185,6 +186,7 @@ object NumberFieldEditor {
         .withValidator(DataValidators.numberField.decimalPlaces.unnamed)
         .withEnabled(p.enabled)
 
+    @UsesSemanticUiManually
     val reqTypeRulesEditorDefaultWidget: ReqTypeRulesEditor.DefaultWidgetFn[Double] =
       Reusable.implicitly((minValueOption, maxValueOption)).map { _ =>
 
@@ -218,7 +220,8 @@ object NumberFieldEditor {
               ^.disabled := enabled.is(Disabled),
             ),
 
-            validated.swap.toOption.map(err => <.div(*.applicableReqTypesErrMsg, Invalidity.toText(err)))
+            validated.swap.toOption.map(err =>
+              <.div(*.applicableReqTypesErrMsg, Invalidity.toText(err)))
           )
         }
       }

@@ -616,14 +616,14 @@ object FieldConfigTest extends TestSuite {
         +> editorMaxError.assert.empty
         +> editorMinError.assert.empty
 
-        >> setEditorDecPlaces("-1")
+        >> setEditorDecimalPlaces("-1")
         +> editorDecPlaces.assert("1")
         +> editorDecPlacesError.assert.empty
 
-        >> setEditorDecPlaces("10")
+        >> setEditorDecimalPlaces("10")
         +> editorDecPlacesError.assert("Cannot exceed 9.")
 
-        >> setEditorDecPlaces("1")
+        >> setEditorDecimalPlaces("1")
         +> editorDecPlacesError.assert.empty
 
         >> setRuleReqRes(0, "Default to…")
@@ -675,27 +675,27 @@ object FieldConfigTest extends TestSuite {
         >> setEditorDesc("New desc")
         >> setEditorMin("2.0")
         >> setEditorMax("6.0")
-        >> setEditorDecPlaces("2")
+        >> setEditorDecimalPlaces("2")
         +> buttonsEnabled.assert(Buttons(delete = Enabled, cancel = Enabled, save = Enabled))
 
         >> clickSaveButton
         +> fieldList.assert(
-        "Description",
-        "Major Feature",
-        "Priority",
-        StaticField.NormalAltStepTree.name,
-        StaticField.ExceptionStepTree.name,
-        StaticField.StepGraph.name,
-        "Released",
-        "Status",
-        "Notes",
-        "Business Justification",
-        "Alternatives",
-        "Component",
-        "Version",
-        "Other Tags",
-        "All Tags",
-        "Rating updated")
+          "Description",
+          "Major Feature",
+          "Priority",
+          StaticField.NormalAltStepTree.name,
+          StaticField.ExceptionStepTree.name,
+          StaticField.StepGraph.name,
+          "Released",
+          "Status",
+          "Notes",
+          "Business Justification",
+          "Alternatives",
+          "Component",
+          "Version",
+          "Other Tags",
+          "All Tags",
+          "Rating updated")
         +> fieldDetail("Rating updated").assert("All—Optional")
         +> editorName.assert("Rating updated")
         +> editorDesc.assert("New desc")

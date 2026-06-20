@@ -32,8 +32,8 @@ object NumberEditor {
       def invalidator(f: Double => Option[String]): Invalidator[Option[Double]] =
         Invalidator(_.flatMap(f).map(Invalidity.apply))
       CommonValidation.optionalDouble
-        .appendInvalidator(invalidator(d => Option.when(d < min)("Cannot be less than " + min)))
-        .appendInvalidator(invalidator(d => Option.when(d > max)("Cannot be greater than " + max)))
+        .appendInvalidator(invalidator(d => Option.when(d < min)(s"Cannot be less than $min.")))
+        .appendInvalidator(invalidator(d => Option.when(d > max)(s"Cannot be greater than $max.")))
     }
 
     val parseResult: Invalidity \/ Value =
@@ -71,7 +71,7 @@ object NumberEditor {
     private val keys = editControls.keyHandlers($.props)
 
     def render(p: Props): VdomNode = {
-      val updateState: ReactEventFromTextArea => Callback =
+      val onChange: ReactEventFromTextArea => Callback =
         e => {
           val newVal = CommonValidation.optionalDouble.corrector.live(e.target.value)
           p.status.wrapEdit(p.edit.setState(newVal))
@@ -81,7 +81,7 @@ object NumberEditor {
         val base = TagMod(
           keys,
           ^.autoFocus := p.autoFocus,
-          ^.onChange ==> updateState,
+          ^.onChange ==> onChange,
           RichTextEditor.minRows(SingleLine),
         )
 
@@ -93,6 +93,7 @@ object NumberEditor {
           value    = p.edit.value,
           tagMod   = base,
         )
+
         editorRef.component(autosizeProps)
       }
 

@@ -204,7 +204,7 @@ abstract class ProjectText[+Ctx <: Context, Out](project: Project, final val ctx
 
   private final val customNumberFieldOption: CustomField.Number.Id => Req => Option[Out] =
     Memo { fid =>
-      val reqNums   = project.content.reqNums.getOrElse(fid, Map.empty)
+      val reqNums   = project.content.reqNumsFor(fid)
       val field     = cfg.fields.custom(fid)
       val liveField = field.live(cfg)
       memoByReqId { req =>

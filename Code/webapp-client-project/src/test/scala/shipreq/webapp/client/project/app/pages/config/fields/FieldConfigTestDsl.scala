@@ -96,8 +96,8 @@ object FieldConfigTestDsl {
   def setEditorMax(max: String): *.Actions =
     *.action(s"Set editor max to: $max")(SimEvent.Change(max) simulate _.obs.editor.get.maxDom.get)
 
-  def setEditorDecPlaces(dp: String): *.Actions =
-    *.action(s"Set editor dec places to: $dp")(SimEvent.Change(dp) simulate _.obs.editor.get.decimalPlacesDom.get)
+  def setEditorDecimalPlaces(dp: String): *.Actions =
+    *.action(s"Set editor decimal places to: $dp")(SimEvent.Change(dp) simulate _.obs.editor.get.decimalPlacesDom.get)
 
   val addEditorRule: *.Actions =
     *.action("Add editor rule")(Simulate click _.obs.editor.get.rules.get.rows.last.addButton.get)
@@ -112,13 +112,13 @@ object FieldConfigTestDsl {
     *.action(s"Set rules[$rowIdx].res to: $res")(_.obs.editor.get.rules.get.rows(rowIdx).res.select(res))
 
   def setRuleDefault(rowIdx: Int, default: String): *.Actions =
-    *.action(s"Set rules[$rowIdx].default to: $default")(x => {
+    *.action(s"Set rules[$rowIdx].default to: $default") { x =>
       val row = x.obs.editor.get.rules.get.rows(rowIdx)
       row.default match {
         case Some(d) => d.select(default)
         case None    => SimEvent.Change(default) simulate row.defaultInputDom.get
       }
-    })
+    }
 
   def selectNew(name: String): *.Actions =
     *.action(s"New button: select $name")(_.obs.newButton.dropdown.select(name))

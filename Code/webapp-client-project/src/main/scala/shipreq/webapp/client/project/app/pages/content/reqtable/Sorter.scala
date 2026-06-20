@@ -124,7 +124,7 @@ object Sorter {
         prep = setup => {
           import setup.p
           val field = p.config.fields.custom(fid)
-          val reqNums = p.content.reqNums.getOrElse(fid, Map.empty)
+          val reqNums = p.content.reqNumsFor(fid)
           val rowApplicability = setup.applicability.byField(c)
 
           {

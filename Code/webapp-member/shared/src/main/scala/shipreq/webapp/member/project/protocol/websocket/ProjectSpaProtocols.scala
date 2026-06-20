@@ -77,7 +77,7 @@ object ProjectSpaProtocols {
   import ManualIssueCmd.CodecsV4._
   import SavedViewCmd.CodecsV5._
   import UpdateAccessCmd.CodecsV1._
-  import UpdateConfigCmd.CodecsV4._
+  import UpdateConfigCmd.CodecsV3._
   import UpdateContentCmd.CodecsV5._
   import UpdateLivenessCmd.CodecsV1._
 
