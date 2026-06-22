@@ -114,7 +114,7 @@ private[filter] class FilterParser(val input: ParserInput) extends ParsingUtil {
   def numberRange: Rule1[NonEmptySet[Int]] =
     rule((numberRangeElement + ',') ~> flattenIntSets1)
 
-  def numberRangeThenBoundary : Rule1[NonEmptySet[Int]] =
+  def numberRangeThenBoundary: Rule1[NonEmptySet[Int]] =
     rule(numberRange ~ (SLWS | EOI))
 
   /** 1 or {1,3,5-9,12} */
@@ -197,7 +197,7 @@ private[filter] class FilterParser(val input: ParserInput) extends ParsingUtil {
       rule(
         valueRule(() => subQuery               )(FieldCriteria.Query(_))
       | valueRule(() => numberRangeThenBoundary)(is => FieldCriteria.ReqTypePosSet(is.map(ReqTypePos)))
-      | valueRule(() => double                 )(FieldCriteria.LiteralNumber(_))
+      | valueRule(() => double                 )(FieldCriteria.CompareNumber(_))
       | valueRule(() => attr                   )(FieldCriteria.Attr(_))
       )
 

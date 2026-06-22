@@ -648,7 +648,7 @@ object DataProp {
             criteria match {
               case FieldCriteria.Query(r)         => r
               case FieldCriteria.Attr(_)
-                 | FieldCriteria.LiteralNumber(_)
+                 | FieldCriteria.CompareNumber(_)
                  | FieldCriteria.ReqTypePosSet(_) => Refs.empty
             }
           field match {

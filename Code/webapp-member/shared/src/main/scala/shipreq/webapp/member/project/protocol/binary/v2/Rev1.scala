@@ -811,28 +811,28 @@ object Rev1 {
     implicit val picklerFieldCriteriaQuery: Pickler[FilterAst.FieldCriteria.Query[Unit]] =
       transformPickler(FilterAst.FieldCriteria.Query.apply[Unit])(_.value)
 
-    implicit val picklerFieldCriteriaLiteralNumber: Pickler[FilterAst.FieldCriteria.LiteralNumber] =
-      transformPickler(FilterAst.FieldCriteria.LiteralNumber.apply)(_.value)
+    implicit val picklerFieldCriteriaCompareNumber: Pickler[FilterAst.FieldCriteria.CompareNumber] =
+      transformPickler(FilterAst.FieldCriteria.CompareNumber.apply)(_.value)
 
     implicit val picklerFieldCriteria: Pickler[FieldCriteriaF[Unit]] =
       new Pickler[FieldCriteriaF[Unit]] {
         private[this] final val KeyAttr          = 'a'
         private[this] final val KeyReqTypePosSet = 'p'
         private[this] final val KeyQuery         = 'q'
-        private[this] final val KeyLiteralNumber = 'n'
+        private[this] final val KeyCompareNumber = 'n'
         override def pickle(a: FieldCriteriaF[Unit])(implicit state: PickleState): Unit =
           a match {
             case b: FilterAst.FieldCriteria.Attr[FilterAst.FieldAttr] => state.enc.writeByte(KeyAttr         ); state.pickle(b)
             case b: FilterAst.FieldCriteria.ReqTypePosSet             => state.enc.writeByte(KeyReqTypePosSet); state.pickle(b)
             case b: FilterAst.FieldCriteria.Query[Unit]               => state.enc.writeByte(KeyQuery        ); state.pickle(b)
-            case b: FilterAst.FieldCriteria.LiteralNumber             => state.enc.writeByte(KeyLiteralNumber); state.pickle(b)
+            case b: FilterAst.FieldCriteria.CompareNumber             => state.enc.writeByte(KeyCompareNumber); state.pickle(b)
           }
         override def unpickle(implicit state: UnpickleState): FieldCriteriaF[Unit] =
           state.dec.readByte match {
             case KeyAttr          => state.unpickle[FilterAst.FieldCriteria.Attr[FilterAst.FieldAttr]]
             case KeyReqTypePosSet => state.unpickle[FilterAst.FieldCriteria.ReqTypePosSet]
             case KeyQuery         => state.unpickle[FilterAst.FieldCriteria.Query[Unit]]
-            case KeyLiteralNumber => state.unpickle[FilterAst.FieldCriteria.LiteralNumber]
+            case KeyCompareNumber => state.unpickle[FilterAst.FieldCriteria.CompareNumber]
           }
       }
 

@@ -207,11 +207,11 @@ object FilterParserTest extends TestSuite {
       "posM"       - test("field:n=1,3,5-9,40",             fieldProp("n", ReqTypePosSet(NonEmptySet(1, 3, 5, 6, 7, 8, 9, 40))))
       "query1"     - test("field:MF=(#a)"     ,             fieldProp("MF", Query(hashRef("a"))))
       "query2"     - test("field:MF=((#a | #b) (#c | #d))", fieldProp("MF", Query(allOf(anyOf(hashRef("a"), hashRef("b")), anyOf(hashRef("c"), hashRef("d"))))))
-      "num0"       - test("field:X=0",                      fieldProp("X", LiteralNumber(0)))
-      "numPos2dp"  - test("field:X=1.23",                   fieldProp("X", LiteralNumber(1.23)))
-      "numPos2dpT" - test("field:X=1.23 abc",               allOf(fieldProp("X", LiteralNumber(1.23)), text("abc")))
-      "numNeg0dp"  - test("field:X=-1",                     fieldProp("X", LiteralNumber(-1)))
-      "numNeg2dp"  - test("field:X=-1.23",                  fieldProp("X", LiteralNumber(-1.23)))
+      "num0"       - test("field:X=0",                      fieldProp("X", CompareNumber(0)))
+      "numPos2dp"  - test("field:X=1.23",                   fieldProp("X", CompareNumber(1.23)))
+      "numPos2dpT" - test("field:X=1.23 abc",               allOf(fieldProp("X", CompareNumber(1.23)), text("abc")))
+      "numNeg0dp"  - test("field:X=-1",                     fieldProp("X", CompareNumber(-1)))
+      "numNeg2dp"  - test("field:X=-1.23",                  fieldProp("X", CompareNumber(-1.23)))
     }
 
     "hasIssue" - {

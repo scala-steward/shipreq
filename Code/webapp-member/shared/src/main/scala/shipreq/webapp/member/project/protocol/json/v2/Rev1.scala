@@ -394,10 +394,10 @@ object Rev1 {
     implicit val encoderFieldCriteriaReqTypePosSet: Encoder[FilterAst.FieldCriteria.ReqTypePosSet] =
       Encoder[NonEmptySet[ReqTypePos]].contramap(_.value)
 
-    implicit val decoderFieldCriteriaLiteralNumber: Decoder[FilterAst.FieldCriteria.LiteralNumber] =
-      Decoder[Double].map(FilterAst.FieldCriteria.LiteralNumber.apply)
+    implicit val decoderFieldCriteriaCompareNumber: Decoder[FilterAst.FieldCriteria.CompareNumber] =
+      Decoder[Double].map(FilterAst.FieldCriteria.CompareNumber.apply)
 
-    implicit val encoderFieldCriteriaLiteralNumber: Encoder[FilterAst.FieldCriteria.LiteralNumber] =
+    implicit val encoderFieldCriteriaCompareNumber: Encoder[FilterAst.FieldCriteria.CompareNumber] =
       Encoder[Double].contramap(_.value)
 
     implicit val decoderFieldCriteriaQuery: Decoder[FilterAst.FieldCriteria.Query[ACursor]] =
@@ -410,14 +410,14 @@ object Rev1 {
       case ("attr" ,  c) => c.as[FilterAst.FieldCriteria.Attr[FilterAst.FieldAttr]]
       case ("rtpos",  c) => c.as[FilterAst.FieldCriteria.ReqTypePosSet]
       case ("query",  c) => c.as[FilterAst.FieldCriteria.Query[ACursor]]
-      case ("litNum", c) => c.as[FilterAst.FieldCriteria.LiteralNumber]
+      case ("cmpNum", c) => c.as[FilterAst.FieldCriteria.CompareNumber]
     }
 
     implicit val encoderFieldCriteria: Encoder[FieldCriteriaF[Json]] = Encoder.instance {
       case a: FilterAst.FieldCriteria.Attr[FilterAst.FieldAttr] => Json.obj("attr"   -> a.asJson)
       case a: FilterAst.FieldCriteria.ReqTypePosSet             => Json.obj("rtpos"  -> a.asJson)
       case a: FilterAst.FieldCriteria.Query[Json]               => Json.obj("query"  -> a.asJson)
-      case a: FilterAst.FieldCriteria.LiteralNumber             => Json.obj("litNum" -> a.asJson)
+      case a: FilterAst.FieldCriteria.CompareNumber             => Json.obj("cmpNum" -> a.asJson)
     }
 
     implicit val decoderFilterAstFieldProp: Decoder[Valid.FieldPropF[ACursor]] =
