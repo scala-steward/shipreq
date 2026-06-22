@@ -41,7 +41,7 @@ object ParsingUtil {
 
   val trim = (_: String).trim
 
-  val toDouble = (_: String).toDouble
+  val toDoubleOption = (_: String).toDoubleOption.filter(d => d.isFinite && !d.isNaN)
 
   val toInt = (_: String).toInt
 }
@@ -81,7 +81,9 @@ abstract class ParsingUtil extends Parser {
     rule(ch('0').* ~ capture(CharPredicate.Digit19 ~ CharPredicate.Digit.*) ~> toInt)
 
   def double: Rule1[Double] =
-    rule(capture('-'.? ~ CharPredicate.Digit.+ ~ optional('.' ~ CharPredicate.Digit.*)) ~> toDouble)
+    rule(
+      capture('-'.? ~ CharPredicate.Digit.+ ~ optional('.' ~ CharPredicate.Digit.*))
+      ~> toDoubleOption ~ popOptional[Double])
 
   def pop[A]: Rule[A :: HNil, HNil] =
     rule(run((_: A) => test(true)))
