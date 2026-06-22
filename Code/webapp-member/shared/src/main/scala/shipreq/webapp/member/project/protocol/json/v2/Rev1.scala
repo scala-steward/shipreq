@@ -394,11 +394,19 @@ object Rev1 {
     implicit val encoderFieldCriteriaReqTypePosSet: Encoder[FilterAst.FieldCriteria.ReqTypePosSet] =
       Encoder[NonEmptySet[ReqTypePos]].contramap(_.value)
 
+    implicit val codecFilterAstOrderOp: JsonCodec[FilterAst.OrderOp] =
+      JsonCodec.enumAdt(AdtMacros.adtIsoSet[FilterAst.OrderOp, String] {
+        case FilterAst.OrderOp.<  => "<"
+        case FilterAst.OrderOp.>  => ">"
+        case FilterAst.OrderOp.<= => "<="
+        case FilterAst.OrderOp.>= => ">="
+      })
+
     implicit val decoderFieldCriteriaCompareNumber: Decoder[FilterAst.FieldCriteria.CompareNumber] =
-      Decoder[Double].map(FilterAst.FieldCriteria.CompareNumber.apply)
+      Decoder.forProduct2("op", "value")(FilterAst.FieldCriteria.CompareNumber.apply)
 
     implicit val encoderFieldCriteriaCompareNumber: Encoder[FilterAst.FieldCriteria.CompareNumber] =
-      Encoder[Double].contramap(_.value)
+      Encoder.forProduct2("op", "value")(a => (a.op, a.value))
 
     implicit val decoderFieldCriteriaQuery: Decoder[FilterAst.FieldCriteria.Query[ACursor]] =
       Decoder.instance(c => Right(FilterAst.FieldCriteria.Query(c)))
@@ -527,14 +535,6 @@ object Rev1 {
 
     implicit val encoderFilterAstScoped2: Encoder[FilterAst.Scoped2[Valid.Scope, Json]] =
       Encoder.forProduct3("scope", "clause", "main")(a => (a.scope, a.clause, a.mainClause))
-
-    implicit val codecFilterAstOrderOp: JsonCodec[FilterAst.OrderOp] =
-      JsonCodec.enumAdt(AdtMacros.adtIsoSet[FilterAst.OrderOp, String] {
-        case FilterAst.OrderOp.<  => "<"
-        case FilterAst.OrderOp.>  => ">"
-        case FilterAst.OrderOp.<= => "<="
-        case FilterAst.OrderOp.>= => ">="
-      })
 
     implicit val decoderFilterAstRelativeTags: Decoder[FilterAst.RelativeTags[Valid.ApTag]] =
       Decoder.forProduct2("op", "subject")(FilterAst.RelativeTags.apply[Valid.ApTag])

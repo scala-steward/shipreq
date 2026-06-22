@@ -194,6 +194,7 @@ object FilterParserTest extends TestSuite {
 
     "field" - {
       import FilterAst.FieldCriteria._
+      import FilterAst.OrderOp
       import shipreq.webapp.member.test.project.UnsafeTypes.{autoHashRefKey => _, _}
       "na"         - test("field:poop=n/a",                 fieldProp("poop", Attr("n/a")))
       "default"    - test("field:poop=default",             fieldProp("poop", Attr("default")))
@@ -207,11 +208,16 @@ object FilterParserTest extends TestSuite {
       "posM"       - test("field:n=1,3,5-9,40",             fieldProp("n", ReqTypePosSet(NonEmptySet(1, 3, 5, 6, 7, 8, 9, 40))))
       "query1"     - test("field:MF=(#a)"     ,             fieldProp("MF", Query(hashRef("a"))))
       "query2"     - test("field:MF=((#a | #b) (#c | #d))", fieldProp("MF", Query(allOf(anyOf(hashRef("a"), hashRef("b")), anyOf(hashRef("c"), hashRef("d"))))))
-      "num0"       - test("field:X=0",                      fieldProp("X", CompareNumber(0)))
-      "numPos2dp"  - test("field:X=1.23",                   fieldProp("X", CompareNumber(1.23)))
-      "numPos2dpT" - test("field:X=1.23 abc",               allOf(fieldProp("X", CompareNumber(1.23)), text("abc")))
-      "numNeg0dp"  - test("field:X=-1",                     fieldProp("X", CompareNumber(-1)))
-      "numNeg2dp"  - test("field:X=-1.23",                  fieldProp("X", CompareNumber(-1.23)))
+      "num0"       - test("field:X=0",                      fieldProp("X", CompareNumber(None, 0)))
+      "numPos2dp"  - test("field:X=1.23",                   fieldProp("X", CompareNumber(None, 1.23)))
+      "numPos2dpT" - test("field:X=1.23 abc",               allOf(fieldProp("X", CompareNumber(None, 1.23)), text("abc")))
+      "numNeg0dp"  - test("field:X=-1",                     fieldProp("X", CompareNumber(None, -1)))
+      "numNeg2dp"  - test("field:X=-1.23",                  fieldProp("X", CompareNumber(None, -1.23)))
+      "lt0"        - test("field:X<0",                      fieldProp("X", CompareNumber(Some(OrderOp.<), 0)))
+      "ltPos2dp"   - test("field:X<1.23",                   fieldProp("X", CompareNumber(Some(OrderOp.<), 1.23)))
+      "ltPos2dpT"  - test("field:X<1.23 abc",               allOf(fieldProp("X", CompareNumber(Some(OrderOp.<), 1.23)), text("abc")))
+      "ltNeg0dp"   - test("field:X<-1",                     fieldProp("X", CompareNumber(Some(OrderOp.<), -1)))
+      "ltNeg2dp"   - test("field:X<-1.23",                  fieldProp("X", CompareNumber(Some(OrderOp.<), -1.23)))
     }
 
     "hasIssue" - {

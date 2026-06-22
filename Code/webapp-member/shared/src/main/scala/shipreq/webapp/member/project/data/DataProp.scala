@@ -646,10 +646,10 @@ object DataProp {
         case FilterAst.FieldProp(field, criteria) =>
           var refs: Refs =
             criteria match {
-              case FieldCriteria.Query(r)         => r
+              case FieldCriteria.Query(r)            => r
               case FieldCriteria.Attr(_)
-                 | FieldCriteria.CompareNumber(_)
-                 | FieldCriteria.ReqTypePosSet(_) => Refs.empty
+                 | FieldCriteria.CompareNumber(_, _)
+                 | FieldCriteria.ReqTypePosSet(_)    => Refs.empty
             }
           field match {
             case \/-(f: CustomFieldId) => refs = refs.addCustomFieldId(f)

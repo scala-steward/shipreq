@@ -811,8 +811,40 @@ object Rev1 {
     implicit val picklerFieldCriteriaQuery: Pickler[FilterAst.FieldCriteria.Query[Unit]] =
       transformPickler(FilterAst.FieldCriteria.Query.apply[Unit])(_.value)
 
+    implicit val picklerFilterAstOrderOp: Pickler[FilterAst.OrderOp] =
+      new Pickler[FilterAst.OrderOp] {
+        private[this] final val Key_<  = 0
+        private[this] final val Key_>  = 1
+        private[this] final val Key_<= = 2
+        private[this] final val Key_>= = 3
+        override def pickle(a: FilterAst.OrderOp)(implicit state: PickleState): Unit =
+          a match {
+            case FilterAst.OrderOp.<  => state.enc.writeByte(Key_< )
+            case FilterAst.OrderOp.>  => state.enc.writeByte(Key_> )
+            case FilterAst.OrderOp.<= => state.enc.writeByte(Key_<=)
+            case FilterAst.OrderOp.>= => state.enc.writeByte(Key_>=)
+          }
+        override def unpickle(implicit state: UnpickleState): FilterAst.OrderOp =
+          state.dec.readByte match {
+            case Key_<  => FilterAst.OrderOp.<
+            case Key_>  => FilterAst.OrderOp.>
+            case Key_<= => FilterAst.OrderOp.<=
+            case Key_>= => FilterAst.OrderOp.>=
+          }
+      }
+
     implicit val picklerFieldCriteriaCompareNumber: Pickler[FilterAst.FieldCriteria.CompareNumber] =
-      transformPickler(FilterAst.FieldCriteria.CompareNumber.apply)(_.value)
+      new Pickler[FilterAst.FieldCriteria.CompareNumber] {
+        override def pickle(a: FilterAst.FieldCriteria.CompareNumber)(implicit state: PickleState): Unit = {
+          state.pickle(a.op)
+          state.pickle(a.value)
+        }
+        override def unpickle(implicit state: UnpickleState): FilterAst.FieldCriteria.CompareNumber = {
+          val op    = state.unpickle[Option[FilterAst.OrderOp]]
+          val value = state.unpickle[Double]
+          FilterAst.FieldCriteria.CompareNumber(op, value)
+        }
+      }
 
     implicit val picklerFieldCriteria: Pickler[FieldCriteriaF[Unit]] =
       new Pickler[FieldCriteriaF[Unit]] {
@@ -898,28 +930,6 @@ object Rev1 {
           val scope = state.unpickle[Valid.Scope]
           FilterAst.Scoped2(scope, (), ())
         }
-      }
-
-    implicit val picklerFilterAstOrderOp: Pickler[FilterAst.OrderOp] =
-      new Pickler[FilterAst.OrderOp] {
-        private[this] final val Key_<  = 0
-        private[this] final val Key_>  = 1
-        private[this] final val Key_<= = 2
-        private[this] final val Key_>= = 3
-        override def pickle(a: FilterAst.OrderOp)(implicit state: PickleState): Unit =
-          a match {
-            case FilterAst.OrderOp.<  => state.enc.writeByte(Key_< )
-            case FilterAst.OrderOp.>  => state.enc.writeByte(Key_> )
-            case FilterAst.OrderOp.<= => state.enc.writeByte(Key_<=)
-            case FilterAst.OrderOp.>= => state.enc.writeByte(Key_>=)
-          }
-        override def unpickle(implicit state: UnpickleState): FilterAst.OrderOp =
-          state.dec.readByte match {
-            case Key_<  => FilterAst.OrderOp.<
-            case Key_>  => FilterAst.OrderOp.>
-            case Key_<= => FilterAst.OrderOp.<=
-            case Key_>= => FilterAst.OrderOp.>=
-          }
       }
 
     implicit val picklerFilterAstRelativeTags: Pickler[FilterAst.RelativeTags[Valid.ApTag]] =

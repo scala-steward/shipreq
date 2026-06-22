@@ -196,11 +196,13 @@ object FilterHelp {
 
       Row(
         "To filter requirements by the value in a numeric field, type ",
-        code("field:<NAME>=<VALUE>"), ", replacing ", code("<NAME>"), " with the field name, and ",
+        code("field:<NAME><RELATION><VALUE>"), ", replacing ", code("<NAME>"), " with the field name, ",
+        code("<RELATION>"), " with the type of relation, and ",
         code("<VALUE>"), " with a given number.",
       )(
         "field:Rating=5",
-        "field:Rating=2.50",
+        "field:Rating>2.50",
+        "field:Rating<=7",
       )
 
     ),
