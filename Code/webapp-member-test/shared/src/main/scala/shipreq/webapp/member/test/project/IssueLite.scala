@@ -81,6 +81,8 @@ object IssueLite {
                                     loc  : LocationOf.Text.InReq,
                                     tagId: ApplicableTagId) extends IssueLite(C.NonApplicableTag)
 
+  final case class NumberOutOfRange(reqId: ReqId, fieldId: CustomField.Number.Id) extends IssueLite(C.NumberOutOfRange)
+
   final case class UninhabitableTagField(fieldId: CustomField.Tag.Id) extends IssueLite(C.UninhabitableTagField)
 
   implicit def univEq: UnivEq[IssueLite] = UnivEq.derive
@@ -108,6 +110,7 @@ object IssueLite {
     case Issue.ManualIssue                 (issue                ) => ManualIssue                 (issue)
     case Issue.NonApplicableField          (field                ) => NonApplicableField          (field.id)
     case Issue.NonApplicableTag            (req, loc, tag        ) => NonApplicableTag            (req.id, loc, tag.id)
+    case Issue.NumberOutOfRange            (req, field           ) => NumberOutOfRange            (req.id, field.id)
     case Issue.UninhabitableTagField       (field                ) => UninhabitableTagField       (field.id)
   }
 }

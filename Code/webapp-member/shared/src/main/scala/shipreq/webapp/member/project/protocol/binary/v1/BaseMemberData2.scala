@@ -14,25 +14,6 @@ object BaseMemberData2 {
   import shipreq.webapp.base.protocol.binary.v1.BaseData._
   import BaseMemberData1._
 
-  implicit lazy val picklerCustomFieldType: Pickler[CustomFieldType] =
-    new Pickler[CustomFieldType] {
-      private[this] final val KeyImplication = 'i'
-      private[this] final val KeyTag         = 't'
-      private[this] final val KeyText        = 'x'
-      override def pickle(a: CustomFieldType)(implicit state: PickleState): Unit =
-        a match {
-          case CustomFieldType.Implication => state.enc.writeByte(KeyImplication)
-          case CustomFieldType.Tag         => state.enc.writeByte(KeyTag        )
-          case CustomFieldType.Text        => state.enc.writeByte(KeyText       )
-        }
-      override def unpickle(implicit state: UnpickleState): CustomFieldType =
-        state.dec.readByte match {
-          case KeyImplication => CustomFieldType.Implication
-          case KeyTag         => CustomFieldType.Tag
-          case KeyText        => CustomFieldType.Text
-        }
-    }
-
   implicit lazy val picklerCustomIssueType: Pickler[CustomIssueType] =
     new Pickler[CustomIssueType] {
       override def pickle(a: CustomIssueType)(implicit state: PickleState): Unit = {

@@ -25,6 +25,8 @@ object UpdateContentCmd {
   case class SetGenericReqTitle(id: GenericReqId,                           value: Text.GenericReqTitle.OptionalText) extends UpdateContentCmd
   case class SetUseCaseTitle   (id: UseCaseId,                              value: Text.UseCaseTitle   .OptionalText) extends UpdateContentCmd
 
+  case class SetCustomNumberField(id: ReqId, fid: CustomField.Number.Id, value: Option[Double]) extends UpdateContentCmd
+
   case class DeleteReqs      (reqs: NonEmptySet[ReqId], codeGroups: Set[ReqCodeGroupId], reason: Text.DeletionReason.OptionalText) extends UpdateContentCmd
   case class DeleteCodeGroups(ids: NonEmptySet[ReqCodeGroupId])                                                                    extends UpdateContentCmd
   case class RestoreContent  (reqs: Set[ReqId], codeGroups: Set[ReqCodeGroupId])                                                   extends UpdateContentCmd
@@ -52,7 +54,7 @@ object UpdateContentCmd {
   implicit def equalUpdateContentCmd    : UnivEq[UpdateContentCmd ] = UnivEq.derive
 
   // ===================================================================================================================
-  object CodecsV4 {
+  object CodecsV5 {
     import boopickle.DefaultBasic._
     import shipreq.webapp.base.protocol.binary.v1.BaseData._
     import shipreq.webapp.member.project.protocol.binary.v1.BaseMemberData1._
@@ -60,6 +62,7 @@ object UpdateContentCmd {
     import shipreq.webapp.member.project.protocol.binary.v1.Events._
     import shipreq.webapp.member.project.protocol.binary.v1.Rev6._
     import shipreq.webapp.member.project.protocol.binary.v1.Rev6.AtomPicklers.instances._
+    import shipreq.webapp.member.project.protocol.binary.v2.Rev1._
     // REMEMBER: Don't forget to increment `CodecsVn` if you change these
 
     private implicit val picklerPatchReqTags: Pickler[PatchReqTags] =
@@ -254,6 +257,21 @@ object UpdateContentCmd {
         }
       }
 
+  private implicit val picklerSetCustomNumberField: Pickler[SetCustomNumberField] =
+    new Pickler[SetCustomNumberField] {
+      override def pickle(a: SetCustomNumberField)(implicit state: PickleState): Unit = {
+        state.pickle(a.id)
+        state.pickle(a.fid)
+        state.pickle(a.value)
+      }
+      override def unpickle(implicit state: UnpickleState): SetCustomNumberField = {
+        val id    = state.unpickle[ReqId]
+        val fid   = state.unpickle[CustomField.Number.Id]
+        val value = state.unpickle[Option[Double]]
+        SetCustomNumberField(id, fid, value)
+      }
+    }
+
     implicit val picklerUpdateContentCmd: Pickler[UpdateContentCmd] =
       new Pickler[UpdateContentCmd] {
         private[this] final val KeyAddUseCaseStep        = 0
@@ -274,6 +292,7 @@ object UpdateContentCmd {
         private[this] final val KeyShiftUseCaseStepLeft  = 15
         private[this] final val KeyShiftUseCaseStepRight = 16
         private[this] final val KeyUpdateUseCaseStep     = 17
+        private[this] final val KeySetCustomNumberField  = 18
         override def pickle(a: UpdateContentCmd)(implicit state: PickleState): Unit =
           a match {
             case b: AddUseCaseStep        => state.enc.writeByte(KeyAddUseCaseStep       ); state.pickle(b)
@@ -287,6 +306,7 @@ object UpdateContentCmd {
             case b: RestoreUseCaseStep    => state.enc.writeByte(KeyRestoreUseCaseStep   ); state.pickle(b)
             case b: SetCodeGroupCode      => state.enc.writeByte(KeySetCodeGroupCode     ); state.pickle(b)
             case b: SetCodeGroupTitle     => state.enc.writeByte(KeySetCodeGroupTitle    ); state.pickle(b)
+            case b: SetCustomNumberField  => state.enc.writeByte(KeySetCustomNumberField ); state.pickle(b)
             case b: SetCustomTextField    => state.enc.writeByte(KeySetCustomTextField   ); state.pickle(b)
             case b: SetGenericReqTitle    => state.enc.writeByte(KeySetGenericReqTitle   ); state.pickle(b)
             case b: SetGenericReqType     => state.enc.writeByte(KeySetGenericReqType    ); state.pickle(b)
@@ -308,6 +328,7 @@ object UpdateContentCmd {
             case KeyRestoreUseCaseStep    => state.unpickle[RestoreUseCaseStep]
             case KeySetCodeGroupCode      => state.unpickle[SetCodeGroupCode]
             case KeySetCodeGroupTitle     => state.unpickle[SetCodeGroupTitle]
+            case KeySetCustomNumberField  => state.unpickle[SetCustomNumberField]
             case KeySetCustomTextField    => state.unpickle[SetCustomTextField]
             case KeySetGenericReqTitle    => state.unpickle[SetGenericReqTitle]
             case KeySetGenericReqType     => state.unpickle[SetGenericReqType]

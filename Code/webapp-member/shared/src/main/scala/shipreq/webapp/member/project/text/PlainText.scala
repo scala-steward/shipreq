@@ -143,6 +143,9 @@ object PlainText {
     override protected def _text(text: Text.AnyOptional, live: Live, tagValidity: ApplicableTagId => Validity): String =
       nestedText(live, text, includeMarkup = true)
 
+    override protected def _number(num: String, live: Live, validity: Validity): String =
+      num
+
     // Keep in sync with ProjectWidgets because it's used together for sorting/rendering in ReqTable
     override protected def deletionReasonWhenNoneGiven: String =
       ""

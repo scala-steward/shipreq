@@ -80,6 +80,7 @@ object Editability {
                | FieldKey.ReqType
                | FieldKey.Implications   (\/-(_))   => globalPerm
             case FieldKey.Implications   (-\/(fid)) => customField(cfg, reqTypeId, fid, globalPerm)
+            case FieldKey.CustomNumberField(fid)    => customField(cfg, reqTypeId, fid, globalPerm)
             case FieldKey.CustomTextField(fid)      => customField(cfg, reqTypeId, fid, globalPerm)
             case FieldKey.CustomFieldTags(fid)      => customField(cfg, reqTypeId, fid, globalPerm)
             case FieldKey.AllTags                   => staticField(cfg, StaticField.AllTags, globalPerm)
@@ -100,6 +101,7 @@ object Editability {
                | FieldKey.UseCaseTitle
                | FieldKey.Implications   (\/-(_))   => globalPerm
             case FieldKey.Implications   (-\/(fid)) => customField(cfg, reqTypeId, fid, globalPerm)
+            case FieldKey.CustomNumberField(fid)    => customField(cfg, reqTypeId, fid, globalPerm)
             case FieldKey.CustomTextField(fid)      => customField(cfg, reqTypeId, fid, globalPerm)
             case FieldKey.CustomFieldTags(fid)      => customField(cfg, reqTypeId, fid, globalPerm)
             case FieldKey.AllTags                   => staticField(cfg, StaticField.AllTags, globalPerm)

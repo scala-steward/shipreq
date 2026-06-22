@@ -6,7 +6,7 @@ import shipreq.webapp.client.project.app.ProjectSpaTestDsl
 import shipreq.webapp.client.project.app.pages.root.Routes.Page
 import shipreq.webapp.client.project.test._
 import shipreq.webapp.member.project.data._
-import shipreq.webapp.member.project.event.{Event, GenericReqGD}
+import shipreq.webapp.member.project.event.{CustomNumberFieldGD, Event, GenericReqGD}
 import shipreq.webapp.member.test.WebappTestUtil._
 import shipreq.webapp.member.test.project.{SampleProject3, SampleProject4, SampleProject7}
 import utest._
@@ -397,6 +397,143 @@ object ReqTableTest2 extends TestSuite {
     runTest(Plan.action(test) withInitialState SampleProject7.project)
   }
 
+  def testNumericFieldsCore()(implicit path: TestPath) = {
+    import shipreq.webapp.member.test.project.SampleProject7.Values._
+    import shipreq.webapp.member.test.project.UnsafeTypes._
+
+    val numField = 88.CFNum
+
+    val project = applyEventsSuccessfully(
+      SampleProject7.project,
+      Event.FieldCustomNumberCreate(numField, CustomNumberFieldGD(
+        name = "My Number",
+        desc = None,
+        range = (0.0, 100.0),
+        decimalPlaces = 2,
+        fieldReqTypeRules = FieldReqTypeRules.optional.defaultTo(10.0)(br).defaultTo(1.0)(mf)
+      ))
+    )
+
+    val plan = Plan.action(
+      enterFilter("MF-1 | BR-1")
+        >> showAllColumns
+
+        >> sortBy("My Number")
+        +> cellEditor("MF-1", "My Number").text.assert("1.00")
+        +> cellEditor("BR-1", "My Number").text.assert("10.00")
+        +> tablePubids.assert.equal("MF-1", "BR-1")
+
+        >> cellEditor("MF-1", "My Number").set("2")
+        +> cellEditor("MF-1", "My Number").text.assert("2.00")
+        +> tablePubids.assert.equal("MF-1", "BR-1")
+
+        >> cellEditor("MF-1", "My Number").set("20.1")
+        +> cellEditor("MF-1", "My Number").text.assert("20.10")
+        +> tablePubids.assert.equal("BR-1", "MF-1")
+
+        >> receiveExternalEvent(Event.FieldCustomNumberUpdate(numField, CustomNumberFieldGD.ValueForFieldReqTypeRules(
+          FieldReqTypeRules.optional.defaultTo(1.0)(mf).notApplicable(br)
+        )))
+        +> cellEditor("BR-1", "My Number").isNA.assert(true)
+        +> tablePubids.assert.equal("MF-1", "BR-1")
+    )
+
+    runTest(plan withInitialState project)
+  }
+
+  def testNumericFieldsFilter()(implicit path: TestPath) = {
+    import shipreq.webapp.member.test.project.SampleProject7.Values._
+    import shipreq.webapp.member.test.project.UnsafeTypes._
+
+    val numField = 88.CFNum
+
+    val project = applyEventsSuccessfully(
+      SampleProject7.project,
+      Event.FieldCustomNumberCreate(numField, CustomNumberFieldGD(
+        name = "Rating",
+        desc = None,
+        range = (0.0, 100.0),
+        decimalPlaces = 2,
+        fieldReqTypeRules = FieldReqTypeRules.optional.defaultTo(10.0)(br).defaultTo(1.0)(mf)
+      ))
+    )
+
+    val idFilter = "(MF-1 | BR-1 | UC-1)"
+
+    val plan = Plan.action(
+      showHideColumn("Rating")
+
+        >> enterFilter(idFilter)
+        +> tablePubids.assert.equal("BR-1", "MF-1", "UC-1")
+
+        >> cellEditor("MF-1", "Rating").set("2")
+        +> cellEditor("MF-1", "Rating").text.assert("2.00")
+        +> tablePubids.assert.equal("BR-1", "MF-1", "UC-1")
+
+        >> enterFilter(idFilter + " field:Rating=default")
+        +> tablePubids.assert.equal("BR-1")
+
+        >> enterFilter(idFilter + " field:Rating=blank")
+        +> tablePubids.assert.equal("UC-1")
+    )
+
+    runTest(plan withInitialState project)
+  }
+
+  /** Tests that numbers are rounded to the field's specified precision before sorting.
+    * This avoids surprises where numbers look the same but sort differently.
+    */
+  def testNumericFieldsSortRounded()(implicit path: TestPath) = {
+    import shipreq.webapp.member.test.project.SampleProject7.Values._
+    import shipreq.webapp.member.test.project.UnsafeTypes._
+
+    val numField = 88.CFNum
+
+    val project = applyEventsSuccessfully(
+      SampleProject7.project,
+      Event.FieldCustomNumberCreate(numField, CustomNumberFieldGD(
+        name = "Rating",
+        desc = None,
+        range = (0.0, 10.0),
+        decimalPlaces = 0,
+        fieldReqTypeRules = FieldReqTypeRules.optional.defaultTo(5.0)(mf)
+      ))
+    )
+
+    // mf6: 4 <-- 4.0
+    // mf1: 5 <-- 5.4
+    // mf2: 5 <-- 5.0
+    // mf3: 5 <-- 5.0 (default)
+    // mf5: 5 <-- 5.4
+    // mf4: 6 <-- 5.9
+
+    val plan = Plan.action(
+      enterFilter("MF-1 | MF-2 | MF-3 | MF-4 | MF-5 | MF-6")
+        >> showHideColumn("Rating")
+        >> sortBy("Rating")
+        +> tablePubids.assert.equal("MF-1", "MF-2", "MF-3", "MF-4", "MF-5", "MF-6")
+
+        >> cellEditor("MF-6", "Rating").set("4.0")
+        +> cellEditor("MF-6", "Rating").text.assert("4")
+
+        >> cellEditor("MF-1", "Rating").set("5.4")
+        +> cellEditor("MF-1", "Rating").text.assert("5")
+
+        >> cellEditor("MF-2", "Rating").set("5")
+        +> cellEditor("MF-2", "Rating").text.assert("5")
+
+        >> cellEditor("MF-5", "Rating").set("5.4")
+        +> cellEditor("MF-5", "Rating").text.assert("5")
+
+        >> cellEditor("MF-4", "Rating").set("5.9")
+        +> cellEditor("MF-4", "Rating").text.assert("6")
+
+        +> tablePubids.assert.equal("MF-6", "MF-1", "MF-2", "MF-3", "MF-5", "MF-4")
+    )
+
+    runTest(plan withInitialState project)
+  }
+
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   override def tests = Tests {
@@ -433,6 +570,12 @@ object ReqTableTest2 extends TestSuite {
     "savedViews" - {
       "basic" - testSavedViewsBasic()
       "deadCol" - testSavedViewsDeadCol()
+    }
+
+    "numericFields" - {
+      "core" - testNumericFieldsCore()
+      "filter" - testNumericFieldsFilter()
+      "sortRounded" - testNumericFieldsSortRounded()
     }
   }
 }

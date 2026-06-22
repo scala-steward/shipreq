@@ -674,6 +674,48 @@ trait ApplyConfigEvent {
   }
 
   // -----------------------------------------------------------------------------------------------
+  object CustomNumberFieldEvents {
+    import FieldEvents.{validateName, create, update}
+
+    val ^ = CustomNumberFieldGD
+    val GD = GenericDataApp[CustomField.Number](^)
+
+    val validateDesc          = validateO(V.numberField.desc)
+    val validateRange         = validateI(V.numberField.range)(r => (r._1.toString, r._2.toString))
+    val validateDecimalPlaces = validateI(V.numberField.decimalPlaces)(_.toString)
+
+    def applyCreate(e: FieldCustomNumberCreate): Eval[Unit] = {
+      implicit val vs = e.vs
+      for {
+        name          <- GD.need(^.Name).flatMap(validateName)
+        desc          <- GD.need(^.Desc).flatMap(validateDesc)
+        range         <- GD.need(^.Range).flatMap(validateRange)
+        decimalPlaces <- GD.need(^.DecimalPlaces).flatMap(validateDecimalPlaces)
+        reqTypeRules  <- GD.need(^.FieldReqTypeRules)
+        f              = CustomField.Number(e.id, name, desc, range, decimalPlaces, reqTypeRules, Live)
+        _             <- create(f)
+      } yield ()
+    }
+
+    val updateName              = validateName          >>=@ CustomField.Number.name
+    val updateDesc              = validateDesc          >>=@ CustomField.Number.desc
+    val updateRange             = validateRange         >>=@ CustomField.Number.range
+    val updateDecimalPlaces     = validateDecimalPlaces >>=@ CustomField.Number.decimalPlaces
+    val updateFieldReqTypeRules = fieldUpdateFn(CustomField.Number.fieldReqTypeRules)
+
+    val updateValues = GD.updateEachValue {
+      case v: ^.ValueForName              => updateName             (v.value)
+      case v: ^.ValueForDesc              => updateDesc             (v.value)
+      case v: ^.ValueForRange             => updateRange            (v.value)
+      case v: ^.ValueForDecimalPlaces     => updateDecimalPlaces    (v.value)
+      case v: ^.ValueForFieldReqTypeRules => updateFieldReqTypeRules(v.value)
+    }
+
+    def applyUpdate(e: FieldCustomNumberUpdate): Eval[Unit] =
+      update[CustomField.Number](e.id, updateValues(e.vs))
+  }
+
+  // -----------------------------------------------------------------------------------------------
   object CustomTextFieldEvents {
     import FieldEvents.{validateName, create, update}
 

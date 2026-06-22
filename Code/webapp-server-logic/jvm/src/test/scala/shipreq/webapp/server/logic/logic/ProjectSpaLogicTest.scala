@@ -113,7 +113,7 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
   private implicit val eqInitAppData = CatsMacros.deriveEq[InitAppData]
 
   private val initAppMsg_0 = WsReqRes.InitApp.AndReq(None)
-  private val cmdNewUC = CreateContentCmd.CreateUseCase(Set.empty, Map.empty, Direction.Values.both(Set.empty), Set.empty, Text.empty)
+  private val cmdNewUC = CreateContentCmd.CreateUseCase(Set.empty, Map.empty, Map.empty, Direction.Values.both(Set.empty), Set.empty, Text.empty)
   private val newUC = WsReqRes.CreateContent.AndReq(cmdNewUC)
 
   private class Tester extends MockInterpreters(_.copy(projectSpa = cfg)) {
@@ -636,7 +636,7 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
       implicit val t = new Tester; import t._
       val subState = projectSpa.onOpen(p1.static, emptyState, onPush(_ => ()), _ => ???).value
       val text = ArraySeq(Text.UseCaseTitle.Literal(" "))
-      val cmd = CreateContentCmd.CreateUseCase(Set.empty, Map.empty, Direction.Values.both(Set.empty), Set.empty, text)
+      val cmd = CreateContentCmd.CreateUseCase(Set.empty, Map.empty, Map.empty, Direction.Values.both(Set.empty), Set.empty, text)
       val cmdWS = WsReqRes.CreateContent.AndReq(cmd)
       def sendBadMsg() = {
         val result = sendMsg(cmdWS, p1.static, subState)

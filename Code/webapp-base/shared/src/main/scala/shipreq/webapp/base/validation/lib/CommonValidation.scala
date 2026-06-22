@@ -1,5 +1,6 @@
 package shipreq.webapp.base.validation.lib
 
+import japgolly.microlibs.stdlib_ext.{ParseDouble, ParseInt}
 import java.util.regex.Pattern
 import shipreq.webapp.base.config.WebappConfig
 import shipreq.webapp.base.util.TextMod
@@ -168,4 +169,37 @@ object CommonValidation {
 
   def option[A]: Validator[Option[A], Option[A], A] =
     Simple.Validator.option[A, Invalidity](invalidBecauseEmpty)
+
+  lazy val optionalDouble: Validator[String, String, Option[Double]] =
+    EndoCorrector.live[String](_.filter(c => c.isDigit || c == '.' || c == '-'))
+      .withAuditor(Auditor {
+        case s if s.isEmpty =>
+          \/-(None)
+        case ParseDouble(d) if d.isFinite && !d.isNaN =>
+          \/-(Some(d))
+        case _ =>
+          -\/(Invalidity("Invalid number."))
+      })
+
+  lazy val double: Validator[String, String, Double] =
+    optionalDouble.andThenAuditor(auditor.optionDefined)
+
+  // Allows 0
+  lazy val optionalPositiveInt: Validator[String, String, Option[Int]] =
+    EndoCorrector.live[String](_.filter(_.isDigit))
+      .withAuditor(Auditor {
+        case s if s.isEmpty => \/-(None)
+        case ParseInt(d)    => \/-(Some(d))
+        case _              => -\/(Invalidity("Too large."))
+      })
+
+  // Allows 0
+  lazy val positiveInt: Validator[String, String, Int] =
+    optionalPositiveInt.andThenAuditor(auditor.optionDefined)
+
+  // Allows 0
+  def positiveIntBound(maxInclusive: Int): Validator[String, String, Int] =
+    positiveInt.andThenAuditor(Auditor.test(n =>
+      Option.when(n > maxInclusive)(Invalidity(s"Cannot exceed $maxInclusive."))
+    ))
 }

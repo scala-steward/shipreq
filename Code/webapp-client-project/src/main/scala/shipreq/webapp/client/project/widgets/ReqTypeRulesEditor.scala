@@ -30,6 +30,9 @@ object ReqTypeRulesEditor {
 
   val NoDefault            = new ReqTypeRulesEditor[Impossible](allowDefaults = false, keyFor = _.impossible)
   val ApplicableTagDefault = new ReqTypeRulesEditor[ApplicableTagId](allowDefaults = true, keyFor = _.value.toString)
+  val DoubleDefault        = new ReqTypeRulesEditor[Double](allowDefaults = true, keyFor = _.toString)
+
+  // -------------------------------------------------------------------------------------------------------------------
 
   final class Validation[D](state: State[D], reqTypes: ReqTypes) {
     import shipreq.webapp.base.validation.lib.Simple.Invalidity
@@ -69,29 +72,28 @@ object ReqTypeRulesEditor {
         }
       }.toVector
 
-    private def validateRes(value: State.ResValue[D], legalOptions: => Set[D]): Option[Resolution[D]] =
+    private def validateRes(value: State.ResValue[D], validateDefault: D => Validity): Option[Resolution[D]] =
       value.res match {
         case Resolution.NotApplicable => Some(Resolution.NotApplicable)
         case Resolution.Optional      => Some(Resolution.Optional)
         case Resolution.Mandatory     => Some(Resolution.Mandatory)
-        case Resolution.DefaultTo(_)  => value.legalDefault(legalOptions).map(Resolution.DefaultTo(_))
+        case Resolution.DefaultTo(_)  => value.validatedDefault(validateDefault).map(Resolution.DefaultTo(_))
       }
 
     def resultWhenValidI(implicit ev: D =:= Impossible): Option[FieldReqTypeRules[D]] =
-      resultWhenValid(Set.empty)
+      resultWhenValid(_.impossible)
 
-    def resultWhenValid(legalOptions: => Set[D]): Option[FieldReqTypeRules[D]] = {
-      lazy val _legalOptions = legalOptions
+    def resultWhenValid(validateDefault: D => Validity): Option[FieldReqTypeRules[D]] = {
 
       val deadO: Option[List[(Resolution[D], Set[ReqTypeId])]] =
-        state.dead.traverse(d => validateRes(d.res, _legalOptions).map((_, d.ids.whole)))
+        state.dead.traverse(d => validateRes(d.res, validateDefault).map((_, d.ids.whole)))
 
       def perReqTypeO: Option[List[(Resolution[D], Set[ReqTypeId])]] =
         results.indices.iterator.map { i =>
           for {
             reqTypeIds <- results(i).toOption
             row         = state.perReqType(i)
-            res        <- validateRes(row.res, _legalOptions)
+            res        <- validateRes(row.res, validateDefault)
           } yield (res, reqTypeIds)
         }
           .toList
@@ -100,24 +102,59 @@ object ReqTypeRulesEditor {
       for {
         dead       <- deadO
         perReqType <- perReqTypeO
-        otherwise  <- validateRes(state.otherwise, _legalOptions)
+        otherwise  <- validateRes(state.otherwise, validateDefault)
       } yield FieldReqTypeRules.ByResolution.build(perReqType.iterator ++ dead, otherwise).toRules
     }
   }
 
   // -------------------------------------------------------------------------------------------------------------------
 
+  type DefaultWidgetFn[D] = Reusable[(StateSnapshot[State.ResValue[D]], Enabled, D => String) => VdomNode]
+
   final case class Props[D](state        : StateSnapshot[State[D]],
                             reqTypes     : ReqTypes,
-                            renderDefault: D ~=> VdomNode,
-                            defaults     : ArraySeq[D],
+                            defaultWidget: DefaultWidgetFn[D],
                             filterDead   : FilterDead,
-                            enabled      : Enabled) {
-
-    lazy val defaultSet = defaults.toSet
-  }
+                            enabled      : Enabled)
 
   object Props {
+
+    def discreteDefaults[D: Reusability](state        : StateSnapshot[State[D]],
+                                         reqTypes     : ReqTypes,
+                                         renderDefault: D ~=> VdomNode,
+                                         defaults     : ArraySeq[D],
+                                         filterDead   : FilterDead,
+                                         enabled      : Enabled): Props[D] = {
+
+      val defaultWidget: DefaultWidgetFn[D] =
+        Reusable.ap(Reusable.implicitly(defaults), renderDefault) { (defaults , renderDefault) =>
+          lazy val defaultSet = defaults.toSet
+
+          (ss, enabled, keyFor) => {
+            val default = ss.value.validatedDefault(Valid when defaultSet.contains(_))
+
+            val defaultItems =
+              defaults.map(d => Dropdown.Item(keyFor(d), renderDefault(d), d))
+
+            Dropdown.Props.Optional(
+              items    = defaultItems,
+              enabled  = enabled,
+              tagMod   = *.rulesEditorDefault,
+              validity = Invalid when default.isEmpty,
+              selected = default.map(keyFor))(
+              onChange = o => ss.modState(_.copy(default = Some(o.value)))
+            ).render
+          }
+        }
+
+      apply[D](
+        state         = state,
+        reqTypes      = reqTypes,
+        defaultWidget = defaultWidget,
+        filterDead    = filterDead,
+        enabled       = enabled,
+      )
+    }
 
     def noDefaults(state     : StateSnapshot[State[Impossible]],
                    reqTypes  : ReqTypes,
@@ -126,16 +163,15 @@ object ReqTypeRulesEditor {
       apply(
         state         = state,
         reqTypes      = reqTypes,
-        renderDefault = renderImpossible,
-        defaults      = ArraySeq.empty,
+        defaultWidget = noDefaultWidget,
         filterDead    = filterDead,
         enabled       = enabled,
       )
 
-    private val renderImpossible: Impossible ~=> VdomNode =
-      Reusable.always(_.impossible)
+    private val noDefaultWidget: Reusable[(Any, Any, Any) => VdomNode] =
+      Reusable.always((_, _, _) => EmptyVdom)
 
-    implicit def reusabilityProps[D: Reusability]: Reusability[Props[D]] =
+    implicit def reusabilityProps[D]: Reusability[Props[D]] =
       Reusability.derive
   }
 
@@ -163,13 +199,13 @@ object ReqTypeRulesEditor {
     def empty[D]: State[D] =
       apply(Nil, Vector.empty, State.ResValue.empty)
 
-    def init[D](cfg: ProjectConfig, rules: FieldReqTypeRules.ByResolution[D]): State[D] = {
+    def init[D](cfg: ProjectConfig, rules: FieldReqTypeRules.ByResolution[D])(toText: D => String): State[D] = {
       val dead: List[DeadRow[D]] =
         MutableArray(
           rules.perRes.iterator.flatMap { case (res, ids) =>
             val deadIds = ids.whole.filter(cfg.reqTypes.live(_, Live) is Dead)
             NonEmptySet.option(deadIds).iterator.map(i =>
-              DeadRow(i, ResValue.from(res), keyGen.next())
+              DeadRow(i, ResValue.from(res)(toText), keyGen.next())
             )
           }
         )
@@ -181,7 +217,7 @@ object ReqTypeRulesEditor {
         MutableArray(
           rules.perRes
             .iterator
-            .map { case (res, ids) => PerReqType.from(cfg, ids, res) }
+            .map { case (res, ids) => PerReqType.from(cfg, ids, res)(toText) }
             .filter(_.text.nonEmpty)
         )
           .sortBy(_.text)
@@ -189,7 +225,7 @@ object ReqTypeRulesEditor {
           .toVector
 
       val otherwise =
-        ResValue.from(rules.otherwise)
+        ResValue.from(rules.otherwise)(toText)
 
       apply(dead, rows, otherwise)
     }
@@ -206,28 +242,28 @@ object ReqTypeRulesEditor {
       def empty[D]: PerReqType[D] =
         apply("", ResValue.empty, keyGen.next())
 
-      def from[D](cfg: ProjectConfig, ids: NonEmptySet[ReqTypeId], res: Resolution[D]): PerReqType[D] = {
+      def from[D](cfg: ProjectConfig, ids: NonEmptySet[ReqTypeId], res: Resolution[D])(toText: D => String): PerReqType[D] = {
         def reqTypes(live: Live) = ids.iterator.flatMap(cfg.reqTypes.get).filter(_.live is live)
         val txt = cfg.reqTypes.mkString(reqTypes(Live), ", ")
-        apply(txt, ResValue.from(res), keyGen.next())
+        apply(txt, ResValue.from(res)(toText), keyGen.next())
       }
     }
 
-    final case class ResValue[D](res: Resolution[Unit], default: Option[D]) {
-      def legalDefault(legalOptions: Set[D]): Option[D] =
-        default.filter(legalOptions.contains)
+    final case class ResValue[D](res: Resolution[Unit], textValue: String, default: Option[D]) {
+      def validatedDefault(validate: D => Validity): Option[D] =
+        default.filter(validate(_) is Valid)
     }
 
     object ResValue {
       def empty[D]: ResValue[D] =
-        apply(Resolution.default, None)
+        apply(Resolution.default, "", None)
 
-      def from[D](res: Resolution[D]): ResValue[D] =
+      def from[D](res: Resolution[D])(toText: D => String): ResValue[D] =
         res match {
-          case Resolution.DefaultTo(d)          => apply(Resolution.DefaultTo(()), Some(d))
-          case r: Resolution.Mandatory.type     => apply(r, None)
-          case r: Resolution.Optional.type      => apply(r, None)
-          case r: Resolution.NotApplicable.type => apply(r, None)
+          case Resolution.DefaultTo(d)          => apply(Resolution.DefaultTo(()), toText(d), Some(d))
+          case r: Resolution.Mandatory.type     => apply(r, "", None)
+          case r: Resolution.Optional.type      => apply(r, "", None)
+          case r: Resolution.NotApplicable.type => apply(r, "", None)
         }
     }
 
@@ -358,24 +394,10 @@ final class ReqTypeRulesEditor[D: Reusability: UnivEq](allowDefaults: Boolean, k
             onChange = o => ss.modState(_.copy(res = o.value))
           ).render
 
-        def defaultSelect = {
-          val default = ss.value.legalDefault(p.defaultSet)
-
-          val defaultItems =
-            p.defaults.map(d => Dropdown.Item(keyFor(d), p.renderDefault(d), d))
-
-          Dropdown.Props.Optional(
-            items    = defaultItems,
-            enabled  = enabled,
-            tagMod   = *.rulesEditorDefault,
-            validity = Invalid when default.isEmpty,
-            selected = default.map(keyFor))(
-            onChange = o => ss.modState(_.copy(default = Some(o.value)))
-          ).render
-        }
+        def defaultWidget = p.defaultWidget(ss, enabled, keyFor)
 
         if (ss.value.res.isDefault)
-          TagMod(resSelect, defaultSelect)
+          TagMod(resSelect, defaultWidget)
         else
           resSelect
       }

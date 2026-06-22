@@ -26,10 +26,10 @@ object EventPermission {
           // Otherwise, only admin can add/remove users to/from a project
           ProjectRole.Admin
 
-      case _: ApplicableTagCreateV1
-         | _: ApplicableTagCreate
-         | _: ApplicableTagUpdateV1
+      case _: ApplicableTagCreate
+         | _: ApplicableTagCreateV1
          | _: ApplicableTagUpdate
+         | _: ApplicableTagUpdateV1
          | _: CodeGroupCreate
          | _: CodeGroupsDelete
          | _: CodeGroupUpdate
@@ -38,28 +38,30 @@ object EventPermission {
          | _: CustomIssueTypeDelete
          | _: CustomIssueTypeRestore
          | _: CustomIssueTypeUpdate
-         | _: CustomReqTypeCreateV1
          | _: CustomReqTypeCreate
+         | _: CustomReqTypeCreateV1
          | _: CustomReqTypeDelete
          | _: CustomReqTypeDeleteHard
          | _: CustomReqTypeDeleteSoft
          | _: CustomReqTypeRestore
-         | _: CustomReqTypeUpdateV1
          | _: CustomReqTypeUpdate
+         | _: CustomReqTypeUpdateV1
          | _: FieldCustomDelete
-         | _: FieldCustomImpCreateV1
          | _: FieldCustomImpCreate
-         | _: FieldCustomImpUpdateV1
+         | _: FieldCustomImpCreateV1
          | _: FieldCustomImpUpdate
+         | _: FieldCustomImpUpdateV1
+         | _: FieldCustomNumberCreate
+         | _: FieldCustomNumberUpdate
          | _: FieldCustomRestore
-         | _: FieldCustomTagCreateV1
          | _: FieldCustomTagCreate
-         | _: FieldCustomTagUpdateV1
+         | _: FieldCustomTagCreateV1
          | _: FieldCustomTagUpdate
-         | _: FieldCustomTextCreateV1
+         | _: FieldCustomTagUpdateV1
          | _: FieldCustomTextCreate
-         | _: FieldCustomTextUpdateV1
+         | _: FieldCustomTextCreateV1
          | _: FieldCustomTextUpdate
+         | _: FieldCustomTextUpdateV1
          | _: FieldReposition
          | _: FieldStaticAdd
          | _: FieldStaticRemove
@@ -70,16 +72,17 @@ object EventPermission {
          | _: ManualIssueDelete
          | _: ManualIssueUpdate
          | _: ReqCodesPatch
+         | _: ReqFieldCustomNumberSet
          | _: ReqFieldCustomTextSet
          | _: ReqImplicationsPatch
          | _: ReqsDelete
          | _: ReqTagsPatch
-         | _: SavedViewCreateV1
          | _: SavedViewCreate
+         | _: SavedViewCreateV1
          | _: SavedViewDefaultSet
          | _: SavedViewDelete
-         | _: SavedViewUpdateV1
          | _: SavedViewUpdate
+         | _: SavedViewUpdateV1
          | _: TagDelete
          | _: TagGroupCreate
          | _: TagGroupUpdate

@@ -71,7 +71,7 @@ object TextFieldEditor {
 
     def init(id: CustomField.Text.Id, cfg: ProjectConfig): State = {
       val f = cfg.fields.custom(id)
-      apply(Some(id), f.name, ReqTypeRulesEditor.State.init(cfg, f.fieldReqTypeRulesByResolution))
+      apply(Some(id), f.name, ReqTypeRulesEditor.State.init(cfg, f.fieldReqTypeRulesByResolution)(_.impossible))
     }
 
     def init(id: Option[CustomField.Text.Id], cfg: ProjectConfig): State =

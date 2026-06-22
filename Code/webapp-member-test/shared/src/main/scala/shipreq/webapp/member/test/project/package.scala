@@ -46,6 +46,7 @@ package object project {
     import CustomField._
     override def mkId(l: Int) = Text.Id(l)
     override def setId(cf: CustomField, i: CustomFieldId) = cf match {
+        case f: Number      => f.copy(id = Number     .Id(i.value))
         case f: Text        => f.copy(id = Text       .Id(i.value))
         case f: Tag         => f.copy(id = Tag        .Id(i.value))
         case f: Implication => f.copy(id = Implication.Id(i.value))

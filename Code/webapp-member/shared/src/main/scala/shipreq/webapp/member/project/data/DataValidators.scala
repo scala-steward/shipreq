@@ -220,14 +220,16 @@ object DataValidators {
       def tagIdUniqueness: Invalidator[TagGroupId] =
         Uniqueness.within(otherData.map({
           case f: CustomField.Tag => f.tagId.some
-          case _: CustomField.Text
+          case _: CustomField.Number
+             | _: CustomField.Text
              | _: CustomField.Implication => None
         }).filterDefined)
 
       def reqTypeIdUniqueness: Invalidator[ReqTypeId] =
         Uniqueness.within(otherData.map({
           case f: CustomField.Implication => f.reqTypeId.some
-          case _: CustomField.Text
+          case _: CustomField.Number
+             | _: CustomField.Text
              | _: CustomField.Tag => None
         }).filterDefined)
     }
@@ -261,6 +263,21 @@ object DataValidators {
       V.option[TagGroupId]
         .named(FieldNames.impFieldSource)
         .stateful(_ appendInvalidator _.tagIdUniqueness)
+  }
+
+  // ===================================================================================================================
+  object numberField {
+    final val maxDecimalPlaces = 9
+
+    def desc = genericDesc
+
+    val range = (V.double tuple V.double)
+      .appendInvalidator(Invalidator { case (min, max) =>
+        Option.when(min > max)(Invalidity("The minimum can't be larger than the maximum."))
+      })
+      .named(FieldNames.minMaxRange)
+
+    val decimalPlaces = V.positiveIntBound(maxDecimalPlaces).named(FieldNames.decimalPlaces)
   }
 
   // ===================================================================================================================

@@ -62,6 +62,7 @@ object IssueStats {
       case _: Issue.ManualIssue                  => manual += 1
       case _: Issue.NonApplicableField           => addInConfig()
       case i: Issue.NonApplicableTag             => addInReq(i.req.id)
+      case i: Issue.NumberOutOfRange             => addInReq(i.req.id)
       case _: Issue.UninhabitableTagField        => addInConfig()
     }
 

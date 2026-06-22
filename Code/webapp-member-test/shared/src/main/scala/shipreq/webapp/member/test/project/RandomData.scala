@@ -384,6 +384,9 @@ object RandomData {
   val staticFieldOptional: Gen[StaticField.Optional] =
     Gen.chooseNE(StaticField.optional)
 
+  val customFieldNumberId =
+    id map CustomField.Number.Id
+
   val customFieldTextId =
     id map CustomField.Text.Id
 
@@ -445,14 +448,36 @@ object RandomData {
       Gen sequence ids.map(id =>
         customFieldImplication(Gen pure id, rules)))
 
-  def customField(rulesAny: Gen[FieldReqTypeRules[Impossible]],
+  def minMax: Gen[(Double, Double)] =
+    for {
+      x <- Gen.double
+      y <- Gen.double
+    } yield
+      if (x <= y) (x, y) else (y, x)
+
+  def customFieldNumber(genReqTypeId: Option[Gen[ReqTypeId]]): Gen[CustomField.Number] =
+    for {
+      id                <- customFieldNumberId
+      name              <- fieldName
+      desc              <- Gen.string.option
+      range             <- minMax
+      decimalPlaces     <- Gen.chooseInt(DataValidators.numberField.maxDecimalPlaces)
+      fieldReqTypeRules <- fieldReqTypeRules(genReqTypeId, Some(Gen.chooseDouble(range._1, range._2)))
+      liveExplicitly    <- live
+    } yield
+      CustomField.Number(id, name, desc, range, decimalPlaces, fieldReqTypeRules, liveExplicitly)
+
+  def customField(genReqTypeId: Option[Gen[ReqTypeId]],
+                  rulesAny: Gen[FieldReqTypeRules[Impossible]],
                   rulesTag: Gen[FieldReqTypeRules.ForTagField],
                   derivTags: Gen[DerivativeTags],
                   impFields: Boolean,
                   tagFields: Boolean): Gen[CustomField] = {
     lazy val txt: Gen[CustomField] = customFieldText(rulesAny)
+    lazy val num: Gen[CustomField] = customFieldNumber(genReqTypeId)
     customFieldType.flatMap {
       case CustomFieldType.Text        => txt
+      case CustomFieldType.Number      => num
       case CustomFieldType.Tag         => if (tagFields) customFieldTag(tagGroupId, rulesTag, derivTags) else txt
       case CustomFieldType.Implication => if (impFields) customFieldImplication(reqTypeId, rulesAny) else txt
     }
@@ -460,12 +485,14 @@ object RandomData {
 
   def customFields(reqTypeIds: Set[ReqTypeId],
                    tagIds    : Set[TagGroupId],
-                   appTagIds : Set[ApplicableTagId],
-                   rulesAny  : Gen[FieldReqTypeRules[Impossible]],
-                   rulesTag  : Gen[FieldReqTypeRules.ForTagField]): Gen[IMap[CustomFieldId, CustomField]] = {
+                   appTagIds : Set[ApplicableTagId]): Gen[IMap[CustomFieldId, CustomField]] = {
+    val genReqTypeId = NonEmptySet.option(reqTypeIds).map(Gen.chooseNE(_))
+    val genApTagId   = NonEmptySet.option(appTagIds).map(Gen.chooseNE(_))
+    val rulesAny     = fieldReqTypeRules[Impossible](genReqTypeId, None)
+    val rulesTag     = fieldReqTypeRules(genReqTypeId, genApTagId)
     val deriv = derivativeTags(appTagIds)
     val cf = for {
-      f1 <- customField(rulesAny, rulesTag, deriv, false, false).list
+      f1 <- customField(genReqTypeId, rulesAny, rulesTag, deriv, false, false).list
       f2 <- customFieldTagSome(tagIds, rulesTag, deriv)
       f3 <- customFieldImplicationSome(reqTypeIds, rulesAny)
     } yield f3.toList ::: f2.toList ::: f1
@@ -476,14 +503,10 @@ object RandomData {
   }
 
   def fieldSet(reqTypeIds: Set[ReqTypeId], tagIds: Set[TagId]): Gen[FieldSet] = {
-    val tagGroupIds  = tagIds.iterator.filterSubType[TagGroupId].toSet
-    val appTagIds    = tagIds.iterator.filterSubType[ApplicableTagId].toSet
-    val genApTagId   = NonEmptySet.option(appTagIds).map(Gen.chooseNE(_))
-    val genReqTypeId = NonEmptySet.option(reqTypeIds).map(Gen.chooseNE(_))
-    val rulesAny     = fieldReqTypeRules[Impossible](genReqTypeId, None)
-    val rulesTag     = fieldReqTypeRules(genReqTypeId, genApTagId)
+    val tagGroupIds = tagIds.iterator.filterSubType[TagGroupId].toSet
+    val appTagIds   = tagIds.iterator.filterSubType[ApplicableTagId].toSet
     for {
-      cf           <- customFields(reqTypeIds, tagGroupIds, appTagIds, rulesAny, rulesTag)
+      cf           <- customFields(reqTypeIds, tagGroupIds, appTagIds)
       mandatoryIds = cf.keySet.map(f => f: FieldId) ++ StaticField.mandatory.iterator
       optionalIds  <- Gen.subset(StaticField.optional.whole)
       order        <- Gen.shuffle((mandatoryIds ++ optionalIds).toVector)
@@ -1704,6 +1727,8 @@ object RandomData {
     val atagIds         = cfg.tags.tree.valuesIterator.map(_.tag).filterSubType[ApplicableTag].map(_.id).toSet
     val atagIdG         = Gen.tryGenChoose(atagIds.toSeq)
     val textColIds      = cfg.fields.customFields.valuesIterator.filterSubType[CustomField.Text].map(_.id).toSet
+    val numFieldIds     = cfg.fields.customFields.valuesIterator.filterSubType[CustomField.Number].map(_.id).toSet
+    val numFieldIdG     = Gen tryGenChoose numFieldIds.toIndexedSeq
     val reqIdSet        = reqsWithoutText.idIterator().toSet
     val reqIdG          = Gen tryGenChoose reqIdSet.toIndexedSeq
     def ucStepIds       = reqsWithoutText.useCases.stepIterator.map(_.id)
@@ -1712,6 +1737,14 @@ object RandomData {
     val delReasonText0  = TextGen.deletionReasonAtom(reqIdG, ucStepIdG, activeCodeIdG, atagIdG).text
     val delReasonText   = TextGen.deletionReasonAtom(reqIdG, ucStepIdG, activeCodeIdG, atagIdG).text1(Text.DeletionReason)
     val manualIssueText = TextGen.manualIssueAtom(reqIdG, ucStepIdG, activeCodeIdG, atagIdG).text1(Text.ManualIssue)
+
+    val genReqDataNums: Gen[ReqData.Numbers] =
+      (numFieldIdG, reqIdG) match {
+        case (Some(numFieldIdGen), Some(reqIdGen)) =>
+          numFieldIdGen.mapTo(reqIdGen.mapTo(Gen.double))
+        case _ =>
+          Gen pure ReqData.Numbers.empty
+      }
 
     val projectDelReason =
       Gen.chooseInt(64).flatMap { i =>
@@ -1723,6 +1756,7 @@ object RandomData {
 
     for {
       name       <- projectName
+      reqNums    <- genReqDataNums
       reqText    <- reqFieldDataText2(reqIdSet, textColIds, ucStepIdG, activeCodeIdG, cissueIdG, atagIdG)
       reqs       <- setReqText(reqsWithoutText, reqIdG, ucStepIdG, activeCodeIdG, cissueIdG, atagIdG)
       reqCodes2  <- reqCode.updateGroupText(rcgTitleText)(reqCodes1.trie)
@@ -1736,6 +1770,7 @@ object RandomData {
                      ProjectContent(
                        reqs,
                        ReqCodes(reqCodes2),
+                       reqNums,
                        reqText,
                        reqTags,
                        reqImps,
@@ -2317,6 +2352,7 @@ object RandomData {
         val gl = specialBuiltInFieldFilterOk.map[Valid.Field](-\/(_))
         import SpecialBuiltInField._
         Gen.chooseGen(gr, gr, gr, gl).flatMap {
+          case \/-(id: CustomField.Number     .Id) => fieldAttr.map(a => FilterAst.FieldProp(\/-(id), a: FieldCriteriaF[A]))
           case \/-(id: CustomField.Tag        .Id) => fieldAttr.map(a => FilterAst.FieldProp(\/-(id), a: FieldCriteriaF[A]))
           case \/-(id: CustomField.Text       .Id) => fieldAttrNoDefault.map(FilterAst.FieldProp(\/-(id), _))
           case \/-(id: CustomField.Implication.Id) => impFieldCriteria(ga).map(FilterAst.FieldProp(\/-(id), _))
@@ -2461,6 +2497,9 @@ object RandomData {
     val deletionReason: Gen[Text.DeletionReason.OptionalText] =
       TextGen.deletionReasonAtom(r, u, c, a).text
 
+    val nonEmptyCustomNumberMap: Gen[Event.NonEmptyCustomNumberMap] =
+      Gen.double.mapBy(customFieldNumberId)(1 to 3).map(NonEmpty.force)
+
     val nonEmptyCustomTextMap: Gen[Event.NonEmptyCustomTextMap] =
       customTextField1.mapBy(customFieldTextId)(1 to 3).map(NonEmpty.force)
 
@@ -2522,11 +2561,26 @@ object RandomData {
     private lazy val fieldReqTypeRules_ : Gen[FieldReqTypeRules[Impossible]] =
       fieldReqTypeRules(Some(reqTypeId), None)
 
+    private def fieldReqTypeRulesNum: Gen[FieldReqTypeRules[Double]] =
+      fieldReqTypeRules(Some(reqTypeId), Some(Gen.double))
+
     private def fieldReqTypeRulesTag: Gen[FieldReqTypeRules[ApplicableTagId]] =
       fieldReqTypeRules(Some(reqTypeId), Some(applicableTagId))
 
     private lazy val derivativeTags: Gen[DerivativeTags] =
       RandomData.derivativeTags(applicableTagId)
+
+    object customNumberFieldGD extends GenericDataGen(CustomNumberFieldGD) {
+      import gd._
+      private def mdp = DataValidators.numberField.maxDecimalPlaces
+      override def valueFor(a: Attr): Gen[Value] = a match {
+        case Name              => fieldName            map Name             .apply
+        case Desc              => desc                 map Desc             .apply
+        case Range             => minMax               map Range            .apply
+        case DecimalPlaces     => Gen.chooseInt(mdp)   map DecimalPlaces    .apply
+        case FieldReqTypeRules => fieldReqTypeRulesNum map FieldReqTypeRules.apply
+      }
+    }
 
     object customTextFieldGD extends GenericDataGen(CustomTextFieldGD) {
       import gd._
@@ -2555,24 +2609,26 @@ object RandomData {
     object genericReqGD extends GenericDataGen(GenericReqGD) {
       import gd._
       override def valueFor(a: Attr): Gen[Value] = a match {
-        case Codes      => reqCodeIdAndValue.nes map Codes     .apply
-        case CustomText => nonEmptyCustomTextMap map CustomText.apply
-        case ImpSrcs    => reqId.nes             map ImpSrcs   .apply
-        case ImpTgts    => reqId.nes             map ImpTgts   .apply
-        case Tags       => applicableTagId.nes   map Tags      .apply
-        case Title      => genericReqTitle1      map Title     .apply
+        case Codes      => reqCodeIdAndValue.nes   map Codes     .apply
+        case CustomNums => nonEmptyCustomNumberMap map CustomNums.apply
+        case CustomText => nonEmptyCustomTextMap   map CustomText.apply
+        case ImpSrcs    => reqId.nes               map ImpSrcs   .apply
+        case ImpTgts    => reqId.nes               map ImpTgts   .apply
+        case Tags       => applicableTagId.nes     map Tags      .apply
+        case Title      => genericReqTitle1        map Title     .apply
       }
     }
 
     object useCaseGD extends GenericDataGen(UseCaseGD) {
       import gd._
       override def valueFor(a: Attr): Gen[Value] = a match {
-        case Codes      => reqCodeIdAndValue.nes map Codes     .apply
-        case CustomText => nonEmptyCustomTextMap map CustomText.apply
-        case ImpSrcs    => reqId.nes             map ImpSrcs   .apply
-        case ImpTgts    => reqId.nes             map ImpTgts   .apply
-        case Tags       => applicableTagId.nes   map Tags      .apply
-        case Title      => useCaseTitle1         map Title     .apply
+        case Codes      => reqCodeIdAndValue.nes   map Codes     .apply
+        case CustomNums => nonEmptyCustomNumberMap map CustomNums.apply
+        case CustomText => nonEmptyCustomTextMap   map CustomText.apply
+        case ImpSrcs    => reqId.nes               map ImpSrcs   .apply
+        case ImpTgts    => reqId.nes               map ImpTgts   .apply
+        case Tags       => applicableTagId.nes     map Tags      .apply
+        case Title      => useCaseTitle1           map Title     .apply
       }
     }
 
@@ -2903,6 +2959,15 @@ object RandomData {
     val genManualIssueUpdate = Gen.apply2(ManualIssueUpdate)(manualIssueId, manualIssueText)
     val genManualIssueDelete = manualIssueId.map(ManualIssueDelete)
 
+    val genFieldCustomNumberCreate: Gen[FieldCustomNumberCreate] =
+      Gen.apply2(FieldCustomNumberCreate)(customFieldNumberId, customNumberFieldGD.nonEmptyValues)
+
+    val genFieldCustomNumberUpdate: Gen[FieldCustomNumberUpdate] =
+      Gen.apply2(FieldCustomNumberUpdate)(customFieldNumberId, customNumberFieldGD.nonEmptyValues)
+
+    val genReqFieldCustomNumberSet: Gen[ReqFieldCustomNumberSet] =
+      Gen.apply3(ReqFieldCustomNumberSet)(reqId, customFieldNumberId, Gen.double.option)
+
     val activeEventGens: NonEmptyVector[Gen[ActiveEvent]] =
       valuesForAdt[ActiveEvent, Gen[ActiveEvent]] {
         case _: AccessUpdate            => genAccessUpdate
@@ -2924,6 +2989,8 @@ object RandomData {
         case _: FieldCustomDelete       => genFieldCustomDelete
         case _: FieldCustomImpCreate    => genFieldCustomImpCreate
         case _: FieldCustomImpUpdate    => genFieldCustomImpUpdate
+        case _: FieldCustomNumberCreate => genFieldCustomNumberCreate
+        case _: FieldCustomNumberUpdate => genFieldCustomNumberUpdate
         case _: FieldCustomRestore      => genFieldCustomRestore
         case _: FieldCustomTagCreate    => genFieldCustomTagCreate
         case _: FieldCustomTagUpdate    => genFieldCustomTagUpdate
@@ -2943,6 +3010,7 @@ object RandomData {
         case _: ProjectRestore.type     => genProjectRestore
         case _: ProjectTemplateApply    => genProjectTemplateApply
         case _: ReqCodesPatch           => genReqCodesPatch
+        case _: ReqFieldCustomNumberSet => genReqFieldCustomNumberSet
         case _: ReqFieldCustomTextSet   => genReqFieldCustomTextSet
         case _: ReqImplicationsPatch    => genReqImplicationsPatch
         case _: ReqsDelete              => genReqsDelete

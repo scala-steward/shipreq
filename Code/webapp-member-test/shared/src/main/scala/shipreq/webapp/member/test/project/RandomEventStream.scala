@@ -16,6 +16,7 @@ import shipreq.base.util._
 import shipreq.webapp.base.data.{ProjectCreator, ProjectRole, UserId}
 import shipreq.webapp.base.test.RandomBaseData
 import shipreq.webapp.base.test.RandomBaseData.unicodeString1
+import shipreq.webapp.member.project.data.DataImplicits._
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.data.savedview.SavedView
 import shipreq.webapp.member.project.event.Event._
@@ -27,7 +28,7 @@ import shipreq.webapp.member.test.WebappTestUtil
 import shipreq.webapp.member.test.project.ApplicableEventGen.ObserveFn
 import shipreq.webapp.member.test.project.DataTestExt._
 import shipreq.webapp.member.test.project.RandomData
-import shipreq.webapp.member.test.project.RandomData.{TextGen, TextGenExt, customReqTypeName, desc, exclusivity, fieldName, fieldRefKey, filter, filterDead, genColour, hashRefKey, implicationRequired, mandatory, reqCode, reqTypeMnemonic, tagGroupName}
+import shipreq.webapp.member.test.project.RandomData.{TextGen, TextGenExt, customReqTypeName, desc, exclusivity, fieldName, fieldRefKey, filter, filterDead, genColour, hashRefKey, implicationRequired, mandatory, minMax, reqCode, reqTypeMnemonic, tagGroupName}
 import shipreq.webapp.member.test.project.RandomEventStream.{ProjectDepGen, State}
 
 final case class RandomEventStreamConfig(retiredEvents: Boolean,
@@ -246,6 +247,9 @@ final class ApplicableEventGen(emptyState: State, curState: State, config: Rando
   val nextCustomFieldImplicationId: Gen[CustomField.Implication.Id] =
     nextCustomField map CustomField.Implication.Id
 
+  val nextCustomFieldNumberId: Gen[CustomField.Number.Id] =
+    nextCustomField map CustomField.Number.Id
+
   val nextCustomFieldTagId: Gen[CustomField.Tag.Id] =
     nextCustomField map CustomField.Tag.Id
 
@@ -312,6 +316,9 @@ final class ApplicableEventGen(emptyState: State, curState: State, config: Rando
   lazy val fieldReqTypeRules_ : Gen[FieldReqTypeRules[Impossible]] =
     RandomData.fieldReqTypeRules(existingReqTypeId, None)
 
+  def fieldReqTypeRulesNum(genDefault: Option[Gen[Double]]): Gen[FieldReqTypeRules[Double]] =
+    RandomData.fieldReqTypeRules(existingReqTypeId, genDefault)
+
   lazy val fieldReqTypeRulesTag: Gen[FieldReqTypeRules[ApplicableTagId]] =
     RandomData.fieldReqTypeRules(existingReqTypeId, existingApplicableTagId)
 
@@ -360,6 +367,9 @@ final class ApplicableEventGen(emptyState: State, curState: State, config: Rando
   val customFieldImpId: Live => Option[Gen[CustomField.Implication.Id]] =
     tryGenChooseLiveDead(l => cfg.fields.customImpFields.filter(_.live(cfg) is l).map(_.id))
 
+  val customFieldNumberId: Live => Option[Gen[CustomField.Number.Id]] =
+    tryGenChooseLiveDead(l => cfg.fields.customNumberFields.filter(_.live(cfg) is l).map(_.id))
+
   val customFieldTagId: Live => Option[Gen[CustomField.Tag.Id]] =
     tryGenChooseLiveDead(l => cfg.fields.customTagFields.filter(_.live(cfg) is l).map(_.id))
 
@@ -407,6 +417,9 @@ final class ApplicableEventGen(emptyState: State, curState: State, config: Rando
 
   lazy val nonEmptyCustomTextMap: Option[Gen[Event.NonEmptyCustomTextMap]] =
     customFieldTextId(Live).map(_.mapTo(customTextFieldText1)(1 to 3).map(NonEmpty.force))
+
+  lazy val nonEmptyCustomNumberMap: Option[Gen[Event.NonEmptyCustomNumberMap]] =
+    customFieldNumberId(Live).map(_.mapTo(Gen.double)(1 to 3).map(NonEmpty.force))
 
   object customIssueTypeGD extends GenericDataGen(CustomIssueTypeGD) {
     import gd._
@@ -474,6 +487,18 @@ final class ApplicableEventGen(emptyState: State, curState: State, config: Rando
     }
   }
 
+  case class customNumberFieldGD(genDefault: Option[Gen[Double]]) extends GenericDataGen(CustomNumberFieldGD) {
+    import gd._
+    private def mdp = DataValidators.numberField.maxDecimalPlaces
+    override def valueFor(a: Attr) = a match {
+      case Name              => fieldName                        map Name             .apply
+      case Desc              => desc                             map Desc             .apply
+      case Range             => minMax                           map Range            .apply
+      case DecimalPlaces     => Gen.chooseInt(mdp)               map DecimalPlaces    .apply
+      case FieldReqTypeRules => fieldReqTypeRulesNum(genDefault) map FieldReqTypeRules.apply
+    }
+  }
+
   object customTextFieldGD extends GenericDataGen(CustomTextFieldGD) {
     import gd._
     override def valueFor(a: Attr) = a match {
@@ -500,12 +525,13 @@ final class ApplicableEventGen(emptyState: State, curState: State, config: Rando
   object createGenericReqGD extends GenericDataOptionGen(GenericReqGD) {
     import gd._
     override def valueFor(a: Attr) = a match {
-      case Codes      => newReqCodeIdAndValue        .nes map Codes     .apply
-      case CustomText => nonEmptyCustomTextMap map (_     map CustomText.apply)
-      case ImpSrcs    => liveReqId             map (_.nes map ImpSrcs   .apply)
-      case ImpTgts    => liveReqId             map (_.nes map ImpTgts   .apply)
-      case Tags       => applicableTagId(Live) map (_.nes map Tags      .apply)
-      case Title      => genericReqTitle1                 map Title     .apply
+      case Codes      => newReqCodeIdAndValue          .nes map Codes     .apply
+      case CustomNums => nonEmptyCustomNumberMap map (_     map CustomNums.apply)
+      case CustomText => nonEmptyCustomTextMap   map (_     map CustomText.apply)
+      case ImpSrcs    => liveReqId               map (_.nes map ImpSrcs   .apply)
+      case ImpTgts    => liveReqId               map (_.nes map ImpTgts   .apply)
+      case Tags       => applicableTagId(Live)   map (_.nes map Tags      .apply)
+      case Title      => genericReqTitle1                   map Title     .apply
     }
   }
 
@@ -554,12 +580,13 @@ final class ApplicableEventGen(emptyState: State, curState: State, config: Rando
   object createUseCaseGD extends GenericDataOptionGen(UseCaseGD) {
     import gd._
     override def valueFor(a: Attr) = a match {
-      case Codes      => newReqCodeIdAndValue        .nes map Codes     .apply
-      case CustomText => nonEmptyCustomTextMap map (_     map CustomText.apply)
-      case ImpSrcs    => liveReqId             map (_.nes map ImpSrcs   .apply)
-      case ImpTgts    => liveReqId             map (_.nes map ImpTgts   .apply)
-      case Tags       => applicableTagId(Live) map (_.nes map Tags      .apply)
-      case Title      => useCaseTitle1                    map Title     .apply
+      case Codes      => newReqCodeIdAndValue          .nes map Codes     .apply
+      case CustomNums => nonEmptyCustomNumberMap map (_     map CustomNums.apply)
+      case CustomText => nonEmptyCustomTextMap   map (_     map CustomText.apply)
+      case ImpSrcs    => liveReqId               map (_.nes map ImpSrcs   .apply)
+      case ImpTgts    => liveReqId               map (_.nes map ImpTgts   .apply)
+      case Tags       => applicableTagId(Live)   map (_.nes map Tags      .apply)
+      case Title      => useCaseTitle1                      map Title     .apply
     }
   }
 
@@ -721,6 +748,20 @@ final class ApplicableEventGen(emptyState: State, curState: State, config: Rando
       vs    <- genVS
     } yield FieldCustomTagCreate(id, tagId, vs)
   }
+
+  def genFieldCustomNumberCreate: Gen[FieldCustomNumberCreate] =
+    minMax.flatMap { rangeDoubles =>
+      import CustomNumberFieldGD._
+      val range = Range(rangeDoubles)
+      val genDefault = Gen.chooseDouble(rangeDoubles._1, rangeDoubles._2)
+      for {
+        fid <- nextCustomFieldNumberId
+        vs1 <- customNumberFieldGD(Some(genDefault)).allValues
+      } yield {
+        val vs2 = NonEmpty.force(vs1 + range)
+        FieldCustomNumberCreate(fid, vs2)
+      }
+    }
 
   def genFieldCustomTextCreateV1: Gen[FieldCustomTextCreateV1] =
     Gen.apply2(FieldCustomTextCreateV1)(nextCustomFieldTextId, customTextFieldGDv1.allValues)
@@ -984,6 +1025,25 @@ final class ApplicableEventGen(emptyState: State, curState: State, config: Rando
     customFieldTextId(Live).map(id =>
       Gen.apply2(FieldCustomTextUpdateV1)(id, customTextFieldGDv1.nonEmptyValues))
 
+  def genFieldCustomNumberUpdate: Option[Gen[FieldCustomNumberUpdate]] =
+    customFieldNumberId(Live).map { genId =>
+      genId.flatMap { fid =>
+        val f = p.config.fields.custom(fid)
+        val genDefault = Gen.chooseDouble(f.min, f.max)
+        customNumberFieldGD(Some(genDefault)).nonEmptyValues.flatMap { nev =>
+          import CustomNumberFieldGD.{FieldReqTypeRules, Range}
+          if (nev.containsK(Range))
+            // Range updated; wipe out any default values (because they could be out-of-range)
+            fieldReqTypeRulesNum(None).map { newRules =>
+              val nev2 = NonEmpty.force(nev + FieldReqTypeRules(newRules))
+              FieldCustomNumberUpdate(fid, nev2)
+            }
+          else
+            Gen pure FieldCustomNumberUpdate(fid, nev)
+        }
+      }
+    }
+
   def genFieldCustomTextUpdate: Option[Gen[FieldCustomTextUpdate]] =
     customFieldTextId(Live).map(id =>
       Gen.apply2(FieldCustomTextUpdate)(id, customTextFieldGD.nonEmptyValues))
@@ -1115,6 +1175,26 @@ final class ApplicableEventGen(emptyState: State, curState: State, config: Rando
       Gen pure ProjectRestore
     }
 
+  val genReqFieldCustomNumberSet: Option[Gen[ReqFieldCustomNumberSet]] =
+    for {
+      genId  <- liveReqId
+      genFid <- customFieldNumberId(Live)
+    } yield
+      for {
+        id  <- genId
+        fid <- genFid
+        v0  <- Gen.double.option
+      } yield {
+        var v = v0
+        val lens = Project.reqNums andThen ReqData.Numbers.at(fid, id)
+        if (v ==* lens.get(p))
+          v = v match {
+            case None    => Some(1)
+            case Some(d) => Some(d + 1)
+          }
+        ReqFieldCustomNumberSet(id, fid, v)
+      }
+
   private val possibleActiveEventGensWithNames: NonEmptyVector[(EventName, Option[Gen[ActiveEvent]])] =
     valuesForAdt[ActiveEvent, (EventName, Option[Gen[ActiveEvent]])] {
       // Note: not using [case e: Xxx => EventName(e) -> xxx] here because the valuesForAdt doesn't like it
@@ -1137,6 +1217,8 @@ final class ApplicableEventGen(emptyState: State, curState: State, config: Rando
       case _: FieldCustomDelete       => EventName("FieldCustomDelete"      ) -> genFieldCustomDelete
       case _: FieldCustomImpCreate    => EventName("FieldCustomImpCreate"   ) -> genFieldCustomImpCreate
       case _: FieldCustomImpUpdate    => EventName("FieldCustomImpUpdate"   ) -> genFieldCustomImpUpdate
+      case _: FieldCustomNumberCreate => EventName("FieldCustomNumberCreate") -> genFieldCustomNumberCreate
+      case _: FieldCustomNumberUpdate => EventName("FieldCustomNumberUpdate") -> genFieldCustomNumberUpdate
       case _: FieldCustomRestore      => EventName("FieldCustomRestore"     ) -> genFieldCustomRestore
       case _: FieldCustomTagCreate    => EventName("FieldCustomTagCreate"   ) -> genFieldCustomTagCreate
       case _: FieldCustomTagUpdate    => EventName("FieldCustomTagUpdate"   ) -> genFieldCustomTagUpdate
@@ -1156,6 +1238,7 @@ final class ApplicableEventGen(emptyState: State, curState: State, config: Rando
       case _: ProjectRestore.type     => EventName("ProjectRestore"         ) -> genProjectRestore
       case _: ProjectTemplateApply    => EventName("ProjectTemplateApply"   ) -> genProjectTemplateApply
       case _: ReqCodesPatch           => EventName("ReqCodesPatch"          ) -> genReqCodesPatch
+      case _: ReqFieldCustomNumberSet => EventName("ReqFieldCustomNumberSet") -> genReqFieldCustomNumberSet
       case _: ReqFieldCustomTextSet   => EventName("ReqFieldCustomTextSet"  ) -> genReqFieldCustomTextSet
       case _: ReqImplicationsPatch    => EventName("ReqImplicationsPatch"   ) -> genReqImplicationsPatch
       case _: ReqsDelete              => EventName("ReqsDelete"             ) -> genReqsDelete

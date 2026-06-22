@@ -2,6 +2,7 @@ package shipreq.webapp.member.project.event
 
 import shipreq.base.util._
 import shipreq.webapp.member.project.data._
+import shipreq.webapp.member.project.data.{FieldReqTypeRules => FRTR}
 import shipreq.webapp.member.project.event.ApplyEventTestFns._
 import shipreq.webapp.member.project.event.ContentEventTestHelp.CustomTextMap
 import shipreq.webapp.member.project.event.Event._
@@ -245,6 +246,12 @@ object ContentEventTestHelp {
   }
   val cf2 = createCTF2.id
 
+  val createCFNum1 = {
+    import CustomNumberFieldGD._
+    FieldCustomNumberCreate(90.CFNum, nev(Name("nummy"), Desc(None), Range((0, 100)), DecimalPlaces(2), FieldReqTypeRules(FRTR.optional)))
+  }
+  val cfNum1 = createCFNum1.id
+
   val testHelpInit = InitialEvents(
     createIssueType1,
     createMF,
@@ -254,6 +261,7 @@ object ContentEventTestHelp {
     createTG1,
     createCTF1,
     createCTF2,
+    createCFNum1,
   )
 
   val emptyGR1   = createGR(1)

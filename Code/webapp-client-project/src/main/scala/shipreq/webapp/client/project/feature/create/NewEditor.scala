@@ -10,6 +10,7 @@ import shipreq.webapp.base.feature._
 import shipreq.webapp.base.util.{LastValueMemo, LruMemo}
 import shipreq.webapp.client.project.feature.create.Feature.{AsyncState, Editor, PreviewId, State}
 import shipreq.webapp.member.feature._
+import shipreq.webapp.member.project.data.DataImplicits._
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.text._
 import shipreq.webapp.member.project.util.DataReusability._
@@ -71,22 +72,24 @@ object NewEditor {
         f => EditRichText.CodeGroupTitle(PreviewId(RowKey.CodeGroup, f), None))
 
       def prepareGR(r: RowKey.GenericReq) = FieldKey.FoldForGenericReq[LogicPerField](
-        codes           = _ => EditReqCodes.Multiple.apply,
-        customTextField = f => EditRichText.CustomTextField(PreviewId(r, f), Some(r.reqTypeId)),
-        implications    = f => EditImplications(f.scope),
-        otherTags       = _ => EditTags.otherTags(r.reqTypeId),
-        allTags         = _ => EditTags.allTags(r.reqTypeId),
-        customFieldTags = f => EditTags.customField(r.reqTypeId, f.field),
-        title           = f => EditRichText.GenericReqTitle(PreviewId(r, f), Some(r.reqTypeId)))
+        codes             = _ => EditReqCodes.Multiple.apply,
+        customNumberField = f => EditNumber(f.field),
+        customTextField   = f => EditRichText.CustomTextField(PreviewId(r, f), Some(r.reqTypeId)),
+        implications      = f => EditImplications(f.scope),
+        otherTags         = _ => EditTags.otherTags(r.reqTypeId),
+        allTags           = _ => EditTags.allTags(r.reqTypeId),
+        customFieldTags   = f => EditTags.customField(r.reqTypeId, f.field),
+        title             = f => EditRichText.GenericReqTitle(PreviewId(r, f), Some(r.reqTypeId)))
 
       def prepareUC(r: RowKey.UseCase.type) = FieldKey.FoldForUseCase[LogicPerField](
-        codes           = _ => EditReqCodes.Multiple.apply,
-        customTextField = f => EditRichText.CustomTextField(PreviewId(r, f), Some(StaticReqType.UseCase)),
-        implications    = f => EditImplications(f.scope),
-        otherTags       = _ => EditTags.otherTags(r.reqTypeId),
-        allTags         = _ => EditTags.allTags(r.reqTypeId),
-        customFieldTags = f => EditTags.customField(r.reqTypeId, f.field),
-        title           = f => EditRichText.UseCaseTitle(PreviewId(r, f), Some(StaticReqType.UseCase)))
+        codes             = _ => EditReqCodes.Multiple.apply,
+        customNumberField = f => EditNumber(f.field),
+        customTextField   = f => EditRichText.CustomTextField(PreviewId(r, f), Some(StaticReqType.UseCase)),
+        implications      = f => EditImplications(f.scope),
+        otherTags         = _ => EditTags.otherTags(r.reqTypeId),
+        allTags           = _ => EditTags.allTags(r.reqTypeId),
+        customFieldTags   = f => EditTags.customField(r.reqTypeId, f.field),
+        title             = f => EditRichText.UseCaseTitle(PreviewId(r, f), Some(StaticReqType.UseCase)))
 
       def prepareMI(r: RowKey.ManualIssue.type) = FieldKey.FoldForManualIssue[LogicPerField](
         f => EditRichTextNonEmpty.ManualIssue(PreviewId(r, f), None))
@@ -130,6 +133,47 @@ object NewEditor {
 
     def newPropsMemo[I, P](f: I => P)(implicit r: Reusability[I]): I => P =
       LruMemo(f, 4).byReusability
+
+    // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████
+    object EditNumber extends ForValueType {
+      import shipreq.webapp.client.project.widgets.editors_with_controls.NumberEditor
+
+      override type Args  = EditorArgs.ForNumberEditor
+      override type Value = Option[Double]
+      type Props          = NumberEditor.Props
+      type PropsInputs    = (StateSnapshot[String], Args, AsyncState)
+
+      def apply(fid: CustomField.Number.Id): InitFn = {
+
+        val propsMemo = newPropsMemo[PropsInputs, Props] { in =>
+          val (ss, args, asyncState) = in
+          NumberEditor.Props(
+            initialValue = None,
+            edit         = ss,
+            asyncStatus  = EditorStatus.async(asyncState),
+            legalRange   = args.project.config.fields.custom(fid).range,
+            abort        = args.abort,
+            abortVerb    = args.abortVerb,
+            commitFn     = args.commit,
+            commitVerb   = args.commitVerb,
+            autoFocus    = args.autoFocus)
+        }
+
+        _.startWithStateSnapshot("")(new EditorAndState(_, propsMemo))
+      }
+
+      private class EditorAndState(ss: StateSnapshot[String],
+                                   propsMemo: PropsInputs => Props) extends EditorImpl {
+        override type Props              = NumberEditor.Props
+        override def renderImpl          = _.render
+        override def valueImpl           = _.parseResult
+        override val props               = (args, asyncState) => propsMemo((ss, args, asyncState))
+        override type State              = String
+        override val stateType           = implicitly[ClassTag[String]]
+        override val state               = ss.value
+        override def withState(s: State) = new EditorAndState(ss.withValue(s), propsMemo)
+      }
+    }
 
     // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████
     object EditReqCodes {

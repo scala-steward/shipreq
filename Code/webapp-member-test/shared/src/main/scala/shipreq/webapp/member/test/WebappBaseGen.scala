@@ -1,5 +1,6 @@
 package shipreq.webapp.member.test
 
+import japgolly.microlibs.nonempty.NonEmpty
 import nyaya.gen._
 import shipreq.base.test.BaseUtilGen._
 import shipreq.base.util.ScalaExt._
@@ -18,6 +19,10 @@ object WebappBaseGen {
       attr.set
         .flatMap(as => Gen sequence as.iterator.map(valueFor).toVector)
         .map(_.foldLeft(gd.emptyValues)(_ + _))
+        .map(fixValues)
+
+    def fixValues(vs: gd.Values): gd.Values =
+      vs
 
     lazy val nonEmptyValues: Gen[gd.NonEmptyValues] =
       attr.nes.flatMap(forValues)
@@ -27,7 +32,7 @@ object WebappBaseGen {
 
     def forValues(as: NonEmptySet[gd.Attr]): Gen[gd.NonEmptyValues] =
       Gen.sequence(as.iterator.map(valueFor).toVector)
-        .map(vs => gd.nev(vs.head, vs.tail: _*))
+        .map(vs => NonEmpty.force(fixValues(gd.values(vs))))
   }
 
   abstract class GenericDataOptionGen[GD <: GenericData](final val gd: GD) {

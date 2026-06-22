@@ -28,7 +28,7 @@ abstract class DataReusability extends BaseReusability {
   implicit def reusabilityAssetManifest: Reusability[AssetManifest] =
     Reusability.byRef
 
-    implicit def reusabilityDerivativeTagsRules: Reusability[DerivativeTags.Rules] =
+  implicit def reusabilityDerivativeTagsRules: Reusability[DerivativeTags.Rules] =
     Reusability.byRefOrUnivEq
 
   implicit def reusabilityDerivativeTags: Reusability[DerivativeTags] =
@@ -270,4 +270,7 @@ abstract class DataReusability extends BaseReusability {
 
   implicit lazy val reusabilityImpGraphConfig: Reusability[ImpGraphConfig] =
     Reusability.derive
+
+  implicit def reusabilityDouble: Reusability[Double] =
+    Reusability.byUnivEq
 }

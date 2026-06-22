@@ -225,6 +225,88 @@ object CustomIssueTypeGD extends GenericData {
 
 // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
+object CustomNumberFieldGD extends GenericData {
+  sealed abstract class Attr extends AttrBase
+  sealed abstract class Value extends ValueBase
+
+  case object DecimalPlaces extends Attr {
+    override type Data = Int
+    override def apply(data: Data) = ValueForDecimalPlaces(data)
+    override val dataEquality: Eq[Data] = implicitly[Eq[Int]]
+  }
+  final case class ValueForDecimalPlaces(value: DecimalPlaces.Data) extends Value {
+    override val attr: DecimalPlaces.type = DecimalPlaces
+    override def equals(o: Any): Boolean = o match {
+      case v2: ValueForDecimalPlaces => DecimalPlaces.dataEquality.eqv(value, v2.value)
+      case _ => false
+    }
+  }
+
+  case object Desc extends Attr {
+    override type Data = Option[String]
+    override def apply(data: Data) = ValueForDesc(data)
+    override val dataEquality: Eq[Data] = implicitly[Eq[Option[String]]]
+  }
+  final case class ValueForDesc(value: Desc.Data) extends Value {
+    override val attr: Desc.type = Desc
+    override def equals(o: Any): Boolean = o match {
+      case v2: ValueForDesc => Desc.dataEquality.eqv(value, v2.value)
+      case _ => false
+    }
+  }
+
+  case object FieldReqTypeRules extends Attr {
+    override type Data = FieldReqTypeRules[Double]
+    override def apply(data: Data) = ValueForFieldReqTypeRules(data)
+    override val dataEquality: Eq[Data] = implicitly[Eq[FieldReqTypeRules[Double]]]
+  }
+  final case class ValueForFieldReqTypeRules(value: FieldReqTypeRules.Data) extends Value {
+    override val attr: FieldReqTypeRules.type = FieldReqTypeRules
+    override def equals(o: Any): Boolean = o match {
+      case v2: ValueForFieldReqTypeRules => FieldReqTypeRules.dataEquality.eqv(value, v2.value)
+      case _ => false
+    }
+  }
+
+  case object Name extends Attr {
+    override type Data = String
+    override def apply(data: Data) = ValueForName(data)
+    override val dataEquality: Eq[Data] = implicitly[Eq[String]]
+  }
+  final case class ValueForName(value: Name.Data) extends Value {
+    override val attr: Name.type = Name
+    override def equals(o: Any): Boolean = o match {
+      case v2: ValueForName => Name.dataEquality.eqv(value, v2.value)
+      case _ => false
+    }
+  }
+
+  case object Range extends Attr {
+    override type Data = (Double, Double)
+    override def apply(data: Data) = ValueForRange(data)
+    override val dataEquality: Eq[Data] = implicitly[Eq[(Double, Double)]]
+  }
+  final case class ValueForRange(value: Range.Data) extends Value {
+    override val attr: Range.type = Range
+    override def equals(o: Any): Boolean = o match {
+      case v2: ValueForRange => Range.dataEquality.eqv(value, v2.value)
+      case _ => false
+    }
+  }
+
+  override implicit val equalityAttr: Order[Attr] with UnivEq[Attr] =
+    Util.univEqAndArbitraryOrder(Vector(DecimalPlaces, Desc, FieldReqTypeRules, Name, Range))
+
+  @inline override implicit def equalityValue: UnivEq[Value] = UnivEq.force
+
+  override val attrs = NonEmptySet[Attr](DecimalPlaces, Desc, FieldReqTypeRules, Name, Range)
+
+  def apply(name: String, desc: Option[String], range: (Double, Double), decimalPlaces: Int, fieldReqTypeRules: FieldReqTypeRules[Double]): NonEmptyValues =
+    NonEmpty.force(emptyValues + ValueForName(name) + ValueForDesc(desc) + ValueForRange(range) + ValueForDecimalPlaces(decimalPlaces) + ValueForFieldReqTypeRules(fieldReqTypeRules))
+}
+
+// █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
+
 object CustomReqTypeGD extends GenericData {
   sealed abstract class Attr extends AttrBase
   sealed abstract class Value extends ValueBase
@@ -402,6 +484,19 @@ object GenericReqGD extends GenericData {
     }
   }
 
+  case object CustomNums extends Attr {
+    override type Data = Event.NonEmptyCustomNumberMap
+    override def apply(data: Data) = ValueForCustomNums(data)
+    override val dataEquality: Eq[Data] = implicitly[Eq[Event.NonEmptyCustomNumberMap]]
+  }
+  final case class ValueForCustomNums(value: CustomNums.Data) extends Value {
+    override val attr: CustomNums.type = CustomNums
+    override def equals(o: Any): Boolean = o match {
+      case v2: ValueForCustomNums => CustomNums.dataEquality.eqv(value, v2.value)
+      case _ => false
+    }
+  }
+
   case object CustomText extends Attr {
     override type Data = Event.NonEmptyCustomTextMap
     override def apply(data: Data) = ValueForCustomText(data)
@@ -468,14 +563,14 @@ object GenericReqGD extends GenericData {
   }
 
   override implicit val equalityAttr: Order[Attr] with UnivEq[Attr] =
-    Util.univEqAndArbitraryOrder(Vector(Codes, CustomText, ImpSrcs, ImpTgts, Tags, Title))
+    Util.univEqAndArbitraryOrder(Vector(Codes, CustomNums, CustomText, ImpSrcs, ImpTgts, Tags, Title))
 
   @inline override implicit def equalityValue: UnivEq[Value] = UnivEq.force
 
-  override val attrs = NonEmptySet[Attr](Codes, CustomText, ImpSrcs, ImpTgts, Tags, Title)
+  override val attrs = NonEmptySet[Attr](Codes, CustomNums, CustomText, ImpSrcs, ImpTgts, Tags, Title)
 
-  def apply(codes: NonEmptySet[ApReqCodeId.AndValue], customText: Event.NonEmptyCustomTextMap, impSrcs: NonEmptySet[ReqId], impTgts: NonEmptySet[ReqId], tags: NonEmptySet[ApplicableTagId], title: Text.GenericReqTitle.NonEmptyText): NonEmptyValues =
-    NonEmpty.force(emptyValues + ValueForCodes(codes) + ValueForCustomText(customText) + ValueForImpSrcs(impSrcs) + ValueForImpTgts(impTgts) + ValueForTags(tags) + ValueForTitle(title))
+  def apply(codes: NonEmptySet[ApReqCodeId.AndValue], customNums: Event.NonEmptyCustomNumberMap, customText: Event.NonEmptyCustomTextMap, impSrcs: NonEmptySet[ReqId], impTgts: NonEmptySet[ReqId], tags: NonEmptySet[ApplicableTagId], title: Text.GenericReqTitle.NonEmptyText): NonEmptyValues =
+    NonEmpty.force(emptyValues + ValueForCodes(codes) + ValueForCustomNums(customNums) + ValueForCustomText(customText) + ValueForImpSrcs(impSrcs) + ValueForImpTgts(impTgts) + ValueForTags(tags) + ValueForTitle(title))
 }
 
 // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
@@ -682,6 +777,19 @@ object UseCaseGD extends GenericData {
     }
   }
 
+  case object CustomNums extends Attr {
+    override type Data = Event.NonEmptyCustomNumberMap
+    override def apply(data: Data) = ValueForCustomNums(data)
+    override val dataEquality: Eq[Data] = implicitly[Eq[Event.NonEmptyCustomNumberMap]]
+  }
+  final case class ValueForCustomNums(value: CustomNums.Data) extends Value {
+    override val attr: CustomNums.type = CustomNums
+    override def equals(o: Any): Boolean = o match {
+      case v2: ValueForCustomNums => CustomNums.dataEquality.eqv(value, v2.value)
+      case _ => false
+    }
+  }
+
   case object CustomText extends Attr {
     override type Data = Event.NonEmptyCustomTextMap
     override def apply(data: Data) = ValueForCustomText(data)
@@ -748,14 +856,14 @@ object UseCaseGD extends GenericData {
   }
 
   override implicit val equalityAttr: Order[Attr] with UnivEq[Attr] =
-    Util.univEqAndArbitraryOrder(Vector(Codes, CustomText, ImpSrcs, ImpTgts, Tags, Title))
+    Util.univEqAndArbitraryOrder(Vector(Codes, CustomNums, CustomText, ImpSrcs, ImpTgts, Tags, Title))
 
   @inline override implicit def equalityValue: UnivEq[Value] = UnivEq.force
 
-  override val attrs = NonEmptySet[Attr](Codes, CustomText, ImpSrcs, ImpTgts, Tags, Title)
+  override val attrs = NonEmptySet[Attr](Codes, CustomNums, CustomText, ImpSrcs, ImpTgts, Tags, Title)
 
-  def apply(codes: NonEmptySet[ApReqCodeId.AndValue], customText: Event.NonEmptyCustomTextMap, impSrcs: NonEmptySet[ReqId], impTgts: NonEmptySet[ReqId], tags: NonEmptySet[ApplicableTagId], title: Text.UseCaseTitle.NonEmptyText): NonEmptyValues =
-    NonEmpty.force(emptyValues + ValueForCodes(codes) + ValueForCustomText(customText) + ValueForImpSrcs(impSrcs) + ValueForImpTgts(impTgts) + ValueForTags(tags) + ValueForTitle(title))
+  def apply(codes: NonEmptySet[ApReqCodeId.AndValue], customNums: Event.NonEmptyCustomNumberMap, customText: Event.NonEmptyCustomTextMap, impSrcs: NonEmptySet[ReqId], impTgts: NonEmptySet[ReqId], tags: NonEmptySet[ApplicableTagId], title: Text.UseCaseTitle.NonEmptyText): NonEmptyValues =
+    NonEmpty.force(emptyValues + ValueForCodes(codes) + ValueForCustomNums(customNums) + ValueForCustomText(customText) + ValueForImpSrcs(impSrcs) + ValueForImpTgts(impTgts) + ValueForTags(tags) + ValueForTitle(title))
 }
 
 // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████

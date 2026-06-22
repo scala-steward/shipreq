@@ -7,7 +7,6 @@ import shipreq.webapp.member.project.event._
 import shipreq.webapp.member.project.protocol.json.v1.Events.EventData._
 import shipreq.webapp.member.project.protocol.json.v1.Rev1.EventData._
 import shipreq.webapp.member.project.protocol.json.v1.Rev6.EventData._
-import shipreq.webapp.member.project.protocol.json.v1.Rev7.EventData._
 import shipreq.webapp.member.project.protocol.json.v2.Rev0.EventData._
 import shipreq.webapp.member.project.protocol.json.v2.Rev1.EventData._
 import shipreq.webapp.member.protocol.json.JsonCodec.Implicits._
@@ -37,6 +36,8 @@ object ProjectEventSerialisation {
     case e: FieldCustomDelete       => (TypeFieldCustomDelete      , e.asJson)
     case e: FieldCustomImpCreate    => (TypeFieldCustomImpCreateV2 , e.asJson)
     case e: FieldCustomImpUpdate    => (TypeFieldCustomImpUpdateV2 , e.asJson)
+    case e: FieldCustomNumberCreate => (TypeFieldCustomNumberCreate, e.asJson)
+    case e: FieldCustomNumberUpdate => (TypeFieldCustomNumberUpdate, e.asJson)
     case e: FieldCustomRestore      => (TypeFieldCustomRestore     , e.asJson)
     case e: FieldCustomTagCreate    => (TypeFieldCustomTagCreateV2 , e.asJson)
     case e: FieldCustomTagUpdate    => (TypeFieldCustomTagUpdateV2 , e.asJson)
@@ -56,6 +57,7 @@ object ProjectEventSerialisation {
     case e: ProjectRestore.type     => (TypeProjectRestore         , e.asJson)
     case e: ProjectTemplateApply    => (TypeProjectTemplateApply   , e.asJson)
     case e: ReqCodesPatch           => (TypeReqCodesPatch          , e.asJson)
+    case e: ReqFieldCustomNumberSet => (TypeReqFieldCustomNumberSet, e.asJson)
     case e: ReqFieldCustomTextSet   => (TypeReqFieldCustomTextSet  , e.asJson)
     case e: ReqImplicationsPatch    => (TypeReqImplicationsPatch   , e.asJson)
     case e: ReqsDelete              => (TypeReqsDelete             , e.asJson)
@@ -141,6 +143,8 @@ object ProjectEventSerialisation {
       case TypeFieldCustomImpCreateV2  => parse[FieldCustomImpCreate]
       case TypeFieldCustomImpUpdateV1  => parse[FieldCustomImpUpdateV1]
       case TypeFieldCustomImpUpdateV2  => parse[FieldCustomImpUpdate]
+      case TypeFieldCustomNumberCreate => parse[FieldCustomNumberCreate]
+      case TypeFieldCustomNumberUpdate => parse[FieldCustomNumberUpdate]
       case TypeFieldCustomRestore      => parse[FieldCustomRestore]
       case TypeFieldCustomTagCreateV1  => parse[FieldCustomTagCreateV1]
       case TypeFieldCustomTagCreateV2  => parse[FieldCustomTagCreate]
@@ -164,6 +168,7 @@ object ProjectEventSerialisation {
       case TypeProjectRestore          => parse[ProjectRestore.type]
       case TypeProjectTemplateApply    => parse[ProjectTemplateApply]
       case TypeReqCodesPatch           => parse[ReqCodesPatch]
+      case TypeReqFieldCustomNumberSet => parse[ReqFieldCustomNumberSet]
       case TypeReqFieldCustomTextSet   => parse[ReqFieldCustomTextSet]
       case TypeReqImplicationsPatch    => parse[ReqImplicationsPatch]
       case TypeReqsDelete              => parse[ReqsDelete]

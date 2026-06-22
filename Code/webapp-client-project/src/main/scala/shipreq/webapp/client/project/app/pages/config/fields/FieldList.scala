@@ -225,6 +225,9 @@ object FieldList {
               val derivativeTags = TagMod.when(f.derivativeTags.enabled is Enabled)(detailDerivTagsOn)
               <.div(reqTypeRules, derivativeTags)
 
+            case f: CustomField.Number =>
+              renderDetailRules(p, f.fieldReqTypeRulesByResolution)(p.pw.number(_, f.decimalPlaces, Live, Valid))
+
             case StaticField.OtherTags =>
               val desc = <.div("Displays tags not assigned to a field.")
               val tagIds = pxOtherTags.value()

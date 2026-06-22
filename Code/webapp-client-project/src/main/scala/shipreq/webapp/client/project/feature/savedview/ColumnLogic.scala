@@ -49,6 +49,7 @@ object ColumnLogic {
     case Column.AllTags                                          => Some(EditorFeature.FieldKey.AllTags)
     case Column.Implications(dir)                                => Some(EditorFeature.FieldKey.Implications(\/-(dir)))
     case Column.CustomField(id: data.CustomField.Implication.Id) => Some(EditorFeature.FieldKey.Implications(-\/(id)))
+    case Column.CustomField(id: data.CustomField.Number     .Id) => Some(EditorFeature.FieldKey.CustomNumberField(id))
     case Column.CustomField(id: data.CustomField.Tag        .Id) => Some(EditorFeature.FieldKey.CustomFieldTags(id))
     case Column.CustomField(id: data.CustomField.Text       .Id) => Some(EditorFeature.FieldKey.CustomTextField(id))
     case Column.Pubid
@@ -62,6 +63,7 @@ object ColumnLogic {
     case EditorFeature.FieldKey.Implications(\/-(dir)) => Some(Column.Implications(dir))
     case EditorFeature.FieldKey.Implications(-\/(id))  => Some(Column.CustomField(id))
     case EditorFeature.FieldKey.CustomFieldTags(id)    => Some(Column.CustomField(id))
+    case EditorFeature.FieldKey.CustomNumberField(id)  => Some(Column.CustomField(id))
     case EditorFeature.FieldKey.CustomTextField(id)    => Some(Column.CustomField(id))
   }
 
@@ -72,6 +74,7 @@ object ColumnLogic {
     case Column.OtherTags                                        => Some(EditorFeature.FieldKey.OtherTags)
     case Column.Implications(dir)                                => Some(EditorFeature.FieldKey.Implications(\/-(dir)))
     case Column.CustomField(id: data.CustomField.Implication.Id) => Some(EditorFeature.FieldKey.Implications(-\/(id)))
+    case Column.CustomField(id: data.CustomField.Number     .Id) => Some(EditorFeature.FieldKey.CustomNumberField(id))
     case Column.CustomField(id: data.CustomField.Tag        .Id) => Some(EditorFeature.FieldKey.CustomFieldTags(id))
     case Column.CustomField(id: data.CustomField.Text       .Id) => Some(EditorFeature.FieldKey.CustomTextField(id))
     case Column.Pubid
@@ -85,6 +88,7 @@ object ColumnLogic {
     case EditorFeature.FieldKey.Implications(\/-(dir)) => Some(Column.Implications(dir))
     case EditorFeature.FieldKey.Implications(-\/(id))  => Some(Column.CustomField(id))
     case EditorFeature.FieldKey.CustomFieldTags(id)    => Some(Column.CustomField(id))
+    case EditorFeature.FieldKey.CustomNumberField(id)  => Some(Column.CustomField(id))
     case EditorFeature.FieldKey.CustomTextField(id)    => Some(Column.CustomField(id))
   }
 

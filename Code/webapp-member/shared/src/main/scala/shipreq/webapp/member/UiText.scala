@@ -80,6 +80,10 @@ object UiText {
     def savedViewName        = "Name"
     def impFieldSource       = "Req Type"
     def tagFieldSource       = "Tag Group"
+    def min                  = "Min"
+    def max                  = "Max"
+    def minMaxRange          = "Min/Max"
+    def decimalPlaces        = "Decimal Places"
   }
 
   object RichText {
@@ -161,6 +165,9 @@ object UiText {
 
     def descBlankCustomField(field: String): String =
       "Mandatory field is blank: " + field
+
+    def numberOutOfRange(field: String): String =
+      "Number is out of range: " + field
 
     def descBlankTitle: String =
       "Title is blank"

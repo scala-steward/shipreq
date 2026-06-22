@@ -36,6 +36,8 @@ trait EventEquality {
   implicit val equalFieldCustomImpCreateV1 : Eq[FieldCustomImpCreateV1 ] = CatsMacros.deriveEq
   implicit val equalFieldCustomImpUpdate   : Eq[FieldCustomImpUpdate   ] = CatsMacros.deriveEq
   implicit val equalFieldCustomImpUpdateV1 : Eq[FieldCustomImpUpdateV1 ] = CatsMacros.deriveEq
+  implicit val equalFieldCustomNumberCreate: Eq[FieldCustomNumberCreate] = CatsMacros.deriveEq
+  implicit val equalFieldCustomNumberUpdate: Eq[FieldCustomNumberUpdate] = CatsMacros.deriveEq
   implicit val equalFieldCustomRestore     : Eq[FieldCustomRestore     ] = CatsMacros.deriveEq
   implicit val equalFieldCustomTagCreate   : Eq[FieldCustomTagCreate   ] = CatsMacros.deriveEq
   implicit val equalFieldCustomTagCreateV1 : Eq[FieldCustomTagCreateV1 ] = CatsMacros.deriveEq
@@ -59,6 +61,7 @@ trait EventEquality {
   implicit val equalProjectRestore         : Eq[ProjectRestore.type    ] = CatsMacros.deriveEq
   implicit val equalProjectTemplateApply   : Eq[ProjectTemplateApply   ] = CatsMacros.deriveEq
   implicit val equalReqCodesPatch          : Eq[ReqCodesPatch          ] = CatsMacros.deriveEq
+  implicit val equalReqFieldCustomNumberSet: Eq[ReqFieldCustomNumberSet] = CatsMacros.deriveEq
   implicit val equalReqFieldCustomTextSet  : Eq[ReqFieldCustomTextSet  ] = CatsMacros.deriveEq
   implicit val equalReqImplicationsPatch   : Eq[ReqImplicationsPatch   ] = CatsMacros.deriveEq
   implicit val equalReqsDelete             : Eq[ReqsDelete             ] = CatsMacros.deriveEq

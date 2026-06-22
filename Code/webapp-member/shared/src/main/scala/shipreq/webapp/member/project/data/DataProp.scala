@@ -139,10 +139,18 @@ object DataProp {
     def noDuplicateTagFieldReqTypeResolutions =
       Prop.distinctI("TagField/ReqTypeResolution", filteredFields { case t: CustomField.Tag => t.fieldReqTypeRules.resolutionIterator() })
 
+    def numFieldDefaultsInRange =
+      Prop.atom[CustomField.Number]("Default in range", n => {
+        val bad = n.fieldReqTypeRules.resolutionIterator().flatMap(_.defaultOption).filter(d => d < n.min || d > n.max).toList
+        Option.when(bad.nonEmpty)(
+          s"Defaults for ${n.name} field are out of range [${n.min}, ${n.max}]: ${bad.mkString(", ")}")
+      }).forall(filteredFields { case n: CustomField.Number => n })
+
     def fieldSet = "FieldSet" rename_: (
       ids ∧ fields ∧
       orderNoDups ∧ orderCustomFieldsIso ∧ orderHasAllMandatoryStaticFields ∧
-      tagFieldsUnique ∧ implicationFieldsUnique ∧ noDuplicateTagFieldReqTypeResolutions
+      tagFieldsUnique ∧ implicationFieldsUnique ∧ noDuplicateTagFieldReqTypeResolutions ∧
+      numFieldDefaultsInRange
     )
 
     val all =
@@ -718,6 +726,8 @@ object DataProp {
       ∧ validReqIds    ("ReqCode ReqIds (inactive)",  _.content.reqCodes.inactiveIdsByReqId.keys)
       ∧ validFieldIds  ("ReqData.text TextField ids", _.content.reqText.data.keys)
       ∧ validReqIds    ("ReqData.text.*.reqIds",      _.content.reqText.data.valuesIterator.flatMap(_.keysIterator))
+      ∧ validFieldIds  ("ReqData.nums NumField ids",  _.content.reqNums.keys)
+      ∧ validReqIds    ("ReqData.nums.*.reqIds",      _.content.reqNums.valuesIterator.flatMap(_.keysIterator))
       ∧ validReqIds    ("ReqData.config.tags keys",   _.content.reqTags.keys)
       ∧ validTagIds    ("ReqData.config.tags values", _.content.reqTags.valueIterator)
       ∧ validReqIds    ("ReqData.implications",       _.content.implications.members)

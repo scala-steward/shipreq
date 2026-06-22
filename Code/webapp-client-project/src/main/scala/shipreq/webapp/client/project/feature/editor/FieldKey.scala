@@ -96,6 +96,16 @@ object FieldKey {
     override def foldUC[F[_, _]](f: FoldForUseCase[F]): F[Args, Change] = f.codes(this)
   }
 
+  final case class CustomNumberField(field: CustomField.Number.Id) extends ForAllReqs {
+    override type Args = EditorArgs.ForNumberEditor
+    override type Change = Option[Double]
+    override type RenderFieldKey = RenderFeature.FieldKey.CustomNumberField
+    override def forRender = RenderFeature.FieldKey.CustomNumberField(field)
+    override def fold[F[_, _]](f: FoldAll[F]): F[Args, Change] = f.customNumberField(this)
+    override def foldGR[F[_, _]](f: FoldForGenericReq[F]): F[Args, Change] = f.customNumberField(this)
+    override def foldUC[F[_, _]](f: FoldForUseCase[F]): F[Args, Change] = f.customNumberField(this)
+  }
+
   final case class CustomTextField(field: CustomField.Text.Id) extends ForAllReqs {
     override type Args = EditorArgs.ForTextEditor
     override type Change = Text.CustomTextField.OptionalText
@@ -207,6 +217,7 @@ object FieldKey {
 
   def customField(id: CustomFieldId): FieldKey =
     id match {
+      case i: CustomField.Number.Id      => CustomNumberField(i)
       case i: CustomField.Text.Id        => CustomTextField(i)
       case i: CustomField.Tag.Id         => CustomFieldTags(i)
       case i: CustomField.Implication.Id => Implications(-\/(i))
@@ -238,36 +249,38 @@ object FieldKey {
     def map[G[_, _]](t: F ~~> G): Fold[FK, G]
   }
 
-  case class FoldAll[F[_, _]](allTags        : AllTags.type         => F[AllTags        .Args, AllTags        .Change],
-                              code           : Code.type            => F[Code           .Args, Code           .Change],
-                              codes          : Codes.type           => F[Codes          .Args, Codes          .Change],
-                              customFieldTags: CustomFieldTags      => F[CustomFieldTags#Args, CustomFieldTags#Change],
-                              customTextField: CustomTextField      => F[CustomTextField#Args, CustomTextField#Change],
-                              implications   : Implications         => F[Implications   #Args, Implications   #Change],
-                              manualIssue    : ManualIssue          => F[ManualIssue    #Args, ManualIssue    #Change],
-                              otherTags      : OtherTags.type       => F[OtherTags      .Args, OtherTags      .Change],
-                              reqType        : ReqType.type         => F[ReqType        .Args, ReqType        .Change],
-                              titleCG        : CodeGroupTitle.type  => F[CodeGroupTitle .Args, CodeGroupTitle .Change],
-                              titleGR        : GenericReqTitle.type => F[GenericReqTitle.Args, GenericReqTitle.Change],
-                              titleUC        : UseCaseTitle.type    => F[UseCaseTitle   .Args, UseCaseTitle   .Change],
-                              useCaseStep    : UseCaseStep          => F[UseCaseStep    #Args, UseCaseStep    #Change],
+  case class FoldAll[F[_, _]](allTags          : AllTags.type         => F[AllTags          .Args, AllTags          .Change],
+                              code             : Code.type            => F[Code             .Args, Code             .Change],
+                              codes            : Codes.type           => F[Codes            .Args, Codes            .Change],
+                              customFieldTags  : CustomFieldTags      => F[CustomFieldTags  #Args, CustomFieldTags  #Change],
+                              customNumberField: CustomNumberField    => F[CustomNumberField#Args, CustomNumberField#Change],
+                              customTextField  : CustomTextField      => F[CustomTextField  #Args, CustomTextField  #Change],
+                              implications     : Implications         => F[Implications     #Args, Implications     #Change],
+                              manualIssue      : ManualIssue          => F[ManualIssue      #Args, ManualIssue      #Change],
+                              otherTags        : OtherTags.type       => F[OtherTags        .Args, OtherTags        .Change],
+                              reqType          : ReqType.type         => F[ReqType          .Args, ReqType          .Change],
+                              titleCG          : CodeGroupTitle.type  => F[CodeGroupTitle   .Args, CodeGroupTitle   .Change],
+                              titleGR          : GenericReqTitle.type => F[GenericReqTitle  .Args, GenericReqTitle  .Change],
+                              titleUC          : UseCaseTitle.type    => F[UseCaseTitle     .Args, UseCaseTitle     .Change],
+                              useCaseStep      : UseCaseStep          => F[UseCaseStep      #Args, UseCaseStep      #Change],
                              ) extends Fold[FieldKey, F] {
     override def apply(f: FieldKey): F[f.Args, f.Change] = f.fold(this)
     override def map[G[_, _]](t: F ~~> G): FoldAll[G] =
       FoldAll(
-        allTags         = f => t(allTags        (f)),
-        code            = f => t(code           (f)),
-        codes           = f => t(codes          (f)),
-        customFieldTags = f => t(customFieldTags(f)),
-        customTextField = f => t(customTextField(f)),
-        implications    = f => t(implications   (f)),
-        manualIssue     = f => t(manualIssue    (f)),
-        otherTags       = f => t(otherTags      (f)),
-        reqType         = f => t(reqType        (f)),
-        titleCG         = f => t(titleCG        (f)),
-        titleGR         = f => t(titleGR        (f)),
-        titleUC         = f => t(titleUC        (f)),
-        useCaseStep     = f => t(useCaseStep    (f)),
+        allTags           = f => t(allTags          (f)),
+        code              = f => t(code             (f)),
+        codes             = f => t(codes            (f)),
+        customFieldTags   = f => t(customFieldTags  (f)),
+        customNumberField = f => t(customNumberField(f)),
+        customTextField   = f => t(customTextField  (f)),
+        implications      = f => t(implications     (f)),
+        manualIssue       = f => t(manualIssue      (f)),
+        otherTags         = f => t(otherTags        (f)),
+        reqType           = f => t(reqType          (f)),
+        titleCG           = f => t(titleCG          (f)),
+        titleGR           = f => t(titleGR          (f)),
+        titleUC           = f => t(titleUC          (f)),
+        useCaseStep       = f => t(useCaseStep      (f)),
       )
   }
 
@@ -281,46 +294,50 @@ object FieldKey {
         title = f => t(title(f)))
   }
 
-  case class FoldForGenericReq[F[_, _]](codes          : Codes.type           => F[Codes          .Args, Codes          .Change],
-                                        customTextField: CustomTextField      => F[CustomTextField#Args, CustomTextField#Change],
-                                        implications   : Implications         => F[Implications   #Args, Implications   #Change],
-                                        reqType        : ReqType.type         => F[ReqType        .Args, ReqType        .Change],
-                                        allTags        : AllTags.type         => F[AllTags        .Args, AllTags        .Change],
-                                        otherTags      : OtherTags.type       => F[OtherTags      .Args, OtherTags      .Change],
-                                        customFieldTags: CustomFieldTags      => F[CustomFieldTags#Args, CustomFieldTags#Change],
-                                        title          : GenericReqTitle.type => F[GenericReqTitle.Args, GenericReqTitle.Change],
+  case class FoldForGenericReq[F[_, _]](codes            : Codes.type           => F[Codes            .Args, Codes            .Change],
+                                        customNumberField: CustomNumberField    => F[CustomNumberField#Args, CustomNumberField#Change],
+                                        customTextField  : CustomTextField      => F[CustomTextField  #Args, CustomTextField  #Change],
+                                        implications     : Implications         => F[Implications     #Args, Implications     #Change],
+                                        reqType          : ReqType.type         => F[ReqType          .Args, ReqType          .Change],
+                                        allTags          : AllTags.type         => F[AllTags          .Args, AllTags          .Change],
+                                        otherTags        : OtherTags.type       => F[OtherTags        .Args, OtherTags        .Change],
+                                        customFieldTags  : CustomFieldTags      => F[CustomFieldTags  #Args, CustomFieldTags  #Change],
+                                        title            : GenericReqTitle.type => F[GenericReqTitle  .Args, GenericReqTitle  .Change],
                                        ) extends Fold[ForGenericReq, F] {
     override def apply(f: ForGenericReq): F[f.Args, f.Change] = f.foldGR(this)
     override def map[G[_, _]](t: F ~~> G): FoldForGenericReq[G] =
       FoldForGenericReq(
-        codes           = f => t(codes          (f)),
-        customTextField = f => t(customTextField(f)),
-        implications    = f => t(implications   (f)),
-        reqType         = f => t(reqType        (f)),
-        allTags         = f => t(allTags        (f)),
-        otherTags       = f => t(otherTags      (f)),
-        customFieldTags = f => t(customFieldTags(f)),
-        title           = f => t(title          (f)))
+        codes             = f => t(codes            (f)),
+        customNumberField = f => t(customNumberField(f)),
+        customTextField   = f => t(customTextField  (f)),
+        implications      = f => t(implications     (f)),
+        reqType           = f => t(reqType          (f)),
+        allTags           = f => t(allTags          (f)),
+        otherTags         = f => t(otherTags        (f)),
+        customFieldTags   = f => t(customFieldTags  (f)),
+        title             = f => t(title            (f)))
   }
 
-  case class FoldForUseCase[F[_, _]](codes          : Codes.type        => F[Codes          .Args, Codes          .Change],
-                                     customTextField: CustomTextField   => F[CustomTextField#Args, CustomTextField#Change],
-                                     implications   : Implications      => F[Implications   #Args, Implications   #Change],
-                                     allTags        : AllTags.type      => F[AllTags        .Args, AllTags        .Change],
-                                     otherTags      : OtherTags.type    => F[OtherTags      .Args, OtherTags      .Change],
-                                     customFieldTags: CustomFieldTags   => F[CustomFieldTags#Args, CustomFieldTags#Change],
-                                     title          : UseCaseTitle.type => F[UseCaseTitle   .Args, UseCaseTitle   .Change],
+  case class FoldForUseCase[F[_, _]](codes            : Codes.type        => F[Codes            .Args, Codes            .Change],
+                                     customNumberField: CustomNumberField => F[CustomNumberField#Args, CustomNumberField#Change],
+                                     customTextField  : CustomTextField   => F[CustomTextField  #Args, CustomTextField  #Change],
+                                     implications     : Implications      => F[Implications     #Args, Implications     #Change],
+                                     allTags          : AllTags.type      => F[AllTags          .Args, AllTags          .Change],
+                                     otherTags        : OtherTags.type    => F[OtherTags        .Args, OtherTags        .Change],
+                                     customFieldTags  : CustomFieldTags   => F[CustomFieldTags  #Args, CustomFieldTags  #Change],
+                                     title            : UseCaseTitle.type => F[UseCaseTitle     .Args, UseCaseTitle     .Change],
                                     ) extends Fold[ForUseCase, F] {
     override def apply(f: ForUseCase): F[f.Args, f.Change] = f.foldUC(this)
     override def map[G[_, _]](t: F ~~> G): FoldForUseCase[G] =
       FoldForUseCase(
-        codes           = f => t(codes          (f)),
-        customTextField = f => t(customTextField(f)),
-        implications    = f => t(implications   (f)),
-        allTags         = f => t(allTags        (f)),
-        otherTags       = f => t(otherTags      (f)),
-        customFieldTags = f => t(customFieldTags(f)),
-        title           = f => t(title          (f)))
+        codes             = f => t(codes            (f)),
+        customNumberField = f => t(customNumberField(f)),
+        customTextField   = f => t(customTextField  (f)),
+        implications      = f => t(implications     (f)),
+        allTags           = f => t(allTags          (f)),
+        otherTags         = f => t(otherTags        (f)),
+        customFieldTags   = f => t(customFieldTags  (f)),
+        title             = f => t(title            (f)))
   }
 
   case class FoldForUseCaseSteps[F[_, _]](step: UseCaseStep => F[UseCaseStep#Args, UseCaseStep#Change]) extends Fold[UseCaseStep, F] {
@@ -362,19 +379,20 @@ object FieldKey {
     implicit val reusability: Reusability[AndArgs] = {
       type F[A, V] = Reusability[A]
       val fold = FoldAll[F](
-        allTags         = f => implicitly[Reusability[f.Args]],
-        code            = f => implicitly[Reusability[f.Args]],
-        codes           = f => implicitly[Reusability[f.Args]],
-        customFieldTags = f => implicitly[Reusability[f.Args]],
-        customTextField = f => implicitly[Reusability[f.Args]],
-        implications    = f => implicitly[Reusability[f.Args]],
-        manualIssue     = f => implicitly[Reusability[f.Args]],
-        otherTags       = f => implicitly[Reusability[f.Args]],
-        reqType         = f => implicitly[Reusability[f.Args]],
-        titleCG         = f => implicitly[Reusability[f.Args]],
-        titleGR         = f => implicitly[Reusability[f.Args]],
-        titleUC         = f => implicitly[Reusability[f.Args]],
-        useCaseStep     = f => implicitly[Reusability[f.Args]],
+        allTags           = f => implicitly[Reusability[f.Args]],
+        code              = f => implicitly[Reusability[f.Args]],
+        codes             = f => implicitly[Reusability[f.Args]],
+        customFieldTags   = f => implicitly[Reusability[f.Args]],
+        customNumberField = f => implicitly[Reusability[f.Args]],
+        customTextField   = f => implicitly[Reusability[f.Args]],
+        implications      = f => implicitly[Reusability[f.Args]],
+        manualIssue       = f => implicitly[Reusability[f.Args]],
+        otherTags         = f => implicitly[Reusability[f.Args]],
+        reqType           = f => implicitly[Reusability[f.Args]],
+        titleCG           = f => implicitly[Reusability[f.Args]],
+        titleGR           = f => implicitly[Reusability[f.Args]],
+        titleUC           = f => implicitly[Reusability[f.Args]],
+        useCaseStep       = f => implicitly[Reusability[f.Args]],
       )
       Reusability { (x, y) =>
         @inline def sameRef = x eq y

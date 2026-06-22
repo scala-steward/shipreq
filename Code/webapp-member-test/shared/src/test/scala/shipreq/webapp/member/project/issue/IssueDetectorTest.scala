@@ -170,6 +170,28 @@ object IssueDetectorTest extends TestSuite {
       IssueLite.BlankCustomField(uc1, priField),
       IssueLite.BlankCustomField(uc1, mfField),
     )
+
+    def numbers() = {
+      val numField = 9.CFNum
+      test(p4)(
+        Event.FieldCustomNumberCreate(numField, CustomNumberFieldGD(
+          name = "Cost",
+          desc = None,
+          range = (0.0, 100.0),
+          decimalPlaces = 2,
+          fieldReqTypeRules = FieldReqTypeRules.notApplicable.mandatory(fr, StaticReqType.UseCase)
+        )),
+        Event.ReqFieldCustomNumberSet(frs(1), numField, 50.0)
+      )(
+        // pri fields
+        IssueLite.BlankCustomField(frs(1), priField),
+        IssueLite.BlankCustomField(frs(2), priField),
+        IssueLite.BlankCustomField(uc1, priField),
+        // num fields
+        IssueLite.BlankCustomField(frs(2), numField),
+        IssueLite.BlankCustomField(uc1, numField),
+      )
+    }
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -555,6 +577,33 @@ object IssueDetectorTest extends TestSuite {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+  private object NumberOutOfRangeTests {
+    private implicit val filter = IssueFilter(IssueClass.NumberOutOfRange)
+
+    import P4._
+
+    def ko() = {
+      val numField = 9.CFNum
+      test(p4)(
+        Event.FieldCustomNumberCreate(numField, CustomNumberFieldGD(
+          name = "Cost",
+          desc = None,
+          range = (0.0, 100.0),
+          decimalPlaces = 2,
+          fieldReqTypeRules = FieldReqTypeRules.notApplicable.optional(fr, StaticReqType.UseCase)
+        )),
+        Event.ReqFieldCustomNumberSet(frs(1), numField, 50.0),
+        Event.ReqFieldCustomNumberSet(frs(2), numField, -10.0),
+        Event.ReqFieldCustomNumberSet(uc1, numField, 150.0)
+      )(
+        IssueLite.NumberOutOfRange(frs(2), numField),
+        IssueLite.NumberOutOfRange(uc1, numField),
+      )
+    }
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
   private object UninhabitableTagFieldTests {
     private implicit val filter = IssueFilter[Issue.UninhabitableTagField]
 
@@ -634,6 +683,7 @@ object IssueDetectorTest extends TestSuite {
       "notAllReqTypes" - notAllReqTypes()
       "imps1"          - imps1()
       "imps2"          - imps2()
+      "numbers"        - numbers()
     }
 
     "ConflictingTag" - {
@@ -736,6 +786,11 @@ object IssueDetectorTest extends TestSuite {
       import NonApplicableTagTests._
       "ko"   - ko()
       "dead" - dead()
+    }
+
+    "NumberOutOfRange" - {
+      import NumberOutOfRangeTests._
+      "ko" - ko()
     }
 
     "UninhabitableTagField" - {

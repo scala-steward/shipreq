@@ -292,10 +292,27 @@ object ProjectSpaProtocolsTest extends TestSuite {
           import Text.GenericReqTitle.{apply => mk, _}
           val bin    = BinaryData.fromHex("5945B41D02000604670000000167000E0001010009026C07556D6D2E2E2E206900010038295653")
           val expect = (ReqId(6),CreateContent.AndReq(CreateGenericReq(
-            Set(),
-            Map(),
+            Set.empty,
+            Map.empty,
+            Map.empty,
             Direction.Values {
-              case Forwards => Set()
+              case Forwards => Set.empty
+              case Backwards => Set(GenericReqId(14))
+            },
+            CustomReqTypeId(1),
+            Set(ApplicableTagId(9)),
+            mk(Literal("Umm... "), Issue(CustomIssueTypeId(1),Text.InlineIssueDesc.empty)))))
+          assertRequest(bin, expect)
+        }
+        "v2.1" - {
+          import Text.GenericReqTitle.{apply => mk, _}
+          val bin    = BinaryData.fromHex("5945B41D0201060467D5F5B6070100010001000000000000164000000167000E0001010009026C07556D6D2E2E2E206900010038295653")
+          val expect = (ReqId(6),CreateContent.AndReq(CreateGenericReq(
+            Set.empty,
+            Map(CustomField.Number.Id(1) -> 5.5),
+            Map.empty,
+            Direction.Values {
+              case Forwards => Set.empty
               case Backwards => Set(GenericReqId(14))
             },
             CustomReqTypeId(1),

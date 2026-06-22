@@ -81,7 +81,15 @@ final class ViewReq[A](data           : Data,
       \/-(viewTags.vector(fid, data.focusedTags, data.unfocusedTags))
   }
 
-  def text(id: CustomField.Text.Id): IfApplicable[A] =
+  def customFieldNumber(id: CustomField.Number.Id): IfApplicable[A] =
+    data.fieldRules.num(id) match {
+      case Resolution.Optional
+         | Resolution.DefaultTo(_)  => \/-(pt.customNumberField(id, data.req, data.live, Optional))
+      case Resolution.Mandatory     => \/-(pt.customNumberField(id, data.req, data.live, Mandatory))
+      case Resolution.NotApplicable => NotApplicable.left
+    }
+
+  def customFieldText(id: CustomField.Text.Id): IfApplicable[A] =
     data.fieldRules.text(id) match {
       case Resolution.Optional      => \/-(pt.customTextField(id, data.req, data.live, Optional))
       case Resolution.Mandatory     => \/-(pt.customTextField(id, data.req, data.live, Mandatory))
@@ -94,19 +102,21 @@ final class ViewReq[A](data           : Data,
 
   val customField: CustomFieldId => IfApplicable[A] = {
     case id: CustomField.Implication.Id => imps(id)
+    case id: CustomField.Number     .Id => customFieldNumber(id)
     case id: CustomField.Tag        .Id => fieldTags(id)
-    case id: CustomField.Text       .Id => text(id)
+    case id: CustomField.Text       .Id => customFieldText(id)
   }
 
   val render: RenderFeature.FieldKey.ForSomeReq => IfApplicable[A] = {
-    case RenderFeature.FieldKey.CustomTextField(field) => text(field)
-    case RenderFeature.FieldKey.CustomFieldTags(field) => fieldTags(field)
-    case RenderFeature.FieldKey.Implications   (scope) => imps(scope)
-    case RenderFeature.FieldKey.Codes                  => \/-(codes)
-    case RenderFeature.FieldKey.Title                  => \/-(title)
-    case RenderFeature.FieldKey.ReqType                => \/-(reqType)
-    case RenderFeature.FieldKey.OtherTags              => \/-(otherTags)
-    case RenderFeature.FieldKey.AllTags                => \/-(allTags)
+    case RenderFeature.FieldKey.CustomNumberField(field) => customFieldNumber(field)
+    case RenderFeature.FieldKey.CustomTextField(field)   => customFieldText(field)
+    case RenderFeature.FieldKey.CustomFieldTags(field)   => fieldTags(field)
+    case RenderFeature.FieldKey.Implications   (scope)   => imps(scope)
+    case RenderFeature.FieldKey.Codes                    => \/-(codes)
+    case RenderFeature.FieldKey.Title                    => \/-(title)
+    case RenderFeature.FieldKey.ReqType                  => \/-(reqType)
+    case RenderFeature.FieldKey.OtherTags                => \/-(otherTags)
+    case RenderFeature.FieldKey.AllTags                  => \/-(allTags)
   }
 
   val editable: EditorFeature.FieldKey.ForSomeReq => IfApplicable[A] =

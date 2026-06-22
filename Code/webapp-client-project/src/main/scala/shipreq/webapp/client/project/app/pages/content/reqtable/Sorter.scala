@@ -1,7 +1,9 @@
 package shipreq.webapp.client.project.app.pages.content.reqtable
 
+import java.math.{BigDecimal, RoundingMode}
 import monocle.Optional
 import shipreq.base.util.{Applicable, NotApplicable}
+import shipreq.webapp.member.project.data.DataImplicits._
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.data.derivation._
 import shipreq.webapp.member.project.data.savedview._
@@ -116,6 +118,34 @@ object Sorter {
       case _: Row.ForCodeGroup => pt.deleteReasonForCodeGroup getOrElse ""
     })
 
+  def customNumberFieldSorter(fid: CustomField.Number.Id, c: Column): SorterForSMCB =
+    SorterForSMCB(bp =>
+      sorter[Option[Double]](
+        prep = setup => {
+          import setup.p
+          val field = p.config.fields.custom(fid)
+          val reqNums = p.content.reqNumsFor(fid)
+          val rowApplicability = setup.applicability.byField(c)
+
+          {
+            case row: Row.ForReq =>
+              rowApplicability(row) match {
+                case Applicable =>
+                  @inline def default = field.fieldReqTypeRules(row.req.reqTypeId).defaultOption
+                  reqNums.get(row.req.id).orElse(default).map(d =>
+                    new BigDecimal(d).setScale(field.decimalPlaces, RoundingMode.HALF_UP).doubleValue
+                  )
+                case NotApplicable =>
+                  None
+              }
+            case _: Row.ForCodeGroup =>
+              None
+          }
+        },
+        sort = SortFn.double.option(bp),
+      )
+    )
+
   // ===================================================================================================================
   // Sort criteria
 
@@ -126,6 +156,7 @@ object Sorter {
   val inconclusiveCB: C.SortInconclusiveHasBlanks => SorterForSMCB = {
     case c: C.CustomField =>
       c.id match {
+        case id: CustomField.Number     .Id => customNumberFieldSorter(id, c)
         case id: CustomField.Text       .Id => customTextFieldSorter(id, c)
         case id: CustomField.Tag        .Id => tagSorter(Row.cfTag(id), _.p.config.tags.orderByPos)
         case id: CustomField.Implication.Id => pubidVectorSorter(Row.cfImp(id))

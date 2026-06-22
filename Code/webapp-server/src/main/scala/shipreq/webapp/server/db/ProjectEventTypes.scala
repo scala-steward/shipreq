@@ -53,6 +53,8 @@ object ProjectEventTypes {
   final val TypeFieldCustomTagUpdateV2  = 1143
   final val TypeFieldCustomTextCreateV2 = 1144
   final val TypeFieldCustomTextUpdateV2 = 1145
+  final val TypeFieldCustomNumberCreate = 1150
+  final val TypeFieldCustomNumberUpdate = 1151
 
   // =======
   // Content
@@ -60,8 +62,9 @@ object ProjectEventTypes {
 
   final val TypeReqFieldCustomTextSet   = 2000
   final val TypeReqTagsPatch            = 2001
-  final val TypeReqImplicationsPatch    = 2022
+  final val TypeReqImplicationsPatch    = 2022 // typo! 22 should've been 02
   final val TypeReqCodesPatch           = 2003
+  final val TypeReqFieldCustomNumberSet = 2004
 
   final val TypeCodeGroupCreate         = 2050
   final val TypeCodeGroupUpdate         = 2051
@@ -133,6 +136,8 @@ object ProjectEventTypes {
     case _: FieldCustomImpCreateV1  => TypeFieldCustomImpCreateV1
     case _: FieldCustomImpUpdate    => TypeFieldCustomImpUpdateV2
     case _: FieldCustomImpUpdateV1  => TypeFieldCustomImpUpdateV1
+    case _: FieldCustomNumberCreate => TypeFieldCustomNumberCreate
+    case _: FieldCustomNumberUpdate => TypeFieldCustomNumberUpdate
     case _: FieldCustomRestore      => TypeFieldCustomRestore
     case _: FieldCustomTagCreate    => TypeFieldCustomTagCreateV2
     case _: FieldCustomTagCreateV1  => TypeFieldCustomTagCreateV1
@@ -156,6 +161,7 @@ object ProjectEventTypes {
     case _: ProjectRestore.type     => TypeProjectRestore
     case _: ProjectTemplateApply    => TypeProjectTemplateApply
     case _: ReqCodesPatch           => TypeReqCodesPatch
+    case _: ReqFieldCustomNumberSet => TypeReqFieldCustomNumberSet
     case _: ReqFieldCustomTextSet   => TypeReqFieldCustomTextSet
     case _: ReqImplicationsPatch    => TypeReqImplicationsPatch
     case _: ReqsDelete              => TypeReqsDelete

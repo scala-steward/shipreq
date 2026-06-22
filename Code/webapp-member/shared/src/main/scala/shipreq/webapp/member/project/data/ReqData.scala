@@ -72,4 +72,28 @@ object ReqData {
 
   implicit def equalityTags: UnivEq[Tags] =
     univEqMultimap
+
+  // -------------------------------------------------------------------------------------------------------------------
+
+  type Numbers = Map[CustomField.Number.Id, Map[ReqId, Double]]
+
+  object Numbers {
+    def empty: Numbers =
+      Map.empty
+
+    private val outerIso: Iso[
+      Option[Map[ReqId, Double]],
+      Map[ReqId, Double]] =
+      Optics.nonEmptyMapIso[ReqId, Double]
+
+    private def outer(id: CustomField.Number.Id): Lens[Numbers, Map[ReqId, Double]] =
+      Optics.nonEmptyMapValueLens(id, outerIso)
+
+    private def inner(id: ReqId): Lens[Map[ReqId, Double], Option[Double]] =
+      Optics.mapValue(id)
+
+    def at(fid: CustomField.Number.Id, reqId: ReqId): Lens[Numbers, Option[Double]] =
+      outer(fid) andThen inner(reqId)
+  }
+
 }

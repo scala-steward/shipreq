@@ -34,6 +34,12 @@ object IssueDetectors {
         f => tags(_, HideDead).set(f.id).isEmpty
       }
 
+      // Check numbers
+      run(ctx, fields.nums) { f =>
+        val numMap = ctx.project.content.reqNumsFor(f.id)
+        !numMap.contains(_)
+      }
+
       // Check text
       run(ctx, fields.text) { f =>
         val textMap = ctx.project.content.reqTextFor(f.id)
@@ -403,6 +409,29 @@ object IssueDetectors {
         if (isLive && allDeadOrNA)
           ctx.add(Issue.NonApplicableField(f))
       }
+    }
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  case object NumberOutOfRange extends Instance {
+
+    override val detect = ctx => {
+      val fields = ctx.project.config.liveCustomNumberFields
+
+      if (fields.nonEmpty)
+        ctx.foreachLiveReq(() => {
+          val content = ctx.project.content
+          req => {
+            for {
+              field <- fields
+              num   <- content.reqNumsFor(field.id).get(req.id)
+            } {
+              if (num < field.min || num > field.max)
+                ctx.add(Issue.NumberOutOfRange(req, field))
+            }
+          }
+        })
     }
   }
 

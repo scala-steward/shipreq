@@ -574,6 +574,27 @@ object ContentEventTest extends TestSuite {
       // TODO test not applicable to target reqtype
     }
 
+    "setCustomNumberField" - {
+      def e = ReqFieldCustomNumberSet(1, cfNum1, Some(12.3))
+      "add" - {
+        val p = _assertPass(emptyGR1, e)
+        val d = p.content.reqNums
+        assertEq(d.size, 1)
+        val m = d(cfNum1)
+        assertEq(m.size, 1)
+        assertEq(m(1), 12.3)
+      }
+      "remove" - {
+        val p = _assertPass(emptyGR1, e, ReqFieldCustomNumberSet(1, cfNum1, None))
+        val d = p.content.reqNums
+        assertEq(d.size, 0)
+      }
+      "reqNotFound"   - assertFail("found")(e)
+      "reqIsDead"     - assertFail("dead") (emptyGR1, delGR1, e)
+      "fieldNotFound" - assertFail("found")(emptyGR1, ReqFieldCustomNumberSet(1, 321.CFNum, Some(12.3)))
+      "fieldDead"     - assertFail("dead") (emptyGR1, FieldCustomDelete(cfNum1), e)
+    }
+
     "deleteRestore" - {
 
       "deleteReq" - {

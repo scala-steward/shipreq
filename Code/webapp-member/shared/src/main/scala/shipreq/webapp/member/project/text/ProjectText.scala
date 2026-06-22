@@ -4,6 +4,7 @@ import japgolly.microlibs.stdlib_ext.MutableArray
 import japgolly.microlibs.utils.{Memo, Utils}
 import scala.collection.immutable.SortedSet
 import shipreq.base.util._
+import shipreq.webapp.member.project.data.DataImplicits._
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.util.Must._
 import shipreq.webapp.member.project.util.ReqCodeTreeItem
@@ -128,6 +129,8 @@ abstract class ProjectText[+Ctx <: Context, Out](project: Project, final val ctx
 
   protected def emptyText: Out
 
+  protected def _number(num: String, live: Live, validity: Validity): Out
+
   /** A single element in the set of flow sources/targets.
    *
    * eg. [This in an example step --> 2.0.1, 2.0.4]
@@ -170,6 +173,9 @@ abstract class ProjectText[+Ctx <: Context, Out](project: Project, final val ctx
 
   protected final def memoByReqId = Memo.by[Req, ReqId](_.id)
 
+  private val numberFmtMemo: Int => String =
+    Memo.int(dp => "%,." + dp + "f")
+
   protected final def useCaseFlowElementById(id: UseCaseStepId): Out =
     useCaseFlowElement(project.content.reqs.useCases.focusStep(id))
 
@@ -187,6 +193,37 @@ abstract class ProjectText[+Ctx <: Context, Out](project: Project, final val ctx
   final val codeGroupTitle: CodeGroup => Out =
     Memo.by((_: CodeGroup).id)(g =>
       text(g.title, g.live, Valid.always, Optional))
+
+  final def customNumberField(id: CustomField.Number.Id, req: Req, live: Live, mandatory: Mandatory): Out =
+    customNumberFieldOption(id)(req).getOrElse[Out] {
+      if (live.is(Live) && mandatory.is(Mandatory))
+        whenBlankButMandatory
+      else
+        emptyText
+    }
+
+  private final val customNumberFieldOption: CustomField.Number.Id => Req => Option[Out] =
+    Memo { fid =>
+      val reqNums   = project.content.reqNumsFor(fid)
+      val field     = cfg.fields.custom(fid)
+      val liveField = field.live(cfg)
+      memoByReqId { req =>
+        @inline def default = field.fieldReqTypeRules(req.reqTypeId).defaultOption
+        reqNums.get(req.id)
+          .orElse(default)
+          .map { n =>
+            val live     = liveField & req.live(cfg.reqTypes)
+            val validity = Valid.when(n >= field.min && n <= field.max)
+            number(n, field.decimalPlaces, live, validity)
+          }
+      }
+    }
+
+  // This is exposed so that defaults can be rendered from the Field Config page
+  final def number(num: Double, decimalPlaces: Int, live: Live, validity: Validity): Out = {
+    val str = numberFmtMemo(decimalPlaces).format(num)
+    _number(str, live, validity)
+  }
 
   final def customTextField(id: CustomField.Text.Id, req: Req, live: Live, mandatory: Mandatory): Out =
     customTextFieldOption(id)(req).getOrElse[Out] {

@@ -479,6 +479,7 @@ object FieldConfigTest extends TestSuite {
       StaticField.ImplicationGraph.name,
       StaticField.OtherTags.name,
       StaticField.AllTags.name,
+      "Numeric field",
       "Implication field",
       "Tag field",
       "Text field"
@@ -567,6 +568,169 @@ object FieldConfigTest extends TestSuite {
         +> editorEditables.assert(0)
     )
 
+  private def testNumFieldCreate()(implicit tp: TestPath) =
+    runActions(SampleProject7.project)(
+
+      clickNew("Numeric field")
+        +> filterDead.assert(HideDead)
+        +> editorName.assert("")
+        +> editorDesc.assert("")
+        +> editorMin.assert("0")
+        +> editorMax.assert("10")
+        +> editorDecPlaces.assert("0")
+        +> editorRules.assert(RuleRow.all("Optional"))
+        +> buttonsEnabled.assert(Buttons(cancel = Enabled, save = Disabled))
+
+        >> setEditorName("")
+        +> editorNameError.assert("Cannot be blank.")
+
+        >> setEditorName("Component")
+        +> editorNameError.assert("Already in use.")
+
+        >> setEditorName("Rating")
+        +> editorNameError.assert.empty
+
+        >> setEditorDesc("Custom Rating Field")
+        +> editorDesc.assert("Custom Rating Field")
+
+        >> setEditorMin("abc")
+        +> editorMinError.assert("Cannot be blank.")
+
+        >> setEditorMin("5..")
+        +> editorMinError.assert("Invalid number.")
+
+        >> setEditorMin("-5")
+        +> editorMinError.assert.empty
+
+        >> setEditorMin("5")
+        +> editorMinError.assert.empty
+
+        >> setEditorMax("xyz")
+        +> editorMaxError.assert("Cannot be blank.")
+
+        >> setEditorMax("4")
+        +> editorMinError.assert("Can't be greater than the maximum.")
+        +> editorMaxError.assert("Can't be less than the minimum.")
+
+        >> setEditorMax("20")
+        +> editorMaxError.assert.empty
+        +> editorMinError.assert.empty
+
+        >> setEditorDecimalPlaces("-1")
+        +> editorDecPlaces.assert("1")
+        +> editorDecPlacesError.assert.empty
+
+        >> setEditorDecimalPlaces("10")
+        +> editorDecPlacesError.assert("Cannot exceed 9.")
+
+        >> setEditorDecimalPlaces("1")
+        +> editorDecPlacesError.assert.empty
+
+        >> setRuleReqRes(0, "Default to…")
+        +> editorRules.assert(RuleRow.AllEmptyDefault)
+        +> buttonsEnabled.assert(Buttons(cancel = Enabled, save = Disabled))
+
+        >> setRuleDefault(0, "25")
+        +> editorRules.assert(RuleRow.all("Default to…", default = "25", defaultError = true))
+        +> buttonsEnabled.assert(Buttons(cancel = Enabled, save = Disabled))
+
+        >> setRuleDefault(0, "abc")
+        +> editorRules.assert(RuleRow.all("Default to…", default = "", defaultError = true))
+
+        >> setRuleDefault(0, "15")
+        +> editorRules.assert(RuleRow.all("Default to…", default = "15", defaultError = false))
+        +> buttonsEnabled.assert(Buttons(cancel = Enabled, save = Enabled))
+
+        >> clickSaveButton
+        +> fieldList.valueBy(_.last).assert("Rating")
+        +> fieldDetail("Rating").assert("All—Default to 15.0")
+        +> buttonsEnabled.assert(Buttons(delete = Enabled, close = Enabled, save = Disabled))
+    )
+
+  private def testNumFieldUpdate()(implicit tp: TestPath) = {
+    val ratingField = 99.CFNum
+    val p = applyEventsSuccessfully(
+      SampleProject7.project,
+      Event.FieldCustomNumberCreate(ratingField, CustomNumberFieldGD.nev(
+        CustomNumberFieldGD.Name("Rating"),
+        CustomNumberFieldGD.Desc(None),
+        CustomNumberFieldGD.Range((1.0, 5.0)),
+        CustomNumberFieldGD.DecimalPlaces(1),
+        CustomNumberFieldGD.FieldReqTypeRules(FieldReqTypeRules.optional)
+      ))
+    )
+
+    runActions(p)(
+      selectField("Rating")
+        +> filterDead.assert(HideDead)
+        +> editorName.assert("Rating")
+        +> editorDesc.assert("")
+        +> editorMin.assert("1")
+        +> editorMax.assert("5")
+        +> editorDecPlaces.assert("1")
+        +> editorRules.assert(RuleRow.all("Optional"))
+        +> buttonsEnabled.assert(Buttons(delete = Enabled, close = Enabled, save = Disabled))
+
+        >> setEditorName("Rating updated")
+        >> setEditorDesc("New desc")
+        >> setEditorMin("2.0")
+        >> setEditorMax("6.0")
+        >> setEditorDecimalPlaces("2")
+        +> buttonsEnabled.assert(Buttons(delete = Enabled, cancel = Enabled, save = Enabled))
+
+        >> clickSaveButton
+        +> fieldList.assert(
+          "Description",
+          "Major Feature",
+          "Priority",
+          StaticField.NormalAltStepTree.name,
+          StaticField.ExceptionStepTree.name,
+          StaticField.StepGraph.name,
+          "Released",
+          "Status",
+          "Notes",
+          "Business Justification",
+          "Alternatives",
+          "Component",
+          "Version",
+          "Other Tags",
+          "All Tags",
+          "Rating updated")
+        +> fieldDetail("Rating updated").assert("All—Optional")
+        +> editorName.assert("Rating updated")
+        +> editorDesc.assert("New desc")
+        +> editorMin.assert("2")
+        +> editorMax.assert("6")
+        +> editorDecPlaces.assert("2")
+        +> buttonsEnabled.assert(Buttons(delete = Enabled, close = Enabled, save = Disabled))
+    )
+  }
+
+  private def testNumFieldDead()(implicit tp: TestPath) = {
+    val ratingField = 99.CFNum
+    val p = applyEventsSuccessfully(
+      SampleProject7.project,
+      Event.FieldCustomNumberCreate(ratingField, CustomNumberFieldGD.nev(
+        CustomNumberFieldGD.Name("Rating"),
+        CustomNumberFieldGD.Desc(None),
+        CustomNumberFieldGD.Range((1.0, 5.0)),
+        CustomNumberFieldGD.DecimalPlaces(1),
+        CustomNumberFieldGD.FieldReqTypeRules(FieldReqTypeRules.optional)
+      ))
+    )
+
+    runActions(p)(
+      selectField("Rating")
+        +> filterDead.assert(HideDead)
+
+        >> clickDeleteButton
+        +> filterDead.assert(ShowDead)
+        +> editorName.assert("Rating")
+        +> buttonsEnabled.assert(Buttons(restore = Enabled, close = Enabled))
+        +> editorEditables.assert(0)
+    )
+  }
+
   override def tests = Tests {
 
     "fieldList" - {
@@ -599,6 +763,12 @@ object FieldConfigTest extends TestSuite {
       "createCant" - testTagFieldCreateCant()
       "update"     - testTagFieldUpdate()
       "dead"       - testTagFieldDead()
+    }
+
+    "numField" - {
+      "create" - testNumFieldCreate()
+      "update" - testNumFieldUpdate()
+      "dead"   - testNumFieldDead()
     }
 
   }

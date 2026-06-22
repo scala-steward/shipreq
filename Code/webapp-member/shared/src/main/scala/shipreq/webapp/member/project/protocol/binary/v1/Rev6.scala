@@ -311,58 +311,6 @@ object Rev6 {
         }
     }
 
-  implicit lazy val picklerCustomField: Pickler[CustomField] =
-    new Pickler[CustomField] {
-      private[this] final val KeyImplication = 'i'
-      private[this] final val KeyTag         = 't'
-      private[this] final val KeyText        = 'x'
-      override def pickle(a: CustomField)(implicit state: PickleState): Unit =
-        a match {
-          case b: CustomField.Implication => state.enc.writeByte(KeyImplication); state.pickle(b)
-          case b: CustomField.Tag         => state.enc.writeByte(KeyTag        ); state.pickle(b)
-          case b: CustomField.Text        => state.enc.writeByte(KeyText       ); state.pickle(b)
-        }
-      override def unpickle(implicit state: UnpickleState): CustomField =
-        state.dec.readByte match {
-          case KeyImplication => state.unpickle[CustomField.Implication]
-          case KeyTag         => state.unpickle[CustomField.Tag        ]
-          case KeyText        => state.unpickle[CustomField.Text       ]
-        }
-    }
-
-  implicit lazy val picklerFieldSetCustomFields: Pickler[FieldSet.CustomFields] =
-    pickleIMap(FieldSet.emptyCustomFields)
-
-  implicit lazy val picklerFieldSet: Pickler[FieldSet] =
-    new Pickler[FieldSet] {
-      override def pickle(a: FieldSet)(implicit state: PickleState): Unit = {
-        state.pickle(a.customFields)
-        state.pickle(a.order)
-      }
-      override def unpickle(implicit state: UnpickleState): FieldSet = {
-        val customFields = state.unpickle[FieldSet.CustomFields]
-        val order        = state.unpickle[FieldSet.Order]
-        FieldSet(customFields, order)
-      }
-    }
-
-  implicit lazy val picklerProjectConfig: Pickler[ProjectConfig] =
-    new Pickler[ProjectConfig] {
-      override def pickle(a: ProjectConfig)(implicit state: PickleState): Unit = {
-        state.pickle(a.customIssueTypes)
-        state.pickle(a.reqTypes)
-        state.pickle(a.fields)
-        state.pickle(a.tags)
-      }
-      override def unpickle(implicit state: UnpickleState): ProjectConfig = {
-        val customIssueTypes = state.unpickle[CustomIssueTypeIMap]
-        val reqTypes         = state.unpickle[ReqTypes]
-        val fields           = state.unpickle[FieldSet]
-        val tags             = state.unpickle[Tags]
-        ProjectConfig(customIssueTypes, reqTypes, fields, tags)
-      }
-    }
-
   implicit lazy val pickleCustomTagFieldGD: Pickler[CustomTagFieldGD.NonEmptyValues] = {
     import CustomTagFieldGD._
 
@@ -524,27 +472,6 @@ object Rev6 {
         val imap   = state.unpickle[ManualIssue.IMap]
         val nextId = state.unpickle[ManualIssueId]
         ManualIssues(imap, nextId)
-      }
-    }
-
-  implicit lazy val picklerProjectContent: Pickler[ProjectContent] =
-    new Pickler[ProjectContent] {
-      override def pickle(a: ProjectContent)(implicit state: PickleState): Unit = {
-        state.pickle(a.reqs)
-        state.pickle(a.reqCodes)
-        state.pickle(a.reqText)
-        state.pickle(a.reqTags)
-        state.pickle(a.implications)
-        state.pickle(a.deletionReasons)
-      }
-      override def unpickle(implicit state: UnpickleState): ProjectContent = {
-        val reqs            = state.unpickle[Requirements]
-        val reqCodes        = state.unpickle[ReqCodes]
-        val reqText         = state.unpickle[ReqData.Text]
-        val reqTags         = state.unpickle[ReqData.Tags]
-        val implications    = state.unpickle[Implications]
-        val deletionReasons = state.unpickle[DeletionReasons]
-        ProjectContent(reqs, reqCodes, reqText, reqTags, implications, deletionReasons)
       }
     }
 
@@ -714,7 +641,8 @@ object Rev6 {
 
   // ===================================================================================================================
 
-  implicit val picklerEventNonEmptyCustomTextMap: Pickler[Event.NonEmptyCustomTextMap] = pickleNonEmptyMono
+  implicit val picklerEventNonEmptyCustomTextMap: Pickler[Event.NonEmptyCustomTextMap] =
+    pickleNonEmptyMono
 
   implicit val pickleCodeGroupGD: Pickler[CodeGroupGD.NonEmptyValues] = {
     import CodeGroupGD._
@@ -740,88 +668,6 @@ object Rev6 {
 
     val values: Pickler[Values] = pickleIMap(emptyValues)
     pickleNonEmptyMono[Values](values, implicitly)
-  }
-
-  implicit val pickleGenericReqGD: Pickler[GenericReqGD.Values] = {
-    import GenericReqGD._
-
-    implicit val picklerValueForCodes      = transformPickler(ValueForCodes     .apply)(_.value)
-    implicit val picklerValueForCustomText = transformPickler(ValueForCustomText.apply)(_.value)
-    implicit val picklerValueForImpSrcs    = transformPickler(ValueForImpSrcs   .apply)(_.value)
-    implicit val picklerValueForImpTgts    = transformPickler(ValueForImpTgts   .apply)(_.value)
-    implicit val picklerValueForTags       = transformPickler(ValueForTags      .apply)(_.value)
-    implicit val picklerValueForTitle      = transformPickler(ValueForTitle     .apply)(_.value)
-
-    implicit val picklerValue: Pickler[Value] =
-      new Pickler[Value] {
-        private[this] final val KeyCodes      = 'C'
-        private[this] final val KeyCustomText = 'X'
-        private[this] final val KeyImpSrcs    = '>'
-        private[this] final val KeyImpTgts    = '<'
-        private[this] final val KeyTags       = '#'
-        private[this] final val KeyTitle      = 'T'
-        override def pickle(a: Value)(implicit state: PickleState): Unit =
-          a match {
-            case b: ValueForCodes      => state.enc.writeByte(KeyCodes     ); state.pickle(b)
-            case b: ValueForCustomText => state.enc.writeByte(KeyCustomText); state.pickle(b)
-            case b: ValueForImpSrcs    => state.enc.writeByte(KeyImpSrcs   ); state.pickle(b)
-            case b: ValueForImpTgts    => state.enc.writeByte(KeyImpTgts   ); state.pickle(b)
-            case b: ValueForTags       => state.enc.writeByte(KeyTags      ); state.pickle(b)
-            case b: ValueForTitle      => state.enc.writeByte(KeyTitle     ); state.pickle(b)
-          }
-        override def unpickle(implicit state: UnpickleState): Value =
-          state.dec.readByte match {
-            case KeyCodes      => state.unpickle[ValueForCodes]
-            case KeyCustomText => state.unpickle[ValueForCustomText]
-            case KeyImpSrcs    => state.unpickle[ValueForImpSrcs]
-            case KeyImpTgts    => state.unpickle[ValueForImpTgts]
-            case KeyTags       => state.unpickle[ValueForTags]
-            case KeyTitle      => state.unpickle[ValueForTitle]
-          }
-      }
-
-    pickleIMap(emptyValues)
-  }
-
-  implicit val pickleUseCaseGD: Pickler[UseCaseGD.Values] = {
-    import UseCaseGD._
-
-    implicit val picklerValueForCodes      = transformPickler(ValueForCodes     .apply)(_.value)
-    implicit val picklerValueForCustomText = transformPickler(ValueForCustomText.apply)(_.value)
-    implicit val picklerValueForImpSrcs    = transformPickler(ValueForImpSrcs   .apply)(_.value)
-    implicit val picklerValueForImpTgts    = transformPickler(ValueForImpTgts   .apply)(_.value)
-    implicit val picklerValueForTags       = transformPickler(ValueForTags      .apply)(_.value)
-    implicit val picklerValueForTitle      = transformPickler(ValueForTitle     .apply)(_.value)
-
-    implicit val picklerValue: Pickler[Value] =
-      new Pickler[Value] {
-        private[this] final val KeyCodes      = 'C'
-        private[this] final val KeyCustomText = 'X'
-        private[this] final val KeyImpSrcs    = '>'
-        private[this] final val KeyImpTgts    = '<'
-        private[this] final val KeyTags       = '#'
-        private[this] final val KeyTitle      = 'T'
-        override def pickle(a: Value)(implicit state: PickleState): Unit =
-          a match {
-            case b: ValueForCodes      => state.enc.writeByte(KeyCodes     ); state.pickle(b)
-            case b: ValueForCustomText => state.enc.writeByte(KeyCustomText); state.pickle(b)
-            case b: ValueForImpSrcs    => state.enc.writeByte(KeyImpSrcs   ); state.pickle(b)
-            case b: ValueForImpTgts    => state.enc.writeByte(KeyImpTgts   ); state.pickle(b)
-            case b: ValueForTags       => state.enc.writeByte(KeyTags      ); state.pickle(b)
-            case b: ValueForTitle      => state.enc.writeByte(KeyTitle     ); state.pickle(b)
-          }
-        override def unpickle(implicit state: UnpickleState): Value =
-          state.dec.readByte match {
-            case KeyCodes      => state.unpickle[ValueForCodes]
-            case KeyCustomText => state.unpickle[ValueForCustomText]
-            case KeyImpSrcs    => state.unpickle[ValueForImpSrcs]
-            case KeyImpTgts    => state.unpickle[ValueForImpTgts]
-            case KeyTags       => state.unpickle[ValueForTags]
-            case KeyTitle      => state.unpickle[ValueForTitle]
-          }
-      }
-
-    pickleIMap(emptyValues)
   }
 
   implicit val pickleUseCaseStepGD: Pickler[UseCaseStepGD.NonEmptyValues] = {
@@ -854,21 +700,6 @@ object Rev6 {
     pickleNonEmptyMono[Values](values, implicitly)
   }
 
-  private[binary] implicit val picklerEventGenericReqCreate: Pickler[Event.GenericReqCreate] =
-    new Pickler[Event.GenericReqCreate] {
-      override def pickle(a: Event.GenericReqCreate)(implicit state: PickleState): Unit = {
-        state.pickle(a.id)
-        state.pickle(a.rt)
-        state.pickle(a.vs)
-      }
-      override def unpickle(implicit state: UnpickleState): Event.GenericReqCreate = {
-        val id = state.unpickle[GenericReqId]
-        val rt = state.unpickle[CustomReqTypeId]
-        val vs = state.unpickle[GenericReqGD.Values]
-        Event.GenericReqCreate(id, rt, vs)
-      }
-    }
-
   private[binary] implicit val picklerEventGenericReqTitleSet: Pickler[Event.GenericReqTitleSet] =
     new Pickler[Event.GenericReqTitleSet] {
       override def pickle(a: Event.GenericReqTitleSet)(implicit state: PickleState): Unit = {
@@ -879,21 +710,6 @@ object Rev6 {
         val id    = state.unpickle[GenericReqId]
         val value = state.unpickle[Text.GenericReqTitle.OptionalText]
         Event.GenericReqTitleSet(id, value)
-      }
-    }
-
-  private[binary] implicit val picklerEventUseCaseCreate: Pickler[Event.UseCaseCreate] =
-    new Pickler[Event.UseCaseCreate] {
-      override def pickle(a: Event.UseCaseCreate)(implicit state: PickleState): Unit = {
-        state.pickle(a.id)
-        state.pickle(a.stepId)
-        state.pickle(a.vs)
-      }
-      override def unpickle(implicit state: UnpickleState): Event.UseCaseCreate = {
-        val id     = state.unpickle[UseCaseId]
-        val stepId = state.unpickle[UseCaseStepId]
-        val vs     = state.unpickle[UseCaseGD.Values]
-        Event.UseCaseCreate(id, stepId, vs)
       }
     }
 

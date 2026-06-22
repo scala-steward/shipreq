@@ -1556,6 +1556,11 @@ object Style extends StyleSheet.Inline {
   // ===================================================================================================================
   object widgets {
 
+    val number = styleF(D.`live * validity`) { case (live, validity) => styleS(
+      mixinIf(live is Dead)(deadMaybeValid(validity)),
+      mixinIf(live.is(Live) && validity.is(Invalid))(hasErrorColor),
+    )}
+
     val richCodeBlockError = style(
       backgroundColor(c"#ddd"),
       padding(1 ex, 2 ex),
@@ -2086,6 +2091,19 @@ object Style extends StyleSheet.Inline {
 
   // ===================================================================================================================
 
+  object numberFieldEditor {
+
+    val reqTypeRuleDefaultEditor = style(
+      marginTop(1 em),
+      display.flex,
+      flexDirection.column,
+    )
+
+    def applicableReqTypesErrMsg = widgets.applicableReqTypesErrMsg
+  }
+
+  // ===================================================================================================================
+
   initInnerObjects(
     accessPage.existingUserSegment.segment,
     accessPage.leaveProjectSegment.segment,
@@ -2100,6 +2118,7 @@ object Style extends StyleSheet.Inline {
     issueConfig.sectionTitle,
     issues.rowspanOuter,
     navBar.connected,
+    numberFieldEditor.reqTypeRuleDefaultEditor,
     reqdetail.detailTable,
     reqdetail.impGraph.container,
     reqdetail.useCaseStep.container,
