@@ -82,4 +82,13 @@ final case class ProjectContent(reqs           : Requirements,
 
   def reqNumsFor(id: CustomField.Number.Id): Map[ReqId, Double] =
     reqNums.getOrElse(id, Map.empty)
+
+  /** "Virtual" meaning it uses the default value (if specified) when blank.
+    *
+    * Result is set to the field's decimal-place precision.
+    */
+  def getVirtualNum(field: CustomField.Number, req: Req): Option[Double] =
+    reqNumsFor(field.id).get(req.id)
+      .orElse(field.fieldReqTypeRules(req.reqTypeId).defaultOption)
+      .map(field.scale)
 }

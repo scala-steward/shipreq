@@ -2,6 +2,7 @@ package shipreq.webapp.member.project.data
 
 import japgolly.microlibs.adt_macros.AdtMacros
 import japgolly.microlibs.stdlib_ext.StdlibExt._
+import java.math.{BigDecimal, RoundingMode}
 import monocle.macros.{GenLens, Lenses}
 import monocle.{Lens, Traversal}
 import scala.collection.immutable.ListSet
@@ -422,6 +423,9 @@ object CustomField {
 
     def min = range._1
     def max = range._2
+
+    def scale(d: Double): Double =
+      new BigDecimal(d).setScale(decimalPlaces, RoundingMode.HALF_UP).doubleValue
   }
 
   object Number {

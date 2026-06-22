@@ -394,6 +394,12 @@ object Rev1 {
     implicit val encoderFieldCriteriaReqTypePosSet: Encoder[FilterAst.FieldCriteria.ReqTypePosSet] =
       Encoder[NonEmptySet[ReqTypePos]].contramap(_.value)
 
+    implicit val decoderFieldCriteriaLiteralNumber: Decoder[FilterAst.FieldCriteria.LiteralNumber] =
+      Decoder[Double].map(FilterAst.FieldCriteria.LiteralNumber.apply)
+
+    implicit val encoderFieldCriteriaLiteralNumber: Encoder[FilterAst.FieldCriteria.LiteralNumber] =
+      Encoder[Double].contramap(_.value)
+
     implicit val decoderFieldCriteriaQuery: Decoder[FilterAst.FieldCriteria.Query[ACursor]] =
       Decoder.instance(c => Right(FilterAst.FieldCriteria.Query(c)))
 
@@ -401,15 +407,17 @@ object Rev1 {
       Encoder[Json].contramap(_.value)
 
     implicit val decoderFieldCriteria: Decoder[FieldCriteriaF[ACursor]] = decodeSumBySoleKey {
-      case ("attr" , c) => c.as[FilterAst.FieldCriteria.Attr[FilterAst.FieldAttr]]
-      case ("rtpos", c) => c.as[FilterAst.FieldCriteria.ReqTypePosSet]
-      case ("query", c) => c.as[FilterAst.FieldCriteria.Query[ACursor]]
+      case ("attr" ,  c) => c.as[FilterAst.FieldCriteria.Attr[FilterAst.FieldAttr]]
+      case ("rtpos",  c) => c.as[FilterAst.FieldCriteria.ReqTypePosSet]
+      case ("query",  c) => c.as[FilterAst.FieldCriteria.Query[ACursor]]
+      case ("litNum", c) => c.as[FilterAst.FieldCriteria.LiteralNumber]
     }
 
     implicit val encoderFieldCriteria: Encoder[FieldCriteriaF[Json]] = Encoder.instance {
-      case a: FilterAst.FieldCriteria.Attr[FilterAst.FieldAttr] => Json.obj("attr"  -> a.asJson)
-      case a: FilterAst.FieldCriteria.ReqTypePosSet             => Json.obj("rtpos" -> a.asJson)
-      case a: FilterAst.FieldCriteria.Query[Json]               => Json.obj("query" -> a.asJson)
+      case a: FilterAst.FieldCriteria.Attr[FilterAst.FieldAttr] => Json.obj("attr"   -> a.asJson)
+      case a: FilterAst.FieldCriteria.ReqTypePosSet             => Json.obj("rtpos"  -> a.asJson)
+      case a: FilterAst.FieldCriteria.Query[Json]               => Json.obj("query"  -> a.asJson)
+      case a: FilterAst.FieldCriteria.LiteralNumber             => Json.obj("litNum" -> a.asJson)
     }
 
     implicit val decoderFilterAstFieldProp: Decoder[Valid.FieldPropF[ACursor]] =

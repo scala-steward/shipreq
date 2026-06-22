@@ -75,6 +75,7 @@ object FilterAlgebra {
       case FieldCriteria.Attr(a)          => a
       case FieldCriteria.ReqTypePosSet(s) => ConciseIntSetFormat(s.whole.map(_.value))
       case FieldCriteria.Query(q)         => subquery(q)
+      case FieldCriteria.LiteralNumber(d) => d.toString
     }
 
     val impCriteria: Potential.ImpCriteriaF[AtomOrComposite[String]] => String = {
@@ -250,8 +251,18 @@ object FilterAlgebra {
 
       def parseAsPoses(field: ParsedField, s: FieldCriteria.ReqTypePosSet): R =
         field match {
-          case \/-(f: CustomField.Implication) => \/-(Valid.fieldProp(\/-(f.id), s))
-          case _                               => valuesNotAllowed
+
+          case \/-(f: CustomField.Implication) =>
+            \/-(Valid.fieldProp(\/-(f.id), s))
+
+          // For number fields, re-interpret ReqTypePosSet as a LiteralNumber
+          // eg. "field:Rating=5"
+          case \/-(f: CustomField.Number) if s.value.size == 1 =>
+            val n = FieldCriteria.LiteralNumber(s.value.head.value)
+            \/-(Valid.fieldProp(\/-(f.id), n))
+
+          case _ =>
+            valuesNotAllowed
         }
 
       def parseAsQuery(field: ParsedField, q: FieldCriteria.Query[Valid]): R =
@@ -260,11 +271,18 @@ object FilterAlgebra {
           case _                               => valuesNotAllowed
         }
 
+      def parseAsLiteralNumber(field: ParsedField, n: FieldCriteria.LiteralNumber): R =
+        field match {
+          case \/-(f: CustomField.Number) => \/-(Valid.fieldProp(\/-(f.id), n))
+          case _                          => valuesNotAllowed
+        }
+
       parseFieldName(fieldName).flatMap { field =>
         criteria match {
           case FieldCriteria.Attr(a)          => parseAsAttr(field, a)
           case q@ FieldCriteria.Query(_)      => parseAsQuery(field, q)
           case s: FieldCriteria.ReqTypePosSet => parseAsPoses(field, s)
+          case s: FieldCriteria.LiteralNumber => parseAsLiteralNumber(field, s)
         }
       }
     }
@@ -361,6 +379,7 @@ object FilterAlgebra {
       case FieldCriteria.Attr(a)             => FieldCriteria.Attr(a.name)
       case x@ FieldCriteria.ReqTypePosSet(_) => x
       case x@ FieldCriteria.Query(_)         => x
+      case x@ FieldCriteria.LiteralNumber(_) => x
     }
 
     def impCriteria(criteria: Valid.ImpCriteriaF[Potential]): Potential.ImpCriteria =
@@ -607,6 +626,14 @@ object FilterAlgebra {
 
       (criteria, fieldArg) match {
 
+        case (FieldCriteria.LiteralNumber(targetNumRaw), \/-(fid: CustomField.Number.Id)) =>
+          val field = p.config.fields.custom(fid)
+          val targetNum = field.scale(targetNumRaw)
+          fieldApplicableReqOnly(fid) { req =>
+            val numOption = p.content.getVirtualNum(field, req)
+            numOption.contains(targetNum)
+          }
+
         case (FieldCriteria.ReqTypePosSet(posSet), \/-(id: CustomField.Implication.Id)) =>
           val criteria = posSet.whole
           val lookup = p.dataLogic.customFieldImps(filterDead)(id)
@@ -727,6 +754,21 @@ object FilterAlgebra {
                | \/-(_: CustomField.Text.Id)
              ) =>
                reqOnly(fail)
+
+         case (_: FieldCriteria.LiteralNumber,
+                 -\/(SpecialBuiltInField.Title)
+               | \/-(StaticField.AllTags)
+               | \/-(StaticField.OtherTags)
+               | \/-(StaticField.ImplicationGraph)
+               | \/-(StaticField.NormalAltStepTree)
+               | \/-(StaticField.ExceptionStepTree)
+               | \/-(StaticField.StepGraph)
+               | \/-(_: CustomField.Implication.Id)
+               | \/-(_: CustomField.Text.Id)
+               | \/-(_: CustomField.Tag.Id)
+             ) =>
+               reqOnly(fail)
+
       }
     }
 
@@ -845,6 +887,7 @@ object FilterAlgebra {
         case c@ FieldCriteria.Attr         (_) => \/-(c)
         case c@ FieldCriteria.ReqTypePosSet(_) => \/-(c)
         case FieldCriteria.Query           (d) => d.map(FieldCriteria.Query(_))
+        case c@ FieldCriteria.LiteralNumber(_) => \/-(c)
       }
 
     def impCriteria(x: Valid.ImpCriteriaF[Result]): Boolean \/ Valid.ImpCriteria =

@@ -475,6 +475,12 @@ object ReqTableTest2 extends TestSuite {
 
         >> enterFilter(idFilter + " field:Rating=blank")
         +> tablePubids.assert.equal("UC-1")
+
+        >> enterFilter("field:Rating=2")
+        +> tablePubids.assert.equal("MF-1")
+
+        >> enterFilter(idFilter + " field:Rating=9.999999")
+        +> tablePubids.assert.equal("BR-1")
     )
 
     runTest(plan withInitialState project)
