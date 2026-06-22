@@ -182,7 +182,7 @@ object FilterEditor {
 
     val fieldName =
       AutoComplete.Strategy.builder
-        .regex("""\b(field:)([^ :=]*)$""", index = 2)
+        .regex("""\b(field:)([^ :=<>≤≥]*)$""", index = 2)
         .search(fieldNameLookup)
         .replace(f => "$1" + f.quotedValue)
         .template((f, _) => f.display)
