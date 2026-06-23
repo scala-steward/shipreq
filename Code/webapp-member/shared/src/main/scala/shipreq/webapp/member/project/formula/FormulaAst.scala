@@ -13,6 +13,8 @@ object FormulaAst {
   final case class Divide  [+A](lhs: A, rhs: A) extends FormulaAst[A]
   final case class Multiply[+A](lhs: A, rhs: A) extends FormulaAst[A]
 
+  final case class Compare[+A](lhs: A, op: FormulaCmpOp, rhs: A) extends FormulaAst[A]
+
   // ===================================================================================================================
 
   type Fixed = Fix[λ[X => FormulaAst[X]]]
@@ -46,6 +48,9 @@ object FormulaAst {
 
     def multiply(lhs: Fix[F], rhs: Fix[F]): Fix[F] =
       Fix[F](Multiply(lhs, rhs))
+
+    def compare(lhs: Fix[F], op: FormulaCmpOp, rhs: Fix[F]): Fix[F] =
+      Fix[F](Compare(lhs, op, rhs))
   }
 
 }

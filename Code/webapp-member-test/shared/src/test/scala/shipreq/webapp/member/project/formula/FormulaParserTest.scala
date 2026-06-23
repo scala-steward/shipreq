@@ -6,10 +6,12 @@ import utest._
 
 object FormulaParserTest extends TestSuite {
   import Formula.Potential._
+  import FormulaCmpOp._
 
   private def assertParse(input: String, expected: Formula.Potential)(implicit q: Line): Unit = {
     FormulaParser.parse(input) match {
       case \/-(f) => assertEq(f, expected)
+      case -\/(f: FormulaParser.ParseException) => fail(f.format)
       case -\/(f) => fail(f.toString)
     }
   }
@@ -44,10 +46,17 @@ object FormulaParserTest extends TestSuite {
       "mulAdd" - assertParse("( 1 * 2 ) + 3", add(multiply(lit(1), lit(2)), lit(3)))
     }
 
+    "cmp" - {
+      "eq1" - assertParse("1=2", compare(lit(1), `=`, lit(2)))
+      "eq2" - assertParse("1 == 2", compare(lit(1), `=`, lit(2)))
+      "consec3" - assertParse("1 < 2 != false", compare(compare(lit(1), <, lit(2)), FormulaCmpOp.!=, lit(false)))
+    }
+
     "combos" - {
       "addMul" - assertParse("3 + 1 * 2", add(lit(3), multiply(lit(1), lit(2))))
       "mulAdd" - assertParse("1 * 2 + 3", add(multiply(lit(1), lit(2)), lit(3)))
       "mulMul" - assertParse("1 * 2 * 3", multiply(multiply(lit(1), lit(2)), lit(3)))
+      "cmp" - assertParse("(1+6)*2 == 1+3*6", compare(multiply(add(lit(1), lit(6)), lit(2)), `=`, add(lit(1), multiply(lit(3), lit(6)))))
     }
 
   }

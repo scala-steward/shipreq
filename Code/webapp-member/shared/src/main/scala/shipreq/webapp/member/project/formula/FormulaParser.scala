@@ -78,13 +78,31 @@ private[formula] class FormulaParser(val input: ParserInput) extends ParsingUtil
       ))
     )
 
-  private def expr: Rule1[Potential] =
+  private def arith: Rule1[Potential] =
     rule(
       term ~ zeroOrMore(OWS ~ (
         '+' ~ OWS ~ term ~> (Potential.add(_, _)) |
         '-' ~ OWS ~ term ~> (Potential.subtract(_, _))
       ))
     )
+
+  private def comparisonOp: Rule1[FormulaCmpOp] =
+    rule(
+      (("==" | "=")  ~ push(FormulaCmpOp.`=`)) |
+      (("!=" | "<>") ~ push(FormulaCmpOp.!=)) |
+      ((">=" | "≥")  ~ push(FormulaCmpOp.>=)) |
+      ((">")         ~ push(FormulaCmpOp.>)) |
+      (("<=" | "≤")  ~ push(FormulaCmpOp.<=)) |
+      (("<")         ~ push(FormulaCmpOp.<))
+    )
+
+  private def possibleComparison: Rule1[Potential] =
+    rule(
+      arith ~ zeroOrMore(OWS ~ comparisonOp ~ OWS ~ arith ~> (Potential.compare(_, _, _)))
+    )
+
+  private def expr: Rule1[Potential] =
+    rule(possibleComparison)
 
   def main: Rule1[Potential] =
     rule(expr ~ EOI)
