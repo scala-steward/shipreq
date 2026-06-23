@@ -2,12 +2,15 @@ package shipreq.webapp.member.project.formula
 
 import japgolly.microlibs.recursion._
 import java.util.regex.Pattern
+import shipreq.base.util.ErrorMsg
+import shipreq.webapp.member.project.data.FieldSet
 import shipreq.webapp.member.project.filter.FilterAlgebra
 
 /** Algebras:
   *
   * {{{
-  *   unparse: FAlgebra[PotentialF, AtomOrComposite[String]]
+  *   unparse : FAlgebra [               PotentialF, AtomOrComposite[String]]
+  *   validate: FAlgebraM[ErrorMsg \/ *, PotentialF, Valid]
   * }}}
   */
 object FormulaAlgebra {
@@ -45,6 +48,33 @@ object FormulaAlgebra {
       case Field(f)           => "field:" ~ quoteFieldName(f)
       case Compare(l, op, r)  => l.noParens ~ ' ' ~ op.symbol ~ ' ' ~ r.noParens
       case Function(f, args)  => f.toUpperCase ~ '(' ~ args.iterator.map(_.noParens).mkString(", ") ~ ')'
+    }
+  }
+
+  // ===================================================================================================================
+
+  def validate(fields: FieldSet): FAlgebraM[ErrorMsg \/ *, PotentialF, Valid] = {
+    @inline def fail(err: String) = -\/(ErrorMsg(err))
+
+    {
+      case Function(name, args) =>
+        FormulaFunction.byName.get(name) match {
+          case Some(f) => \/-(Valid.function(f, args))
+          case None    => fail("Unknown function: " + name)
+        }
+
+      case Field(name) =>
+        fields.customNumberFields.find(_.name ==* name) match {
+          case Some(f) => \/-(Valid.field(\/-(f.id)))
+          case None    => fail("Invalid field: " + name)
+        }
+
+      case x: Value            => \/-(Valid(x))
+      case x@ Add(_, _)        => \/-(Valid(x))
+      case x@ Subtract(_, _)   => \/-(Valid(x))
+      case x@ Multiply(_, _)   => \/-(Valid(x))
+      case x@ Divide(_, _)     => \/-(Valid(x))
+      case x@ Compare(_, _, _) => \/-(Valid(x))
     }
   }
 }
