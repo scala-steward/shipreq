@@ -1,6 +1,5 @@
 package shipreq.webapp.client.project.app.pages.content.reqtable
 
-import java.math.{BigDecimal, RoundingMode}
 import monocle.Optional
 import shipreq.base.util.{Applicable, NotApplicable}
 import shipreq.webapp.member.project.data.DataImplicits._
@@ -124,19 +123,13 @@ object Sorter {
         prep = setup => {
           import setup.p
           val field = p.config.fields.custom(fid)
-          val reqNums = p.content.reqNumsFor(fid)
           val rowApplicability = setup.applicability.byField(c)
 
           {
             case row: Row.ForReq =>
               rowApplicability(row) match {
-                case Applicable =>
-                  @inline def default = field.fieldReqTypeRules(row.req.reqTypeId).defaultOption
-                  reqNums.get(row.req.id).orElse(default).map(d =>
-                    new BigDecimal(d).setScale(field.decimalPlaces, RoundingMode.HALF_UP).doubleValue
-                  )
-                case NotApplicable =>
-                  None
+                case Applicable    => p.content.getVirtualNum(field, row.req)
+                case NotApplicable => None
               }
             case _: Row.ForCodeGroup =>
               None

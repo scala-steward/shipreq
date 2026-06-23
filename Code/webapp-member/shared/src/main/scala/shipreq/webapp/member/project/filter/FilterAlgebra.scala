@@ -33,8 +33,8 @@ object FilterAlgebra {
   import FilterAst.FieldCriteria
 
   val isFieldNameUnquotedChar: Char => Boolean = {
-    case ':' | '=' | '"' | ')' => false
-    case c                     => !c.isWhitespace
+    case ':' | '=' | '"' | ')' | '<' | '>' | '≥' | '≤' => false
+    case c => !c.isWhitespace
   }
 
   def quoteFieldName(name: String): String =
@@ -72,9 +72,11 @@ object FilterAlgebra {
     }
 
     val fieldCriteria: Potential.FieldCriteriaF[AtomOrComposite[String]] => String = {
-      case FieldCriteria.Attr(a)          => a
-      case FieldCriteria.ReqTypePosSet(s) => ConciseIntSetFormat(s.whole.map(_.value))
-      case FieldCriteria.Query(q)         => subquery(q)
+      case FieldCriteria.Attr(a)                    =>  "=" ~ a
+      case FieldCriteria.ReqTypePosSet(s)           =>  "=" ~ ConciseIntSetFormat(s.whole.map(_.value))
+      case FieldCriteria.Query(q)                   =>  "=" ~ subquery(q)
+      case FieldCriteria.CompareNumber(None, d)     =>  "=" ~ d.toString
+      case FieldCriteria.CompareNumber(Some(op), d) =>  op.symbol ~ d.toString
     }
 
     val impCriteria: Potential.ImpCriteriaF[AtomOrComposite[String]] => String = {
@@ -125,7 +127,7 @@ object FilterAlgebra {
       case ReqType       (value)             => value.value
       case HashRef       (text)              => Grammar.hashRefKey.prefix ~ text.value
       case RelativeTags  (op, tag)           => op.symbol ~ Grammar.hashRefKey.prefix ~ tag.value
-      case FieldProp     (field, attr)       => "field:" ~ quoteFieldName(field) ~ "=" ~ fieldCriteria(attr)
+      case FieldProp     (field, attr)       => "field:" ~ quoteFieldName(field) ~ fieldCriteria(attr)
       case HasIssue      (on, criteria)      => "has:issue:" ~ (if (on is On) "" else "-") ~ criteria.mkString(",")
       case ImpliesAnyOf  (criteria)          => "implies:" ~ impCriteria(criteria)
       case ImpliedByAnyOf(criteria)          => "impliedBy:" ~ impCriteria(criteria)
@@ -250,8 +252,18 @@ object FilterAlgebra {
 
       def parseAsPoses(field: ParsedField, s: FieldCriteria.ReqTypePosSet): R =
         field match {
-          case \/-(f: CustomField.Implication) => \/-(Valid.fieldProp(\/-(f.id), s))
-          case _                               => valuesNotAllowed
+
+          case \/-(f: CustomField.Implication) =>
+            \/-(Valid.fieldProp(\/-(f.id), s))
+
+          // For number fields, re-interpret ReqTypePosSet as a CompareNumber
+          // eg. "field:Rating=5"
+          case \/-(f: CustomField.Number) if s.value.size == 1 =>
+            val n = FieldCriteria.CompareNumber(None, s.value.head.value)
+            \/-(Valid.fieldProp(\/-(f.id), n))
+
+          case _ =>
+            valuesNotAllowed
         }
 
       def parseAsQuery(field: ParsedField, q: FieldCriteria.Query[Valid]): R =
@@ -260,11 +272,18 @@ object FilterAlgebra {
           case _                               => valuesNotAllowed
         }
 
+      def parseAsCompareNumber(field: ParsedField, n: FieldCriteria.CompareNumber): R =
+        field match {
+          case \/-(f: CustomField.Number) => \/-(Valid.fieldProp(\/-(f.id), n))
+          case _                          => valuesNotAllowed
+        }
+
       parseFieldName(fieldName).flatMap { field =>
         criteria match {
           case FieldCriteria.Attr(a)          => parseAsAttr(field, a)
           case q@ FieldCriteria.Query(_)      => parseAsQuery(field, q)
           case s: FieldCriteria.ReqTypePosSet => parseAsPoses(field, s)
+          case s: FieldCriteria.CompareNumber => parseAsCompareNumber(field, s)
         }
       }
     }
@@ -358,9 +377,10 @@ object FilterAlgebra {
     }
 
     val fieldCriteria: FieldCriteria[FieldAttr, Potential] => Potential.FieldCriteria = {
-      case FieldCriteria.Attr(a)             => FieldCriteria.Attr(a.name)
-      case x@ FieldCriteria.ReqTypePosSet(_) => x
-      case x@ FieldCriteria.Query(_)         => x
+      case FieldCriteria.Attr(a)                => FieldCriteria.Attr(a.name)
+      case x@ FieldCriteria.ReqTypePosSet(_)    => x
+      case x@ FieldCriteria.Query(_)            => x
+      case x@ FieldCriteria.CompareNumber(_, _) => x
     }
 
     def impCriteria(criteria: Valid.ImpCriteriaF[Potential]): Potential.ImpCriteria =
@@ -607,6 +627,24 @@ object FilterAlgebra {
 
       (criteria, fieldArg) match {
 
+        case (FieldCriteria.CompareNumber(op, targetNumRaw), \/-(fid: CustomField.Number.Id)) =>
+          val field = p.config.fields.custom(fid)
+          val targetNum = field.scale(targetNumRaw)
+          op match {
+
+            case None =>
+              fieldApplicableReqOnly(fid) { req =>
+                val numOption = p.content.getVirtualNum(field, req)
+                numOption.contains(targetNum)
+              }
+
+            case Some(op) =>
+              fieldApplicableReqOnly(fid) { req =>
+                val numOption = p.content.getVirtualNum(field, req)
+                numOption.exists(op.cmpDoubles(_, targetNum))
+              }
+          }
+
         case (FieldCriteria.ReqTypePosSet(posSet), \/-(id: CustomField.Implication.Id)) =>
           val criteria = posSet.whole
           val lookup = p.dataLogic.customFieldImps(filterDead)(id)
@@ -727,6 +765,21 @@ object FilterAlgebra {
                | \/-(_: CustomField.Text.Id)
              ) =>
                reqOnly(fail)
+
+         case (_: FieldCriteria.CompareNumber,
+                 -\/(SpecialBuiltInField.Title)
+               | \/-(StaticField.AllTags)
+               | \/-(StaticField.OtherTags)
+               | \/-(StaticField.ImplicationGraph)
+               | \/-(StaticField.NormalAltStepTree)
+               | \/-(StaticField.ExceptionStepTree)
+               | \/-(StaticField.StepGraph)
+               | \/-(_: CustomField.Implication.Id)
+               | \/-(_: CustomField.Text.Id)
+               | \/-(_: CustomField.Tag.Id)
+             ) =>
+               reqOnly(fail)
+
       }
     }
 
@@ -842,9 +895,10 @@ object FilterAlgebra {
 
     def fieldCriteria(x: Valid.FieldCriteriaF[Result]): Boolean \/ Valid.FieldCriteria =
       x match {
-        case c@ FieldCriteria.Attr         (_) => \/-(c)
-        case c@ FieldCriteria.ReqTypePosSet(_) => \/-(c)
-        case FieldCriteria.Query           (d) => d.map(FieldCriteria.Query(_))
+        case c@ FieldCriteria.Attr         (_)    => \/-(c)
+        case c@ FieldCriteria.ReqTypePosSet(_)    => \/-(c)
+        case FieldCriteria.Query           (d)    => d.map(FieldCriteria.Query(_))
+        case c@ FieldCriteria.CompareNumber(_, _) => \/-(c)
       }
 
     def impCriteria(x: Valid.ImpCriteriaF[Result]): Boolean \/ Valid.ImpCriteria =

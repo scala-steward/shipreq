@@ -67,13 +67,14 @@ object FilterAst {                                                              
   }
 
   sealed abstract class OrderOp(final val symbol : String,
-                                final val cmpInts: (Int, Int) => Boolean)
+                                final val cmpInts: (Int, Int) => Boolean,
+                                final val cmpDoubles: (Double, Double) => Boolean)
 
   object OrderOp {
-    case object >  extends OrderOp(">" , _ >  _)
-    case object <  extends OrderOp("<" , _ <  _)
-    case object >= extends OrderOp(">=", _ >= _)
-    case object <= extends OrderOp("<=", _ <= _)
+    case object >  extends OrderOp(">" , _ >  _, _ >  _)
+    case object <  extends OrderOp("<" , _ <  _, _ <  _)
+    case object >= extends OrderOp(">=", _ >= _, _ >= _)
+    case object <= extends OrderOp("<=", _ <= _, _ <= _)
 
     implicit def univEq: UnivEq[OrderOp] = UnivEq.derive
 
@@ -116,9 +117,10 @@ object FilterAst {                                                              
   sealed trait FieldCriteria[+Attr, +Query]
 
   object FieldCriteria {
-    final case class Attr[+A](value: A)                            extends FieldCriteria[A, Nothing]
-    final case class ReqTypePosSet(value: NonEmptySet[ReqTypePos]) extends FieldCriteria[Nothing, Nothing]
-    final case class Query[+Q](value: Q)                           extends FieldCriteria[Nothing, Q]
+    final case class Attr[+A](value: A)                                extends FieldCriteria[A, Nothing]
+    final case class ReqTypePosSet(value: NonEmptySet[ReqTypePos])     extends FieldCriteria[Nothing, Nothing]
+    final case class Query[+Q](value: Q)                               extends FieldCriteria[Nothing, Q]
+    final case class CompareNumber(op: Option[OrderOp], value: Double) extends FieldCriteria[Nothing, Nothing]
 
     implicit def univEq[A: UnivEq, Q: UnivEq]: UnivEq[FieldCriteria[A, Q]] =
       UnivEq.derive
@@ -131,12 +133,14 @@ object FilterAst {                                                              
           case c: Attr[A]       => c
           case c: ReqTypePosSet => c
           case c: Query[X]      => Query(f(c.value))
+          case c: CompareNumber => c
         }
 
         override def traverse[G[_], X, Y](fa: F[X])(f: X => G[Y])(implicit G: Applicative[G]): G[F[Y]] = fa match {
           case c: Attr[A]       => G.pure(c)
           case c: ReqTypePosSet => G.pure(c)
           case c: Query[X]      => G.map(f(c.value))(Query(_))
+          case c: CompareNumber => G.pure(c)
         }
       }
   }

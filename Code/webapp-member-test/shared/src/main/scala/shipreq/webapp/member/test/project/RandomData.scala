@@ -2237,6 +2237,7 @@ object RandomData {
         var gens = NonEmptyVector(genAlphaSlash.string(1 to 4).map(FieldCriteria.Attr(_): Potential.FieldCriteriaF[A]))
         gens :+= valid.fieldAttr.map(f => FieldCriteria.Attr(f.value.name))
         for (g <- ga) gens :+= g.map(FieldCriteria.Query(_))
+        gens :+= Gen.apply2(FieldCriteria.CompareNumber.apply)(orderOp.option, Gen.double)
         Gen.chooseGenNE(gens)
       }
 

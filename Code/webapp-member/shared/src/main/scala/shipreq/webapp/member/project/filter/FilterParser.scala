@@ -114,6 +114,9 @@ private[filter] class FilterParser(val input: ParserInput) extends ParsingUtil {
   def numberRange: Rule1[NonEmptySet[Int]] =
     rule((numberRangeElement + ',') ~> flattenIntSets1)
 
+  def numberRangeThenBoundary: Rule1[NonEmptySet[Int]] =
+    rule(numberRange ~ (SLWS | EOI))
+
   /** 1 or {1,3,5-9,12} */
   def numberOrRange: Rule1[NonEmptySet[Int]] =
     rule((int1n ~> mkIntSet1) | ('{' ~ numberRange ~ '}'))
@@ -190,14 +193,28 @@ private[filter] class FilterParser(val input: ParserInput) extends ParsingUtil {
     def valueRule[A](r: () => Rule1[A])(f: A => Potential.FieldCriteria): RuleAB[String, Potential] =
       rule(r() ~> ((name: String, a: A) => Potential.fieldProp(name, f(a))))
 
-    def value: RuleAB[String, Potential] =
+    def valueRule2[A, B](r: () => Rule2[A, B])(f: (A, B) => Potential.FieldCriteria): RuleAB[String, Potential] =
+      rule(r() ~> ((name: String, a: A, b: B) => Potential.fieldProp(name, f(a, b))))
+
+    def eqValue: RuleAB[String, Potential] =
       rule(
-        valueRule(() => subQuery   )(FieldCriteria.Query(_))
-      | valueRule(() => numberRange)(is => FieldCriteria.ReqTypePosSet(is.map(ReqTypePos)))
-      | valueRule(() => attr       )(FieldCriteria.Attr(_))
+        valueRule(() => subQuery               )(FieldCriteria.Query(_))
+      | valueRule(() => numberRangeThenBoundary)(is => FieldCriteria.ReqTypePosSet(is.map(ReqTypePos)))
+      | valueRule(() => double                 )(FieldCriteria.CompareNumber(None, _))
+      | valueRule(() => attr                   )(FieldCriteria.Attr(_))
       )
 
-    rule("field:" ~ name ~ '=' ~!~ value)
+    def cmpValueInner = rule(orderOp ~!~ double)
+
+    def cmpValue: RuleAB[String, Potential] =
+      rule(
+        valueRule2(() => cmpValueInner)((op, d) => FieldCriteria.CompareNumber(Some(op), d))
+      )
+
+    rule("field:" ~ name ~ (
+      '=' ~!~ eqValue
+      | cmpValue
+    ))
   }
 
   private def subQuery: Rule1[Potential] =
