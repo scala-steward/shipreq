@@ -2,34 +2,37 @@ package shipreq.webapp.member.project.formula
 
 import japgolly.microlibs.recursion.Fix
 
-sealed trait FormulaAst[+Self, +Fn]
+sealed trait FormulaAst[+Self, +Fn, +Field]
 
 object FormulaAst {
 
-  final case class Value(value: FormulaValue) extends FormulaAst[Nothing, Nothing]
+  final case class Value(value: FormulaValue) extends FormulaAst[Nothing, Nothing, Nothing]
 
-  final case class Add     [+A](lhs: A, rhs: A) extends FormulaAst[A, Nothing]
-  final case class Subtract[+A](lhs: A, rhs: A) extends FormulaAst[A, Nothing]
-  final case class Divide  [+A](lhs: A, rhs: A) extends FormulaAst[A, Nothing]
-  final case class Multiply[+A](lhs: A, rhs: A) extends FormulaAst[A, Nothing]
+  final case class Add     [+A](lhs: A, rhs: A) extends FormulaAst[A, Nothing, Nothing]
+  final case class Subtract[+A](lhs: A, rhs: A) extends FormulaAst[A, Nothing, Nothing]
+  final case class Divide  [+A](lhs: A, rhs: A) extends FormulaAst[A, Nothing, Nothing]
+  final case class Multiply[+A](lhs: A, rhs: A) extends FormulaAst[A, Nothing, Nothing]
 
-  final case class Compare[+A](lhs: A, op: FormulaCmpOp, rhs: A) extends FormulaAst[A, Nothing]
+  final case class Compare[+A](lhs: A, op: FormulaCmpOp, rhs: A) extends FormulaAst[A, Nothing, Nothing]
 
-  final case class Function[+Fn, +A](function: Fn, args: List[A]) extends FormulaAst[A, Fn]
+  final case class Function[+Fn, +A](function: Fn, args: List[A]) extends FormulaAst[A, Fn, Nothing]
+
+  final case class Field[+F](field: F) extends FormulaAst[Nothing, Nothing, F]
 
   // ===================================================================================================================
 
-  type Fixed[A] = Fix[λ[X => FormulaAst[X, A]]]
+  type Fixed[A, B] = Fix[λ[X => FormulaAst[X, A, B]]]
 
-  implicit def univEqFix[A: UnivEq]: UnivEq[Fixed[A]] =
-    UnivEq.deriveFix[Fix, λ[X => FormulaAst[X, A]]]
+  implicit def univEqFix[A: UnivEq, B: UnivEq]: UnivEq[Fixed[A, B]] =
+    UnivEq.deriveFix[Fix, λ[X => FormulaAst[X, A, B]]]
 
   // ===================================================================================================================
 
   trait Dsl {
     type Fn
+    type Field
 
-    final type F[A] = FormulaAst[A, Fn]
+    final type F[A] = FormulaAst[A, Fn, Field]
 
     def apply(f: F[Fix[F]]): Fix[F] =
       Fix[F](f)
@@ -58,6 +61,9 @@ object FormulaAst {
 
     def function(fn: Fn, args: List[Fix[F]]): Fix[F] =
       Fix[F](Function(fn, args))
+
+    def field(f: Field): Fix[F] =
+      Fix[F](Field(f))
   }
 
 }

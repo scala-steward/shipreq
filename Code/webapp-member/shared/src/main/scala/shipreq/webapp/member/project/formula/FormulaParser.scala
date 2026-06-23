@@ -67,6 +67,19 @@ private[formula] class FormulaParser(val input: ParserInput) extends ParsingUtil
   private def parens: Rule1[Potential] =
     rule('(' ~ OWS ~ expr ~ OWS ~ ')')
 
+  private val fieldNameUnquotedChar =
+    CharPredicate.from(c => (c != EOI) && FormulaAlgebra.isFieldNameUnquotedChar(c))
+
+  private def field: Rule1[Potential] = {
+    def quoteChar: Rule0 =
+      rule('"')
+
+    def name: Rule1[String] =
+      rule(capture(fieldNameUnquotedChar.+) | (quoteChar ~ nonGreedyCapture(() => quoteChar)))
+
+    rule("field:" ~ name ~> (Potential.field(_)))
+  }
+
   private def function: Rule1[Potential] =
     rule(
       capture(CharPredicate.Alpha.+) ~ OWS ~ '('
@@ -76,7 +89,7 @@ private[formula] class FormulaParser(val input: ParserInput) extends ParsingUtil
     )
 
   private def factor: Rule1[Potential] =
-    rule(function | literal | parens)
+    rule(field | function | literal | parens)
 
   private def term: Rule1[Potential] =
     rule(

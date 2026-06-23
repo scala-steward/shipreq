@@ -60,6 +60,11 @@ object FormulaParserTest extends TestSuite {
         lit("good"),
         multiply(lit(3), lit(4))
       )))
+
+      "field" - {
+        "direct" - assertParse("field:Rating", field("Rating"))
+        "quoted" - assertParse("field:\"Hot Dog\"", field("Hot Dog"))
+      }
     }
 
     "combos" - {
@@ -68,6 +73,7 @@ object FormulaParserTest extends TestSuite {
       "mulMul" - assertParse("1 * 2 * 3", multiply(multiply(lit(1), lit(2)), lit(3)))
       "cmp" - assertParse("(1+6)*2 == 1+3*6", compare(multiply(add(lit(1), lit(6)), lit(2)), `=`, add(lit(1), multiply(lit(3), lit(6)))))
       "fnCmp" - assertParse("round(1.2) > round(0.5)", compare(function("round", lit(1.2) :: Nil), >, function("round", lit(0.5) :: Nil)))
+      "fnFieldAdd" - assertParse("round(field:Rating + 1)", function("round", add(field("Rating"), lit(1)) :: Nil))
     }
 
   }
