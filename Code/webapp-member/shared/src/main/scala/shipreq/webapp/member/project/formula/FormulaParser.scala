@@ -1,0 +1,91 @@
+package shipreq.webapp.member.project.formula
+
+import org.parboiled2.{Parser => _, _}
+import scala.util.{Failure, Success, Try}
+import shipreq.webapp.base.util._
+import shipreq.webapp.member.project.formula.Formula.Potential
+import shipreq.webapp.member.project.util.ParsingUtil
+
+object FormulaParser {
+
+  val preProcessor = PreProcessor.singleLine
+
+  def parse(input: String): Result =
+    parsePreProcessed(preProcessor(input))
+
+  def parsePreProcessed(input: PreProcessed): Result = {
+    val parser = new FormulaParser(input.charArray)
+    parseResult(parser.main.run(), parser)
+  }
+
+  private def parseResult[A](t: Try[A], parser: FormulaParser): Failure \/ A =
+    t match {
+      case Success(a)             => \/-(a)
+      case Failure(e: ParseError) => -\/(ParseException(e, parser.formatError(e, _)))
+      case Failure(e: Throwable)  => -\/(GeneralException(e))
+    }
+
+  type Result = Failure \/ Potential
+
+  sealed trait Failure
+  final case class GeneralException(t: Throwable) extends Failure
+  final case class ParseException(error: ParseError, formatter: ErrorFormatter => String) extends Failure {
+    def format: String =
+      format(new ErrorFormatter())
+    def format(ef: ErrorFormatter): String =
+      formatter(ef)
+  }
+}
+
+// =====================================================================================================================
+
+private[formula] class FormulaParser(val input: ParserInput) extends ParsingUtil {
+  import ParsingUtil.Whitespace
+
+  private def OWS = rule(zeroOrMore(Whitespace))
+
+  private def literal: Rule1[Potential] = {
+    def literalBool: Rule1[Potential] =
+      rule(
+        ignoreCase("true") ~ push(Potential.value(FormulaValue.Bool(true))) |
+        ignoreCase("false") ~ push(Potential.value(FormulaValue.Bool(false)))
+      )
+
+    def literalDouble: Rule1[Potential] =
+      rule(double ~> ((d: Double) => Potential.value(FormulaValue.Dbl(d))))
+
+    def literalStringQuoteChar: Rule0 =
+      rule('"')
+
+    def literalString: Rule1[Potential] =
+      rule(literalStringQuoteChar ~ nonGreedyCapture(() => literalStringQuoteChar)
+        ~> ((s: String) => Potential.value(FormulaValue.Str(s))))
+
+    rule(literalBool | literalDouble | literalString)
+  }
+
+  private def parens: Rule1[Potential] =
+    rule('(' ~ OWS ~ expr ~ OWS ~ ')')
+
+  private def factor: Rule1[Potential] =
+    rule(literal | parens)
+
+  private def term: Rule1[Potential] =
+    rule(
+      factor ~ zeroOrMore(OWS ~ (
+        '*' ~ OWS ~ factor ~> (Potential.multiply(_, _)) |
+        '/' ~ OWS ~ factor ~> (Potential.divide(_, _))
+      ))
+    )
+
+  private def expr: Rule1[Potential] =
+    rule(
+      term ~ zeroOrMore(OWS ~ (
+        '+' ~ OWS ~ term ~> (Potential.add(_, _)) |
+        '-' ~ OWS ~ term ~> (Potential.subtract(_, _))
+      ))
+    )
+
+  def main: Rule1[Potential] =
+    rule(expr ~ EOI)
+}

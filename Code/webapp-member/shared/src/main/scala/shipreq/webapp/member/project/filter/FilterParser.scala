@@ -42,6 +42,8 @@ object FilterParser {
       formatter(ef)
   }
 
+  // ===================================================================================================================
+
   val attrChar =
     CharPredicate.AlphaNum ++ CharPredicate.from {
       case '/' | ',' | '-' => true
