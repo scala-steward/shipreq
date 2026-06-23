@@ -19,12 +19,12 @@ import shipreq.webapp.member.project.text.{Atom, Grammar, PlainText, TextSearch}
 /** Algebras:
   *
   * {{{
-  *   unparse        : FAlgebra [             PotentialF,   AtomOrComposite[String]]
-  *   validate       : FAlgebraM[String \/ *, PotentialF,   Valid                  ]
-  *   unvalidate     : FAlgebra [             ValidF,       Potential              ]
-  *   makeExtensional: FAlgebra [             ValidF,       Extensional            ]
-  *   compile        : FAlgebra [             ExtensionalF, CompiledFilter         ]
-  *   remove         : FAlgebra [             ValidF,       Boolean \/ Valid       ]
+  *   unparse        : FAlgebra [               PotentialF,   AtomOrComposite[String]]
+  *   validate       : FAlgebraM[ErrorMsg \/ *, PotentialF,   Valid                  ]
+  *   unvalidate     : FAlgebra [               ValidF,       Potential              ]
+  *   makeExtensional: FAlgebra [               ValidF,       Extensional            ]
+  *   compile        : FAlgebra [               ExtensionalF, CompiledFilter         ]
+  *   remove         : FAlgebra [               ValidF,       Boolean \/ Valid       ]
   * }}}
   */
 object FilterAlgebra {
