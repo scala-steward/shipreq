@@ -4,10 +4,15 @@ import japgolly.microlibs.recursion._
 
 object Formula {
 
-  type PotentialF[+F] = FormulaAst[F]
+  type PotentialF[+F] = FormulaAst[
+    F,
+    Potential.Fn,
+  ]
 
   type Potential = Fix[PotentialF]
 
-  object Potential extends FormulaAst.Dsl
+  object Potential extends FormulaAst.Dsl {
+    override type Fn = String
+  }
 
 }

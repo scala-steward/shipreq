@@ -67,8 +67,16 @@ private[formula] class FormulaParser(val input: ParserInput) extends ParsingUtil
   private def parens: Rule1[Potential] =
     rule('(' ~ OWS ~ expr ~ OWS ~ ')')
 
+  private def function: Rule1[Potential] =
+    rule(
+      capture(CharPredicate.Alpha.+) ~ OWS ~ '('
+      ~ zeroOrMore(OWS ~ expr).separatedBy(OWS ~ ',')
+      ~ OWS ~ ')'
+      ~> ((f: String, args: Seq[Potential]) => Potential.function(f, args.toList))
+    )
+
   private def factor: Rule1[Potential] =
-    rule(literal | parens)
+    rule(function | literal | parens)
 
   private def term: Rule1[Potential] =
     rule(

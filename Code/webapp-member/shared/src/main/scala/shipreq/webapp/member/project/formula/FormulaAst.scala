@@ -2,30 +2,34 @@ package shipreq.webapp.member.project.formula
 
 import japgolly.microlibs.recursion.Fix
 
-sealed trait FormulaAst[+Self]
+sealed trait FormulaAst[+Self, +Fn]
 
 object FormulaAst {
 
-  final case class Value(value: FormulaValue) extends FormulaAst[Nothing]
+  final case class Value(value: FormulaValue) extends FormulaAst[Nothing, Nothing]
 
-  final case class Add     [+A](lhs: A, rhs: A) extends FormulaAst[A]
-  final case class Subtract[+A](lhs: A, rhs: A) extends FormulaAst[A]
-  final case class Divide  [+A](lhs: A, rhs: A) extends FormulaAst[A]
-  final case class Multiply[+A](lhs: A, rhs: A) extends FormulaAst[A]
+  final case class Add     [+A](lhs: A, rhs: A) extends FormulaAst[A, Nothing]
+  final case class Subtract[+A](lhs: A, rhs: A) extends FormulaAst[A, Nothing]
+  final case class Divide  [+A](lhs: A, rhs: A) extends FormulaAst[A, Nothing]
+  final case class Multiply[+A](lhs: A, rhs: A) extends FormulaAst[A, Nothing]
 
-  final case class Compare[+A](lhs: A, op: FormulaCmpOp, rhs: A) extends FormulaAst[A]
+  final case class Compare[+A](lhs: A, op: FormulaCmpOp, rhs: A) extends FormulaAst[A, Nothing]
+
+  final case class Function[+Fn, +A](function: Fn, args: List[A]) extends FormulaAst[A, Fn]
 
   // ===================================================================================================================
 
-  type Fixed = Fix[λ[X => FormulaAst[X]]]
+  type Fixed[A] = Fix[λ[X => FormulaAst[X, A]]]
 
-  implicit def univEqFix: UnivEq[Fixed] =
-    UnivEq.deriveFix[Fix, λ[X => FormulaAst[X]]]
+  implicit def univEqFix[A: UnivEq]: UnivEq[Fixed[A]] =
+    UnivEq.deriveFix[Fix, λ[X => FormulaAst[X, A]]]
 
   // ===================================================================================================================
 
   trait Dsl {
-    final type F[A] = FormulaAst[A]
+    type Fn
+
+    final type F[A] = FormulaAst[A, Fn]
 
     def apply(f: F[Fix[F]]): Fix[F] =
       Fix[F](f)
@@ -51,6 +55,9 @@ object FormulaAst {
 
     def compare(lhs: Fix[F], op: FormulaCmpOp, rhs: Fix[F]): Fix[F] =
       Fix[F](Compare(lhs, op, rhs))
+
+    def function(fn: Fn, args: List[Fix[F]]): Fix[F] =
+      Fix[F](Function(fn, args))
   }
 
 }

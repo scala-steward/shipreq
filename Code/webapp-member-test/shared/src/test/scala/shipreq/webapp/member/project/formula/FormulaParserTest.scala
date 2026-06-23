@@ -52,11 +52,22 @@ object FormulaParserTest extends TestSuite {
       "consec3" - assertParse("1 < 2 != false", compare(compare(lit(1), <, lit(2)), FormulaCmpOp.!=, lit(false)))
     }
 
+    "fn" - {
+      "0" - assertParse("now ( )", function("now", Nil))
+      "1" - assertParse("not ( false )", function("not", lit(false) :: Nil))
+      "if" - assertParse("IF ( 1=2 , \"good\" , 3*4 )", function("IF", List(
+        compare(lit(1), `=`, lit(2)),
+        lit("good"),
+        multiply(lit(3), lit(4))
+      )))
+    }
+
     "combos" - {
       "addMul" - assertParse("3 + 1 * 2", add(lit(3), multiply(lit(1), lit(2))))
       "mulAdd" - assertParse("1 * 2 + 3", add(multiply(lit(1), lit(2)), lit(3)))
       "mulMul" - assertParse("1 * 2 * 3", multiply(multiply(lit(1), lit(2)), lit(3)))
       "cmp" - assertParse("(1+6)*2 == 1+3*6", compare(multiply(add(lit(1), lit(6)), lit(2)), `=`, add(lit(1), multiply(lit(3), lit(6)))))
+      "fnCmp" - assertParse("round(1.2) > round(0.5)", compare(function("round", lit(1.2) :: Nil), >, function("round", lit(0.5) :: Nil)))
     }
 
   }
