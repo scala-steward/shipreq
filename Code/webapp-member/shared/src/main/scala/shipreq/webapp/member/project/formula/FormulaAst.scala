@@ -1,6 +1,10 @@
 package shipreq.webapp.member.project.formula
 
+import cats.{Applicative, Traverse}
+import cats.instances.list._
+import cats.syntax.all._
 import japgolly.microlibs.recursion.Fix
+import shipreq.base.util.TraverseWithDefaults
 
 sealed trait FormulaAst[+Self, +Fn, +Field]
 
@@ -25,6 +29,33 @@ object FormulaAst {
 
   implicit def univEqFix[A: UnivEq, B: UnivEq]: UnivEq[Fixed[A, B]] =
     UnivEq.deriveFix[Fix, λ[X => FormulaAst[X, A, B]]]
+
+  implicit def traverse[Fn, Field]: Traverse[FormulaAst[*, Fn, Field]] =
+    new TraverseWithDefaults[FormulaAst[*, Fn, Field]] {
+      type F[A] = FormulaAst[A, Fn, Field]
+
+      override def map[A, B](fa: F[A])(f: A => B): F[B] = fa match {
+        case v: Value              => v
+        case Add(lhs, rhs)         => Add(f(lhs), f(rhs))
+        case Subtract(lhs, rhs)    => Subtract(f(lhs), f(rhs))
+        case Multiply(lhs, rhs)    => Multiply(f(lhs), f(rhs))
+        case Divide(lhs, rhs)      => Divide(f(lhs), f(rhs))
+        case Compare(lhs, op, rhs) => Compare(f(lhs), op, f(rhs))
+        case Function(fn, args)    => Function(fn, args map f)
+        case f@ Field(_)           => f
+      }
+
+      override def traverse[G[_], A, B](fa: F[A])(f: A => G[B])(implicit G: Applicative[G]): G[F[B]] = fa match {
+        case v: Value              => G pure v
+        case Add(lhs, rhs)         => G.map2(f(lhs), f(rhs))(Add(_, _))
+        case Subtract(lhs, rhs)    => G.map2(f(lhs), f(rhs))(Subtract(_, _))
+        case Multiply(lhs, rhs)    => G.map2(f(lhs), f(rhs))(Multiply(_, _))
+        case Divide(lhs, rhs)      => G.map2(f(lhs), f(rhs))(Divide(_, _))
+        case Compare(lhs, op, rhs) => G.map2(f(lhs), f(rhs))(Compare(_, op, _))
+        case Function(fn, args)    => G.map(args traverse f)(Function(fn, _))
+        case f@ Field(_)           => G pure f
+      }
+    }
 
   // ===================================================================================================================
 

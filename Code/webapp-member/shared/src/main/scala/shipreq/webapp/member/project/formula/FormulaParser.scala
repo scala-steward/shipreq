@@ -85,7 +85,7 @@ private[formula] class FormulaParser(val input: ParserInput) extends ParsingUtil
       capture(CharPredicate.Alpha.+) ~ OWS ~ '('
       ~ zeroOrMore(OWS ~ expr).separatedBy(OWS ~ ',')
       ~ OWS ~ ')'
-      ~> ((f: String, args: Seq[Potential]) => Potential.function(f, args.toList))
+      ~> ((f: String, args: Seq[Potential]) => Potential.function(f.toUpperCase, args.toList))
     )
 
   private def factor: Rule1[Potential] =

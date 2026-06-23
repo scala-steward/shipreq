@@ -15,6 +15,9 @@ object Formula {
   object Potential extends FormulaAst.Dsl {
     override type Fn = String
     override type Field = String
+
+    def toText(f: Potential): String =
+      AtomOrComposite.cata(FormulaAlgebra.unparse)(f)
   }
 
 }

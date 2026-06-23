@@ -8,12 +8,22 @@ object FormulaParserTest extends TestSuite {
   import Formula.Potential._
   import FormulaCmpOp._
 
-  private def assertParse(input: String, expected: Formula.Potential)(implicit q: Line): Unit = {
+  private def parseOrDie(input: String)(implicit q: Line): Formula.Potential = {
     FormulaParser.parse(input) match {
-      case \/-(f) => assertEq(f, expected)
+      case \/-(f) => f
       case -\/(f: FormulaParser.ParseException) => fail(f.format)
       case -\/(f) => fail(f.toString)
     }
+  }
+
+  private def assertParse(input: String, expected: Formula.Potential)(implicit q: Line): String = {
+    val f = parseOrDie(input)
+    assertEq(input, f, expected)
+
+    // Test FormulaAlgebra.unparse here too
+    val text = toText(f)
+    assertEq(text, parseOrDie(text), expected)
+    text
   }
 
   override def tests = Tests {
@@ -53,8 +63,8 @@ object FormulaParserTest extends TestSuite {
     }
 
     "fn" - {
-      "0" - assertParse("now ( )", function("now", Nil))
-      "1" - assertParse("not ( false )", function("not", lit(false) :: Nil))
+      "0" - assertParse("now ( )", function("NOW", Nil))
+      "1" - assertParse("not ( false )", function("NOT", lit(false) :: Nil))
       "if" - assertParse("IF ( 1=2 , \"good\" , 3*4 )", function("IF", List(
         compare(lit(1), `=`, lit(2)),
         lit("good"),
@@ -72,8 +82,8 @@ object FormulaParserTest extends TestSuite {
       "mulAdd" - assertParse("1 * 2 + 3", add(multiply(lit(1), lit(2)), lit(3)))
       "mulMul" - assertParse("1 * 2 * 3", multiply(multiply(lit(1), lit(2)), lit(3)))
       "cmp" - assertParse("(1+6)*2 == 1+3*6", compare(multiply(add(lit(1), lit(6)), lit(2)), `=`, add(lit(1), multiply(lit(3), lit(6)))))
-      "fnCmp" - assertParse("round(1.2) > round(0.5)", compare(function("round", lit(1.2) :: Nil), >, function("round", lit(0.5) :: Nil)))
-      "fnFieldAdd" - assertParse("round(field:Rating + 1)", function("round", add(field("Rating"), lit(1)) :: Nil))
+      "fnCmp" - assertParse("Round(1.2) > round(0.5)", compare(function("ROUND", lit(1.2) :: Nil), >, function("ROUND", lit(0.5) :: Nil)))
+      "fnFieldAdd" - assertParse("round(field:Rating + 1)", function("ROUND", add(field("Rating"), lit(1)) :: Nil))
     }
 
   }
