@@ -78,8 +78,10 @@ object FormulaAlgebra {
               fail("Invalid number of args for function: " + name)
 
           f match {
+            case FormulaFunction.And   => validWhen(true)
             case FormulaFunction.If    => validWhen(a == 2 || a == 3)
             case FormulaFunction.Not   => validWhen(a == 1)
+            case FormulaFunction.Or    => validWhen(true)
             case FormulaFunction.Round => validWhen(a == 1 || a == 2)
           }
 
@@ -108,6 +110,7 @@ object FormulaAlgebra {
 
   def eval(fieldSet: FieldSet, reqNums: ReqData.Numbers, req: Req): FAlgebraM[ErrorMsg \/ *, ValidF, FormulaValue] = {
     import FormulaValue._
+    type Res = ErrorMsg \/ FormulaValue
 
     {
       case Value(v) => \/-(v)
@@ -192,48 +195,63 @@ object FormulaAlgebra {
           }
       }
 
-      case Function(fn, args) => fn match {
+      case Function(fn, args) =>
+        def foldBoolArgs(start: Boolean)(f: (Boolean, Boolean) => Boolean): Res =
+          args.foldLeft[Res](\/-(Bool(start)))((r, bv) =>
+            r.flatMap(av =>
+              (av, bv) match {
+                case (Bool(a), Bool(b)) => \/-(Bool(f(a, b)))
+                case _                  => typeMismatch
+              }
+            )
+          )
 
-        case FormulaFunction.If =>
-          @inline def ifThen(b: Boolean, x: FormulaValue, y: FormulaValue): FormulaValue =
-            if (b) x else y
-          args match {
-            case arg1 :: arg2 :: Nil => (arg1, arg2) match {
-              case (Bool(b), x) => \/-(ifThen(b, x, Empty))
-              case _            => typeMismatch
-            }
-            case arg1 :: arg2 :: arg3 :: Nil => (arg1, arg2, arg3) match {
-              case (Bool(b), x, y) => \/-(ifThen(b, x, y))
-              case _               => typeMismatch
-            }
-            case _ => invalidNumberOfFnArgs
-          }
+        fn match {
+          case FormulaFunction.And =>
+            foldBoolArgs(true)(_ && _)
 
-        case FormulaFunction.Not =>
-          args match {
-            case arg :: Nil => arg match {
-              case Bool(b) => \/-(Bool(!b))
-              case _       => typeMismatch
+          case FormulaFunction.If =>
+            @inline def ifThen(b: Boolean, x: FormulaValue, y: FormulaValue): FormulaValue =
+              if (b) x else y
+            args match {
+              case arg1 :: arg2 :: Nil => (arg1, arg2) match {
+                case (Bool(b), x) => \/-(ifThen(b, x, Empty))
+                case _            => typeMismatch
+              }
+              case arg1 :: arg2 :: arg3 :: Nil => (arg1, arg2, arg3) match {
+                case (Bool(b), x, y) => \/-(ifThen(b, x, y))
+                case _               => typeMismatch
+              }
+              case _ => invalidNumberOfFnArgs
             }
-            case _ => invalidNumberOfFnArgs
-          }
 
-        case FormulaFunction.Round =>
-          def round(d: Double, scale: Double): Double =
-            new BigDecimal(d).setScale(scale.toInt, RoundingMode.HALF_UP).doubleValue
-          args match {
-            case arg :: Nil => arg match {
-              case Dbl(d) => \/-(Dbl(round(d, 0)))
-              case _      => typeMismatch
+          case FormulaFunction.Not =>
+            args match {
+              case arg :: Nil => arg match {
+                case Bool(b) => \/-(Bool(!b))
+                case _       => typeMismatch
+              }
+              case _ => invalidNumberOfFnArgs
             }
-            case arg1 :: arg2 :: Nil => (arg1, arg2) match {
-              case (Dbl(d), Dbl(s)) => \/-(Dbl(round(d, s)))
-              case _                => typeMismatch
-            }
-            case _ => invalidNumberOfFnArgs
-          }
 
-      }
+          case FormulaFunction.Or =>
+            foldBoolArgs(false)(_ || _)
+
+          case FormulaFunction.Round =>
+            def round(d: Double, scale: Double): Double =
+              new BigDecimal(d).setScale(scale.toInt, RoundingMode.HALF_UP).doubleValue
+            args match {
+              case arg :: Nil => arg match {
+                case Dbl(d) => \/-(Dbl(round(d, 0)))
+                case _      => typeMismatch
+              }
+              case arg1 :: arg2 :: Nil => (arg1, arg2) match {
+                case (Dbl(d), Dbl(s)) => \/-(Dbl(round(d, s)))
+                case _                => typeMismatch
+              }
+              case _ => invalidNumberOfFnArgs
+            }
+        }
     }
   }
 }

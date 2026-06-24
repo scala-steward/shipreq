@@ -139,6 +139,20 @@ object FormulaEvalTest extends TestSuite {
       "notFalse" - assertEval("NOT(false)", Bool(true))
       "notError" - assertEvalError("NOT(1)", "Type mismatch.")
 
+      "and0" - assertEval("AND()", Bool(true))
+      "and1" - assertEval("AND(true)", Bool(true))
+      "and2" - assertEval("AND(false)", Bool(false))
+      "and3" - assertEval("AND(true, true)", Bool(true))
+      "and4" - assertEval("AND(true, false)", Bool(false))
+      "andError" - assertEvalError("AND(true, 1)", "Type mismatch.")
+
+      "or0" - assertEval("OR()", Bool(false))
+      "or1" - assertEval("OR(true)", Bool(true))
+      "or2" - assertEval("OR(false)", Bool(false))
+      "or3" - assertEval("OR(true, false)", Bool(true))
+      "or4" - assertEval("OR(false, false)", Bool(false))
+      "orError" - assertEvalError("OR(false, 1)", "Type mismatch.")
+
       "round1" - assertEval("ROUND(1.234)", Dbl(1))
       "round2" - assertEval("ROUND(1.5)", Dbl(2))
       "round3" - assertEval("ROUND(1.234, 2)", Dbl(1.23))

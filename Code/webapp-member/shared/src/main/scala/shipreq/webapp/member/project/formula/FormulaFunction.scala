@@ -5,8 +5,10 @@ import japgolly.microlibs.adt_macros.AdtMacros
 sealed abstract class FormulaFunction(final val name: String)
 
 object FormulaFunction {
+  case object And   extends FormulaFunction("AND")
   case object If    extends FormulaFunction("IF")
   case object Not   extends FormulaFunction("NOT")
+  case object Or    extends FormulaFunction("OR")
   case object Round extends FormulaFunction("ROUND")
 
   val all = AdtMacros.adtValues[FormulaFunction]
