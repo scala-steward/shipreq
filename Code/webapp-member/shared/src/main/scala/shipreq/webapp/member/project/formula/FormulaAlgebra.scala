@@ -79,7 +79,7 @@ object FormulaAlgebra {
 
       case Field(name) =>
         fields.customNumberFields.find(_.name ==* name) match {
-          case Some(f) => \/-(Valid.field(\/-(f.id)))
+          case Some(f) => \/-(Valid.field(FormulaFieldRef.NumberField(f.id)))
           case None    => fail("Invalid field: " + name)
         }
 

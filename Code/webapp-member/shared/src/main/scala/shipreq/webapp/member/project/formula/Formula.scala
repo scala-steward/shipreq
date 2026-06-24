@@ -2,7 +2,6 @@ package shipreq.webapp.member.project.formula
 
 import japgolly.microlibs.recursion._
 import shipreq.base.util.ErrorMsg
-import shipreq.webapp.member.project.data.CustomField
 
 object Formula {
 
@@ -39,6 +38,6 @@ object Formula {
 
   object Valid extends FormulaAst.Dsl {
     override type Fn = FormulaFunction
-    override type Field = Unit \/ CustomField.Number.Id // Unit will later become CustomField.Formula.Id
+    override type Field = FormulaFieldRef
   }
 }
