@@ -29,6 +29,11 @@ object FormulaAlgebra {
 
   @inline private def fail(err: String) = -\/(ErrorMsg(err))
 
+  private val trailingZeros = Pattern.compile("\\.0+$")
+
+  private def doubleToString(d: Double): String =
+    trailingZeros.matcher(d.toString).replaceFirst("")
+
   // ===================================================================================================================
 
   val unparse: FAlgebra[PotentialF, AtomOrComposite[String]] = {
@@ -41,13 +46,12 @@ object FormulaAlgebra {
         case AtomOrComposite.Composite(c, _) => c
       }
     }
-    val trailingZeros = Pattern.compile("\\.0+$")
 
     {
       case Value(Empty)       => ""
       case Value(Bool(true))  => "true"
       case Value(Bool(false)) => "false"
-      case Value(Dbl(d))      => trailingZeros.matcher(d.toString).replaceFirst("")
+      case Value(Dbl(d))      => doubleToString(d)
       case Value(Str(s))      => '"' ~ s ~ '"'
       case Add(l, r)          => composite("(", l.atom ~ " + " ~ r.atom, ")")
       case Subtract(l, r)     => composite("(", l.atom ~ " - " ~ r.atom, ")")
@@ -112,7 +116,7 @@ object FormulaAlgebra {
         (lhs, rhs) match {
           case (Dbl(x), Dbl(y))  => \/-(Dbl(x + y))
           case (Str(x), Str(y))  => \/-(Str(x + y))
-          case (Str(x), Dbl(y))  => \/-(Str(x + y))
+          case (Str(x), Dbl(y))  => \/-(Str(x + doubleToString(y)))
           case (Str(x), Bool(y)) => \/-(Str(x + y.toString.toUpperCase))
           case _                 => typeMismatch
         }
@@ -142,7 +146,7 @@ object FormulaAlgebra {
           case (Str(x), Str(y))   => \/-(Bool(x ==* y))
           case (Bool(x), Bool(y)) => \/-(Bool(x ==* y))
           case (Empty, Empty)     => \/-(Bool(true))
-          case _                  => typeMismatch
+          case _                  => \/-(Bool(false))
         }
 
       case Compare(lhs, FormulaCmpOp.!=, rhs) =>
@@ -151,7 +155,7 @@ object FormulaAlgebra {
           case (Str(x), Str(y))   => \/-(Bool(x !=* y))
           case (Bool(x), Bool(y)) => \/-(Bool(x !=* y))
           case (Empty, Empty)     => \/-(Bool(false))
-          case _                  => typeMismatch
+          case _                  => \/-(Bool(true))
         }
 
       case Compare(lhs, FormulaCmpOp.<, rhs) =>
