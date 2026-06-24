@@ -5,16 +5,9 @@ import sourcecode.Line
 import utest._
 
 object FormulaParserTest extends TestSuite {
+  import FormulaTestShared._
   import Formula.Potential._
   import FormulaCmpOp._
-
-  private def parseOrDie(input: String)(implicit q: Line): Formula.Potential = {
-    FormulaParser.parse(input) match {
-      case \/-(f) => f
-      case -\/(f: FormulaParser.ParseException) => fail(f.format)
-      case -\/(f) => fail(f.toString)
-    }
-  }
 
   private def assertParse(input: String, expected: Formula.Potential)(implicit q: Line): String = {
     val f = parseOrDie(input)

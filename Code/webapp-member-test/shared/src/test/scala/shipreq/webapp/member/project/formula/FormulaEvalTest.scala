@@ -2,13 +2,12 @@ package shipreq.webapp.member.project.formula
 
 import japgolly.microlibs.testutil.TestUtil._
 import shipreq.webapp.member.project.data._
-import shipreq.webapp.member.project.data.DataImplicits._
 import shipreq.webapp.member.project.formula.FormulaValue._
-import shipreq.webapp.member.test.project.UnsafeTypes._
 import sourcecode.Line
 import utest._
 
 object FormulaEvalTest extends TestSuite {
+  import FormulaTestShared._
 
   private def parseAndValidate(input: String, fieldSet: FieldSet): Formula.Valid = {
     FormulaParser.parse(input) match {
@@ -44,37 +43,6 @@ object FormulaEvalTest extends TestSuite {
       case -\/(err)   => assertEq(input, err.value, expectedErrorMsg)
     }
   }
-
-  // Set up custom fields for testing
-  private val scoreFieldId = 1.CFNum
-  private val scoreField = CustomField.Number(
-    id = scoreFieldId,
-    name = "score",
-    desc = None,
-    range = (0.0, 100.0),
-    decimalPlaces = 2,
-    fieldReqTypeRules = FieldReqTypeRules.optional,
-    liveExplicitly = Live
-  )
-
-  private val bonusFieldId = 2.CFNum
-  private val bonusField = CustomField.Number(
-    id = bonusFieldId,
-    name = "bonus",
-    desc = None,
-    range = (0.0, 100.0),
-    decimalPlaces = 1,
-    fieldReqTypeRules = FieldReqTypeRules.optional.defaultTo(10.0)(CustomReqTypeId(1)),
-    liveExplicitly = Live
-  )
-
-  private val fieldSet = FieldSet(
-    emptyDataMap(CustomField).add(scoreField).add(bonusField),
-    Vector(scoreFieldId, bonusFieldId)
-  )
-
-  private val reqId = GenericReqId(10)
-  private val req = GenericReq(reqId, PubidT(CustomReqTypeId(1), ReqTypePos(1)), ∅, Live)
 
   override def tests = Tests {
 
