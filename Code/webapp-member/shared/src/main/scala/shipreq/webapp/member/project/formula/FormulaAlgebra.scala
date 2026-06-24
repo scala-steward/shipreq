@@ -78,11 +78,12 @@ object FormulaAlgebra {
               fail("Invalid number of args for function: " + name)
 
           f match {
-            case FormulaFunction.And   => validWhen(true)
-            case FormulaFunction.If    => validWhen(a == 2 || a == 3)
-            case FormulaFunction.Not   => validWhen(a == 1)
-            case FormulaFunction.Or    => validWhen(true)
-            case FormulaFunction.Round => validWhen(a == 1 || a == 2)
+            case FormulaFunction.And     => validWhen(true)
+            case FormulaFunction.If      => validWhen(a == 2 || a == 3)
+            case FormulaFunction.IsBlank => validWhen(a == 1)
+            case FormulaFunction.Not     => validWhen(a == 1)
+            case FormulaFunction.Or      => validWhen(true)
+            case FormulaFunction.Round   => validWhen(a == 1 || a == 2)
           }
 
         case None =>
@@ -221,6 +222,15 @@ object FormulaAlgebra {
               case arg1 :: arg2 :: arg3 :: Nil => (arg1, arg2, arg3) match {
                 case (Bool(b), x, y) => \/-(ifThen(b, x, y))
                 case _               => typeMismatch
+              }
+              case _ => invalidNumberOfFnArgs
+            }
+
+          case FormulaFunction.IsBlank =>
+            args match {
+              case arg :: Nil => arg match {
+                case Empty => \/-(Bool(true))
+                case _     => \/-(Bool(false))
               }
               case _ => invalidNumberOfFnArgs
             }

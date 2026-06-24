@@ -159,6 +159,11 @@ object FormulaEvalTest extends TestSuite {
       "round4" - assertEval("ROUND(1.236, 2)", Dbl(1.24))
       "roundError" - assertEvalError("ROUND(\"a\")", "Type mismatch.")
       "roundScaleError" - assertEvalError("ROUND(1.2, \"a\")", "Type mismatch.")
+
+      "isBlankTrue" - assertEval("ISBLANK(field:score)", Bool(true), fieldSet, req = req)
+      "isBlankFalseDbl" - assertEval("ISBLANK(1)", Bool(false))
+      "isBlankFalseStr" - assertEval("ISBLANK(\"hello\")", Bool(false))
+      "isBlankFalseBool" - assertEval("ISBLANK(true)", Bool(false))
     }
 
     "fields" - {
