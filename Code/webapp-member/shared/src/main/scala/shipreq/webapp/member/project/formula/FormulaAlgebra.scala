@@ -1,9 +1,11 @@
 package shipreq.webapp.member.project.formula
 
 import japgolly.microlibs.recursion._
+import java.math.{BigDecimal, RoundingMode}
 import java.util.regex.Pattern
 import shipreq.base.util.ErrorMsg
-import shipreq.webapp.member.project.data.FieldSet
+import shipreq.webapp.member.project.data.DataImplicits._
+import shipreq.webapp.member.project.data.{FieldSet, Req, ReqData}
 import shipreq.webapp.member.project.filter.FilterAlgebra
 
 /** Algebras:
@@ -11,6 +13,7 @@ import shipreq.webapp.member.project.filter.FilterAlgebra
   * {{{
   *   unparse : FAlgebra [               PotentialF, AtomOrComposite[String]]
   *   validate: FAlgebraM[ErrorMsg \/ *, PotentialF, Valid]
+  *   eval    : FAlgebraM[ErrorMsg \/ *, ValidF,     FormulaValue]
   * }}}
   */
 object FormulaAlgebra {
@@ -23,6 +26,10 @@ object FormulaAlgebra {
 
   @inline def quoteFieldName(name: String): String =
     FilterAlgebra.quoteFieldName(name)
+
+  @inline private def fail(err: String) = -\/(ErrorMsg(err))
+
+  // ===================================================================================================================
 
   val unparse: FAlgebra[PotentialF, AtomOrComposite[String]] = {
     import shipreq.base.util.SafeStringOps._
@@ -37,6 +44,7 @@ object FormulaAlgebra {
     val trailingZeros = Pattern.compile("\\.0+$")
 
     {
+      case Value(Empty)       => ""
       case Value(Bool(true))  => "true"
       case Value(Bool(false)) => "false"
       case Value(Dbl(d))      => trailingZeros.matcher(d.toString).replaceFirst("")
@@ -54,41 +62,174 @@ object FormulaAlgebra {
   // ===================================================================================================================
 
   def validate(fields: FieldSet): FAlgebraM[ErrorMsg \/ *, PotentialF, Valid] = {
-    @inline def fail(err: String) = -\/(ErrorMsg(err))
+
+    case Function(name, args) =>
+      FormulaFunction.byName.get(name) match {
+        case Some(f) =>
+          val a = args.size
+          def validWhen(argCheck: Boolean) =
+            if (argCheck)
+              \/-(Valid.function(f, args))
+            else
+              fail("Invalid number of args for function: " + name)
+
+          f match {
+            case FormulaFunction.If    => validWhen(a == 2 || a == 3)
+            case FormulaFunction.Not   => validWhen(a == 1)
+            case FormulaFunction.Round => validWhen(a == 1 || a == 2)
+          }
+
+        case None =>
+          fail("Unknown function: " + name)
+      }
+
+    case Field(name) =>
+      fields.customNumberFields.find(_.name ==* name) match {
+        case Some(f) => \/-(Valid.field(FormulaFieldRef.NumberField(f.id)))
+        case None    => fail("Invalid field: " + name)
+      }
+
+    case x: Value            => \/-(Valid(x))
+    case x@ Add(_, _)        => \/-(Valid(x))
+    case x@ Subtract(_, _)   => \/-(Valid(x))
+    case x@ Multiply(_, _)   => \/-(Valid(x))
+    case x@ Divide(_, _)     => \/-(Valid(x))
+    case x@ Compare(_, _, _) => \/-(Valid(x))
+  }
+
+  // ===================================================================================================================
+
+  private val typeMismatch = fail("Type mismatch.")
+  private val invalidNumberOfFnArgs = fail("Arg count mismatch.") // this should be caught at the validation stage
+
+  def eval(fieldSet: FieldSet, reqNums: ReqData.Numbers, req: Req): FAlgebraM[ErrorMsg \/ *, ValidF, FormulaValue] = {
+    import FormulaValue._
 
     {
-      case Function(name, args) =>
-        FormulaFunction.byName.get(name) match {
-          case Some(f) =>
-            val a = args.size
-            def validWhen(argCheck: Boolean) =
-              if (argCheck)
-                \/-(Valid.function(f, args))
-              else
-                fail("Invalid number of args for function: " + name)
+      case Value(v) => \/-(v)
 
-            f match {
-              case FormulaFunction.If    => validWhen(a == 2 || a == 3)
-              case FormulaFunction.Not   => validWhen(a == 1)
-              case FormulaFunction.Round => validWhen(a == 1 || a == 2)
+      case Add(lhs, rhs) =>
+        (lhs, rhs) match {
+          case (Dbl(x), Dbl(y))  => \/-(Dbl(x + y))
+          case (Str(x), Str(y))  => \/-(Str(x + y))
+          case (Str(x), Dbl(y))  => \/-(Str(x + y))
+          case (Str(x), Bool(y)) => \/-(Str(x + y.toString.toUpperCase))
+          case _                 => typeMismatch
+        }
+
+      case Subtract(lhs, rhs) =>
+        (lhs, rhs) match {
+          case (Dbl(x), Dbl(y)) => \/-(Dbl(x - y))
+          case _                => typeMismatch
+        }
+
+      case Multiply(lhs, rhs) =>
+        (lhs, rhs) match {
+          case (Dbl(x), Dbl(y)) => \/-(Dbl(x * y))
+          case _                => typeMismatch
+        }
+
+      case Divide(lhs, rhs) =>
+        (lhs, rhs) match {
+          case (Dbl(_), Dbl(0)) => fail("Division by zero.")
+          case (Dbl(x), Dbl(y)) => \/-(Dbl(x / y))
+          case _                => typeMismatch
+        }
+
+      case Compare(lhs, FormulaCmpOp.`=`, rhs) =>
+        (lhs, rhs) match {
+          case (Dbl(x), Dbl(y))   => \/-(Bool(x ==* y))
+          case (Str(x), Str(y))   => \/-(Bool(x ==* y))
+          case (Bool(x), Bool(y)) => \/-(Bool(x ==* y))
+          case (Empty, Empty)     => \/-(Bool(true))
+          case _                  => typeMismatch
+        }
+
+      case Compare(lhs, FormulaCmpOp.!=, rhs) =>
+        (lhs, rhs) match {
+          case (Dbl(x), Dbl(y))   => \/-(Bool(x !=* y))
+          case (Str(x), Str(y))   => \/-(Bool(x !=* y))
+          case (Bool(x), Bool(y)) => \/-(Bool(x !=* y))
+          case (Empty, Empty)     => \/-(Bool(false))
+          case _                  => typeMismatch
+        }
+
+      case Compare(lhs, FormulaCmpOp.<, rhs) =>
+        (lhs, rhs) match {
+          case (Dbl(x), Dbl(y)) => \/-(Bool(x < y))
+          case _                => typeMismatch
+        }
+
+      case Compare(lhs, FormulaCmpOp.>, rhs) =>
+        (lhs, rhs) match {
+          case (Dbl(x), Dbl(y)) => \/-(Bool(x > y))
+          case _                => typeMismatch
+        }
+
+      case Compare(lhs, FormulaCmpOp.<=, rhs) =>
+        (lhs, rhs) match {
+          case (Dbl(x), Dbl(y)) => \/-(Bool(x <= y))
+          case _                => typeMismatch
+        }
+
+      case Compare(lhs, FormulaCmpOp.>=, rhs) =>
+        (lhs, rhs) match {
+          case (Dbl(x), Dbl(y)) => \/-(Bool(x >= y))
+          case _                => typeMismatch
+        }
+
+      case Field(ref) => ref match {
+
+        case FormulaFieldRef.NumberField(fid) =>
+          val f = fieldSet.custom(fid)
+          reqNums.getVirtual(f, req) match {
+            case Some(d) => \/-(Dbl(d))
+            case None    => \/-(Empty)
+          }
+      }
+
+      case Function(fn, args) => fn match {
+
+        case FormulaFunction.If =>
+          @inline def ifThen(b: Boolean, x: FormulaValue, y: FormulaValue): FormulaValue =
+            if (b) x else y
+          args match {
+            case arg1 :: arg2 :: Nil => (arg1, arg2) match {
+              case (Bool(b), x) => \/-(ifThen(b, x, Empty))
+              case _            => typeMismatch
             }
+            case arg1 :: arg2 :: arg3 :: Nil => (arg1, arg2, arg3) match {
+              case (Bool(b), x, y) => \/-(ifThen(b, x, y))
+              case _               => typeMismatch
+            }
+            case _ => invalidNumberOfFnArgs
+          }
 
-          case None =>
-            fail("Unknown function: " + name)
-        }
+        case FormulaFunction.Not =>
+          args match {
+            case arg :: Nil => arg match {
+              case Bool(b) => \/-(Bool(!b))
+              case _       => typeMismatch
+            }
+            case _ => invalidNumberOfFnArgs
+          }
 
-      case Field(name) =>
-        fields.customNumberFields.find(_.name ==* name) match {
-          case Some(f) => \/-(Valid.field(FormulaFieldRef.NumberField(f.id)))
-          case None    => fail("Invalid field: " + name)
-        }
+        case FormulaFunction.Round =>
+          def round(d: Double, scale: Double): Double =
+            new BigDecimal(d).setScale(scale.toInt, RoundingMode.HALF_UP).doubleValue
+          args match {
+            case arg :: Nil => arg match {
+              case Dbl(d) => \/-(Dbl(round(d, 0)))
+              case _      => typeMismatch
+            }
+            case arg1 :: arg2 :: Nil => (arg1, arg2) match {
+              case (Dbl(d), Dbl(s)) => \/-(Dbl(round(d, s)))
+              case _                => typeMismatch
+            }
+            case _ => invalidNumberOfFnArgs
+          }
 
-      case x: Value            => \/-(Valid(x))
-      case x@ Add(_, _)        => \/-(Valid(x))
-      case x@ Subtract(_, _)   => \/-(Valid(x))
-      case x@ Multiply(_, _)   => \/-(Valid(x))
-      case x@ Divide(_, _)     => \/-(Valid(x))
-      case x@ Compare(_, _, _) => \/-(Valid(x))
+      }
     }
   }
 }

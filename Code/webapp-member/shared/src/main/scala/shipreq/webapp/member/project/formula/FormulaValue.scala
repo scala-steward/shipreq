@@ -6,6 +6,7 @@ object FormulaValue {
   final case class Dbl (value: Double)  extends FormulaValue
   final case class Str (value: String)  extends FormulaValue
   final case class Bool(value: Boolean) extends FormulaValue
+  case object Empty                     extends FormulaValue
 
   implicit def univEq: UnivEq[FormulaValue] = UnivEq.derive
 }
