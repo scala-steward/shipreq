@@ -59,8 +59,22 @@ object FormulaAlgebra {
     {
       case Function(name, args) =>
         FormulaFunction.byName.get(name) match {
-          case Some(f) => \/-(Valid.function(f, args))
-          case None    => fail("Unknown function: " + name)
+          case Some(f) =>
+            val a = args.size
+            def validWhen(argCheck: Boolean) =
+              if (argCheck)
+                \/-(Valid.function(f, args))
+              else
+                fail("Invalid number of args for function: " + name)
+
+            f match {
+              case FormulaFunction.If    => validWhen(a == 2 || a == 3)
+              case FormulaFunction.Not   => validWhen(a == 1)
+              case FormulaFunction.Round => validWhen(a == 1 || a == 2)
+            }
+
+          case None =>
+            fail("Unknown function: " + name)
         }
 
       case Field(name) =>
