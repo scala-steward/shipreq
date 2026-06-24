@@ -57,22 +57,8 @@ object FormulaPropTest extends TestSuite {
   override def tests = Tests {
 
     "validToTextAndBack" - {
-
-      "prop" - {
-        for (valid <- RandomData.formula.valid.gen(fieldSet).samples())
-          assertValidToTextAndBack(valid)
-      }
-
-      // "failure1" - {
-      //   import Formula.Valid._
-      //   val f = Add(Compare(Value(Bool(true)),!=,Field(NumberField(CustomField.Number.Id(1)))),Compare(Field(NumberField(CustomField.Number.Id(1))),>=,Field(NumberField(CustomField.Number.Id(2)))))
-      //   assertValidToTextAndBack(f)
-      // }
-
-// >>>>>>> true <> field:score + field:score >= field:bonus
-// + shipreq.webapp.member.project.formula.FormulaParserTest.fn.field.quoted 0ms  field:"Hot Dog"
-// expect: Compare(Compare(Value(Bool(true)),!=,Add(Field(NumberField(CustomField.Number.Id(1))),Field(NumberField(CustomField.Number.Id(1))))),>=,Field(NumberField(CustomField.Number.Id(2))))
-// actual: Add(Compare(Value(Bool(true)),!=,Field(NumberField(CustomField.Number.Id(1)))),Compare(Field(NumberField(CustomField.Number.Id(1))),>=,Field(NumberField(CustomField.Number.Id(2)))))
+      for (valid <- RandomData.formula.valid.gen(fieldSet).samples().take(100))
+        assertValidToTextAndBack(valid)
     }
 
   }

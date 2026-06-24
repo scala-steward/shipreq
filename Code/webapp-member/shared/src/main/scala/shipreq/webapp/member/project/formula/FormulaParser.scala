@@ -40,9 +40,15 @@ object FormulaParser {
 // =====================================================================================================================
 
 private[formula] class FormulaParser(val input: ParserInput) extends ParsingUtil {
-  import ParsingUtil.Whitespace
+  import ParsingUtil._
 
   private def OWS = rule(zeroOrMore(Whitespace))
+
+  override def double: Rule1[Double] =
+    rule(
+      capture('-'.? ~ CharPredicate.Digit.+ ~ optional('.' ~ CharPredicate.Digit.*) ~ optional(anyOf("eE") ~ anyOf("+-").? ~ CharPredicate.Digit.+))
+      ~> toDoubleOption ~ popOptional[Double]
+    )
 
   private def literal: Rule1[Potential] = {
     def literalBool: Rule1[Potential] =
@@ -54,12 +60,15 @@ private[formula] class FormulaParser(val input: ParserInput) extends ParsingUtil
     def literalDouble: Rule1[Potential] =
       rule(double ~> ((d: Double) => Potential.value(FormulaValue.Dbl(d))))
 
-    def literalStringQuoteChar: Rule0 =
-      rule('"')
-
-    def literalString: Rule1[Potential] =
-      rule(literalStringQuoteChar ~ nonGreedyCapture(() => literalStringQuoteChar)
-        ~> ((s: String) => Potential.value(FormulaValue.Str(s))))
+    def literalString: Rule1[Potential] = {
+      def escapedQuote: Rule1[String] = rule("\"\"" ~ push("\""))
+      def normalChar: Rule1[String] = rule(capture(noneOf("\"")))
+      rule(
+        '"' ~
+        zeroOrMore(escapedQuote | normalChar) ~> ((chars: Seq[String]) => chars.mkString) ~
+        '"' ~> ((s: String) => Potential.value(FormulaValue.Str(s)))
+      )
+    }
 
     rule(literalBool | literalDouble | literalString)
   }
@@ -89,7 +98,7 @@ private[formula] class FormulaParser(val input: ParserInput) extends ParsingUtil
     )
 
   private def factor: Rule1[Potential] =
-    rule(field | function | literal | parens)
+    rule(field | literal | function | parens)
 
   private def term: Rule1[Potential] =
     rule(

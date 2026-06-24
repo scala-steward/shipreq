@@ -36,6 +36,7 @@ object FormulaParserTest extends TestSuite {
       }
       "str" - {
         "simple" - assertParse("\"ahh man\"", lit("ahh man"))
+        "escaped" - assertParse("\"ahh \"\"man\"\"\"", lit("ahh \"man\""))
       }
       "double" - {
         "0" - assertParse("0", lit(0))
@@ -44,6 +45,8 @@ object FormulaParserTest extends TestSuite {
         "123.456" - assertParse("123.456", lit(123.456))
         "-123" - assertParse("-123", lit(-123))
         "-123.456" - assertParse("-123.456", lit(-123.456))
+        "sciNeg" - assertParse("1.2e-3", lit(0.0012))
+        "sciPos" - assertParse("-1.2E+3", lit(-1200))
       }
     }
 
@@ -85,6 +88,18 @@ object FormulaParserTest extends TestSuite {
       "cmp" - assertParse("(1+6)*2 == 1+3*6", compare(multiply(add(lit(1), lit(6)), lit(2)), `=`, add(lit(1), multiply(lit(3), lit(6)))))
       "fnCmp" - assertParse("Round(1.2) > round(0.5)", compare(function("ROUND", lit(1.2) :: Nil), >, function("ROUND", lit(0.5) :: Nil)))
       "fnFieldAdd" - assertParse("round(field:Rating + 1)", function("ROUND", add(field("Rating"), lit(1)) :: Nil))
+
+      "failingCase1" - assertParse(
+        "OR(field:bonus - field:bonus, field:bonus = field:bonus, field:score) / (field:score > true)",
+        divide(
+          function("OR", List(
+            subtract(field("bonus"), field("bonus")),
+            compare(field("bonus"), `=`, field("bonus")),
+            field("score")
+          )),
+          compare(field("score"), >, lit(true))
+        )
+      )
     }
 
   }

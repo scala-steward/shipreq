@@ -22,11 +22,16 @@ object FormulaAlgebra {
   import FormulaAst._
   import FormulaValue._
 
-  @inline def isFieldNameUnquotedChar: Char => Boolean =
-    FilterAlgebra.isFieldNameUnquotedChar
+  val isFieldNameUnquotedChar: Char => Boolean = {
+    case '(' | ')' | ',' | '+' | '-' | '*' | '/' => false
+    case c => FilterAlgebra.isFieldNameUnquotedChar(c)
+  }
 
-  @inline def quoteFieldName(name: String): String =
-    FilterAlgebra.quoteFieldName(name)
+  def quoteFieldName(name: String): String =
+    if (name.forall(isFieldNameUnquotedChar))
+      name
+    else
+      "\"" + name + "\""
 
   @inline private def fail(err: String) = -\/(ErrorMsg(err))
 
@@ -53,13 +58,13 @@ object FormulaAlgebra {
       case Value(Bool(true))  => "true"
       case Value(Bool(false)) => "false"
       case Value(Dbl(d))      => doubleToString(d)
-      case Value(Str(s))      => '"' ~ s ~ '"'
+      case Value(Str(s))      => '"' ~ s.replace("\"", "\"\"") ~ '"'
       case Add(l, r)          => composite("(", l.atom ~ " + " ~ r.atom, ")")
       case Subtract(l, r)     => composite("(", l.atom ~ " - " ~ r.atom, ")")
       case Multiply(l, r)     => composite("(", l.atom ~ " * " ~ r.atom, ")")
       case Divide(l, r)       => composite("(", l.atom ~ " / " ~ r.atom, ")")
       case Field(f)           => "field:" ~ quoteFieldName(f)
-      case Compare(l, op, r)  => l.noParens ~ ' ' ~ op.symbol ~ ' ' ~ r.noParens
+      case Compare(l, op, r)  => composite("(", l.noParens ~ ' ' ~ op.symbol ~ ' ' ~ r.atom, ")")
       case Function(f, args)  => f.toUpperCase ~ '(' ~ args.iterator.map(_.noParens).mkString(", ") ~ ')'
     }
   }
