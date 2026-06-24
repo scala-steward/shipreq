@@ -6,4 +6,7 @@ sealed trait FormulaFieldRef
 
 object FormulaFieldRef {
   final case class NumberField(id: CustomField.Number.Id) extends FormulaFieldRef
+
+  implicit def univEq: UnivEq[FormulaFieldRef] =
+    UnivEq.derive
 }

@@ -6,8 +6,6 @@ import shipreq.webapp.member.project.data.{FieldSet, Req, ReqData}
 
 object Formula {
 
-  type Validator = FAlgebraM[ErrorMsg \/ *, PotentialF, Valid]
-
   type PotentialF[+F] = FormulaAst[
     F,
     Potential.Fn,
@@ -23,8 +21,8 @@ object Formula {
     def toText(f: Potential): String =
       AtomOrComposite.cata(FormulaAlgebra.unparse)(f)
 
-    def validate(pf: Potential, validator: Validator): ErrorMsg \/ Formula.Valid =
-      Recursion.cataM[ErrorMsg \/ *, PotentialF, Valid](validator)(pf)
+    def validate(pf: Potential, fieldSet: FieldSet): ErrorMsg \/ Formula.Valid =
+      Recursion.cataM(FormulaAlgebra.validate(fieldSet))(pf)
   }
 
   // ===================================================================================================================

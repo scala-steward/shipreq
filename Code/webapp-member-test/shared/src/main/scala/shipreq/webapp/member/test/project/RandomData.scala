@@ -2447,6 +2447,81 @@ object RandomData {
   }
 
   // ===================================================================================================================
+  object formula {
+    import shipreq.webapp.member.project.formula._
+
+    val genFormulaValue: Gen[FormulaValue] =
+      Gen.chooseGen(
+        // Gen pure FormulaValue.Empty,
+        Gen.boolean.map(FormulaValue.Bool.apply),
+        Gen.double.map(FormulaValue.Dbl.apply),
+        Gen.stringOf(Gen.ascii).map(FormulaValue.Str.apply),
+      )
+
+    val genFormulaCmpOp: Gen[FormulaCmpOp] =
+      Gen.chooseNE(FormulaCmpOp.all)
+
+    val genFormulaFunction: Gen[FormulaFunction] =
+      Gen.chooseNE(FormulaFunction.all)
+
+    object valid {
+      import Formula.{ValidF, Valid}
+
+      def gen(fieldSet: FieldSet): Gen[Valid] = {
+        val ogNumberField: Option[Gen[CustomField.Number.Id]] =
+          Gen.tryGenChoose(fieldSet.customNumberFields.iterator.map(_.id))
+
+        gen(ogNumberField)
+      }
+
+      def gen(ogNumberField: Option[Gen[CustomField.Number.Id]]): Gen[Valid] = {
+
+        var flatGens: NonEmptyVector[Gen[ValidF[Nothing]]] =
+          NonEmptyVector(genFormulaValue.map(FormulaAst.Value(_)))
+
+        val ogFieldRef: Option[Gen[FormulaFieldRef]] =
+          ogNumberField.map(_.map(FormulaFieldRef.NumberField.apply))
+
+        for (gFieldRef <- ogFieldRef)
+          flatGens :+= gFieldRef.map(FormulaAst.Field(_))
+
+        val gFlat: Gen[ValidF[Nothing]] =
+          Gen.chooseGenNE(flatGens)
+
+        def coalgebra: FCoalgebraM[Gen, ValidF, Int] =
+          remainingDepth =>
+            if (remainingDepth <= 0)
+              gFlat
+            else {
+              val gNext = Gen.chooseInt(remainingDepth)
+
+              var gens: NonEmptyVector[Gen[ValidF[Int]]] =
+                flatGens
+
+              gens :+= (for {x <- gNext; y <- gNext} yield FormulaAst.Add(x, y))
+              gens :+= (for {x <- gNext; y <- gNext} yield FormulaAst.Subtract(x, y))
+              gens :+= (for {x <- gNext; y <- gNext} yield FormulaAst.Multiply(x, y))
+              gens :+= (for {x <- gNext; y <- gNext} yield FormulaAst.Divide(x, y))
+              gens :+= (for {x <- gNext; y <- gNext; o <- genFormulaCmpOp} yield FormulaAst.Compare(x, o, y))
+
+              gens :+= genFormulaFunction.flatMap {
+                case f@ FormulaFunction.And     => gNext.list(0 to 3).map(args => FormulaAst.Function(f, args))
+                case f@ FormulaFunction.If      => gNext.list(2 to 3).map(args => FormulaAst.Function(f, args))
+                case f@ FormulaFunction.IsBlank => gNext.map(a => FormulaAst.Function(f, a :: Nil))
+                case f@ FormulaFunction.Not     => gNext.map(a => FormulaAst.Function(f, a :: Nil))
+                case f@ FormulaFunction.Or      => gNext.list(0 to 3).map(args => FormulaAst.Function(f, args))
+                case f@ FormulaFunction.Round   => gNext.list(1 to 2).map(args => FormulaAst.Function(f, args))
+              }
+
+              Gen.chooseGenNE(gens)
+            }
+
+        Recursion.anaM(coalgebra)(4 `JVM|JS` 3)
+      }
+    }
+  }
+
+  // ===================================================================================================================
   object events {
     import shipreq.webapp.member.project.event._
     import Event._

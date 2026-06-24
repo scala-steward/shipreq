@@ -13,8 +13,7 @@ object FormulaEvalTest extends TestSuite {
   private def parseAndValidate(input: String, fieldSet: FieldSet): Formula.Valid = {
     FormulaParser.parse(input) match {
       case \/-(potential) =>
-        val validator = FormulaAlgebra.validate(fieldSet)
-        Formula.Potential.validate(potential, validator) match {
+        Formula.Potential.validate(potential, fieldSet) match {
           case \/-(valid) => valid
           case -\/(err)   => fail(s"Validation failed: ${err.value}")
         }

@@ -14,6 +14,9 @@ object FormulaFunction {
 
   val all = AdtMacros.adtValues[FormulaFunction]
 
+  implicit def univEq: UnivEq[FormulaFunction] =
+    UnivEq.derive
+
   val byName: Map[String, FormulaFunction] =
     all.iterator.map(f => (f.name, f)).toMap
 }
