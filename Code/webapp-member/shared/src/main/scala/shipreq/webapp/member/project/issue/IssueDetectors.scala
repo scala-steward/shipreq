@@ -36,7 +36,7 @@ object IssueDetectors {
 
       // Check numbers
       run(ctx, fields.nums) { f =>
-        val numMap = ctx.project.content.reqNumsFor(f.id)
+        val numMap = ctx.project.content.reqNums(f.id)
         !numMap.contains(_)
       }
 
@@ -425,7 +425,7 @@ object IssueDetectors {
           req => {
             for {
               field <- fields
-              num   <- content.reqNumsFor(field.id).get(req.id)
+              num   <- content.reqNums(field.id).get(req.id)
             } {
               if (num < field.min || num > field.max)
                 ctx.add(Issue.NumberOutOfRange(req, field))

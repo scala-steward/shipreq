@@ -123,12 +123,13 @@ object Sorter {
         prep = setup => {
           import setup.p
           val field = p.config.fields.custom(fid)
+          val reqNums = p.content.reqNums
           val rowApplicability = setup.applicability.byField(c)
 
           {
             case row: Row.ForReq =>
               rowApplicability(row) match {
-                case Applicable    => p.content.getVirtualNum(field, row.req)
+                case Applicable    => reqNums.getVirtual(field, row.req)
                 case NotApplicable => None
               }
             case _: Row.ForCodeGroup =>

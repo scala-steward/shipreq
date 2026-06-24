@@ -1741,7 +1741,7 @@ object RandomData {
     val genReqDataNums: Gen[ReqData.Numbers] =
       (numFieldIdG, reqIdG) match {
         case (Some(numFieldIdGen), Some(reqIdGen)) =>
-          numFieldIdGen.mapTo(reqIdGen.mapTo(Gen.double))
+          numFieldIdGen.mapTo(reqIdGen.mapTo(Gen.double)).map(ReqData.Numbers.apply)
         case _ =>
           Gen pure ReqData.Numbers.empty
       }

@@ -75,11 +75,28 @@ object ReqData {
 
   // -------------------------------------------------------------------------------------------------------------------
 
-  type Numbers = Map[CustomField.Number.Id, Map[ReqId, Double]]
+  @Lenses
+  final case class Numbers(data: Map[CustomField.Number.Id, Map[ReqId, Double]]) {
+
+    def apply(id: CustomField.Number.Id): Map[ReqId, Double] =
+      data.getOrElse(id, Map.empty)
+
+    /** "Virtual" meaning it uses the default value (if specified) when blank.
+      *
+      * Result is set to the field's decimal-place precision.
+      */
+    def getVirtual(field: CustomField.Number, req: Req): Option[Double] =
+      apply(field.id).get(req.id)
+        .orElse(field.fieldReqTypeRules(req.reqTypeId).defaultOption)
+        .map(field.scale)
+  }
 
   object Numbers {
     def empty: Numbers =
-      Map.empty
+      apply(Map.empty)
+
+    implicit def univEq: UnivEq[Numbers] =
+      UnivEq.derive
 
     private val outerIso: Iso[
       Option[Map[ReqId, Double]],
@@ -87,7 +104,7 @@ object ReqData {
       Optics.nonEmptyMapIso[ReqId, Double]
 
     private def outer(id: CustomField.Number.Id): Lens[Numbers, Map[ReqId, Double]] =
-      Optics.nonEmptyMapValueLens(id, outerIso)
+      data andThen Optics.nonEmptyMapValueLens(id, outerIso)
 
     private def inner(id: ReqId): Lens[Map[ReqId, Double], Option[Double]] =
       Optics.mapValue(id)

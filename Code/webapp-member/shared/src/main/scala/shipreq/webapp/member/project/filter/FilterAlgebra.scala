@@ -634,13 +634,13 @@ object FilterAlgebra {
 
             case None =>
               fieldApplicableReqOnly(fid) { req =>
-                val numOption = p.content.getVirtualNum(field, req)
+                val numOption = p.content.reqNums.getVirtual(field, req)
                 numOption.contains(targetNum)
               }
 
             case Some(op) =>
               fieldApplicableReqOnly(fid) { req =>
-                val numOption = p.content.getVirtualNum(field, req)
+                val numOption = p.content.reqNums.getVirtual(field, req)
                 numOption.exists(op.cmpDoubles(_, targetNum))
               }
           }
@@ -656,7 +656,7 @@ object FilterAlgebra {
           reqOnly(req => lookup.getReqIds(req.id).exists(criteria.contains))
 
         case (FieldCriteria.Attr(Blank), \/-(fid: CustomField.Number.Id)) =>
-          val reqNums = p.content.reqNumsFor(fid)
+          val reqNums = p.content.reqNums(fid)
           fieldApplicableReqOnly(fid) { req =>
             if (reqNums.contains(req.id))
               false
@@ -707,7 +707,7 @@ object FilterAlgebra {
           }
 
         case (FieldCriteria.Attr(DefaultInUse), \/-(fid: CustomField.Number.Id)) =>
-          val reqNums = p.content.reqNumsFor(fid)
+          val reqNums = p.content.reqNums(fid)
           fieldApplicableReqOnly(fid) { req =>
             if (reqNums.contains(req.id))
               false

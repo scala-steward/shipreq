@@ -492,8 +492,9 @@ object Rev1 {
     }
 
   implicit lazy val picklerReqDataNumbers: Pickler[ReqData.Numbers] = {
-    implicit val picklerValues: Pickler[Map[ReqId, Double]] = pickleMap
-    pickleMap
+    implicit val pickler1: Pickler[Map[ReqId, Double]] = pickleMap
+    implicit val pickler2: Pickler[Map[CustomField.Number.Id, Map[ReqId, Double]]] = pickleMap
+    transformPickler(ReqData.Numbers.apply)(_.data)
   }
 
   implicit lazy val picklerProjectContent: Pickler[ProjectContent] =
