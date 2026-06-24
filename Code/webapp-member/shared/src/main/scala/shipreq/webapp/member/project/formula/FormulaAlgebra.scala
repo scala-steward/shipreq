@@ -11,9 +11,10 @@ import shipreq.webapp.member.project.filter.FilterAlgebra
 /** Algebras:
   *
   * {{{
-  *   unparse : FAlgebra [               PotentialF, AtomOrComposite[String]]
-  *   validate: FAlgebraM[ErrorMsg \/ *, PotentialF, Valid]
-  *   eval    : FAlgebraM[ErrorMsg \/ *, ValidF,     FormulaValue]
+  *   unparse   : FAlgebra [               PotentialF, AtomOrComposite[String]]
+  *   validate  : FAlgebraM[ErrorMsg \/ *, PotentialF, Valid]
+  *   unvalidate: FAlgebra [               ValidF,     Potential]
+  *   eval      : FAlgebraM[ErrorMsg \/ *, ValidF,     FormulaValue]
   * }}}
   */
 object FormulaAlgebra {
@@ -102,6 +103,25 @@ object FormulaAlgebra {
     case x@ Multiply(_, _)   => \/-(Valid(x))
     case x@ Divide(_, _)     => \/-(Valid(x))
     case x@ Compare(_, _, _) => \/-(Valid(x))
+  }
+
+  // ===================================================================================================================
+
+  def unvalidate(fieldSet: FieldSet): FAlgebra[ValidF, Potential] = {
+    case v: Value            => Potential(v)
+    case x@ Add(_, _)        => Potential(x)
+    case x@ Subtract(_, _)   => Potential(x)
+    case x@ Multiply(_, _)   => Potential(x)
+    case x@ Divide(_, _)     => Potential(x)
+    case x@ Compare(_, _, _) => Potential(x)
+    case Function(f, args)   => Potential(Function(f.name, args))
+
+    case Field(ref) =>
+      val name: String =
+        ref match {
+          case FormulaFieldRef.NumberField(fid) => fieldSet.custom(fid).name
+        }
+      Potential(Field(name))
   }
 
   // ===================================================================================================================

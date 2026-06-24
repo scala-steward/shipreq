@@ -43,5 +43,11 @@ object Formula {
 
     def eval(formula: Valid, fieldSet: FieldSet, reqNums: ReqData.Numbers, req: Req): ErrorMsg \/ FormulaValue =
       Recursion.cataM(FormulaAlgebra.eval(fieldSet, reqNums, req))(formula)
+
+    def toPotential(formula: Valid, fieldSet: FieldSet): Potential =
+      Recursion.cata(FormulaAlgebra.unvalidate(fieldSet))(formula)
+
+    def toText(formula: Valid, fieldSet: FieldSet): String =
+      Potential.toText(toPotential(formula, fieldSet))
   }
 }
