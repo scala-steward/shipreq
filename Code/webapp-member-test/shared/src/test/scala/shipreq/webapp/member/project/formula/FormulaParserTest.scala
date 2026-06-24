@@ -29,6 +29,7 @@ object FormulaParserTest extends TestSuite {
   override def tests = Tests {
 
     "literals" - {
+      "empty" - assertParse("", value(FormulaValue.Empty))
       "bool" - {
         "true" - assertParse("trUE", lit(true))
         "false" - assertParse("False", lit(false))

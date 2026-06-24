@@ -126,5 +126,7 @@ private[formula] class FormulaParser(val input: ParserInput) extends ParsingUtil
     rule(possibleComparison)
 
   def main: Rule1[Potential] =
-    rule(expr ~ EOI)
+    rule(
+      EOI ~ push(Potential.value(FormulaValue.Empty))
+      | expr ~ EOI)
 }
