@@ -2276,7 +2276,7 @@ object RandomData {
             flatGen
           else {
             val next = remainingDepth - 1
-            val gNext = Gen.pure(next)
+            val gNext = Gen.chooseInt(remainingDepth)
             val sgNext = Some(gNext)
             val genNEV = gNext.nev(1 to (5 `JVM|JS` 3))
             var gens: NonEmptyVector[Gen[PotentialF[Int]]] = flatGens
@@ -2402,7 +2402,7 @@ object RandomData {
             flatGen
           else {
             val next = remainingDepth - 1
-            val gNext = Gen.pure(next)
+            val gNext = Gen.chooseInt(remainingDepth)
             val sgNext = Some(gNext)
             val genNEV = gNext.nev(1 to (5 `JVM|JS` 3))
             var gens: NonEmptyVector[Gen[ValidF[Int]]] = flatGens
