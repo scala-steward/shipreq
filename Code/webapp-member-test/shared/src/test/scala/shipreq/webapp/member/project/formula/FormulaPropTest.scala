@@ -1,7 +1,9 @@
 package shipreq.webapp.member.project.formula
 
 import japgolly.microlibs.testutil.TestUtil._
+import shipreq.webapp.base.test.BinaryTestUtil.assertRoundTripP
 import shipreq.webapp.member.test.project.RandomData
+import shipreq.webapp.member.project.protocol.binary.Latest.pickleValidFormula
 import sourcecode.Line
 import utest._
 
@@ -19,9 +21,19 @@ object FormulaPropTest extends TestSuite {
 
   override def tests = Tests {
 
-    "validToTextAndBack" - {
-      for (valid <- RandomData.formula.valid.gen(fieldSet).samples().take(100))
-        assertValidToTextAndBack(valid)
+    "valid" - {
+      def samples() = RandomData.formula.valid.gen(fieldSet).samples().take(100)
+
+      "toTextAndBack" - {
+        for (valid <- samples())
+          assertValidToTextAndBack(valid)
+      }
+
+      "toBinaryAndBack" - {
+        for (valid <- samples())
+          assertRoundTripP(valid)
+      }
+
     }
 
   }

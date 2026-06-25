@@ -8,6 +8,7 @@ import shipreq.webapp.member.project.data.savedview.{ImpGraphConfig, SavedView}
 import shipreq.webapp.member.project.data.{Live => _, _}
 import shipreq.webapp.member.project.event._
 import shipreq.webapp.member.project.filter.Filter
+import shipreq.webapp.member.project.formula.Formula
 import shipreq.webapp.member.project.sort.SortMethod
 import shipreq.webapp.member.project.text.Text
 
@@ -18,11 +19,13 @@ import shipreq.webapp.member.project.text.Text
   * - Added CustomField.Number.Id
   * - Added Event.ProjectDelete
   * - Added Event.ProjectRestore
+  * - Added Formula.Valid
   * - Added Project.deletionReason
   * - Added ProjectContent.reqNums (and deps)
   * - Added ProjectMetaData.live
   */
 object Rev1 {
+  import boopickle.ConstPickler
   import boopickle.DefaultBasic._
   import shipreq.webapp.base.protocol.binary.v1.BaseData._
   import shipreq.webapp.member.project.protocol.binary.v1.BaseMemberData1._
@@ -1001,6 +1004,217 @@ object Rev1 {
             case KeyScoped1        => state.unpickle[FilterAst.Scoped1       [Valid.Scope, Unit       ]]
             case KeyScoped2        => state.unpickle[FilterAst.Scoped2       [Valid.Scope, Unit       ]]
             case KeyRelativeTags   => state.unpickle[FilterAst.RelativeTags  [Valid.ApTag             ]]
+          }
+      }
+
+    pickleFix[ValidF]
+  }
+
+  // ===================================================================================================================
+  // Formula
+
+  implicit lazy val pickleValidFormula: Pickler[Formula.Valid] = {
+    import shipreq.webapp.member.project.formula._
+    import Formula.ValidF
+
+    implicit val picklerListUnit: Pickler[List[Unit]] =
+      implicitly[Pickler[Int]].xmap(List.fill(_)(()))(_.size)
+
+    implicit val picklerFormulaValueDbl: Pickler[FormulaValue.Dbl] =
+      transformPickler(FormulaValue.Dbl.apply)(_.value)
+
+    implicit val picklerFormulaValueStr: Pickler[FormulaValue.Str] =
+      transformPickler(FormulaValue.Str.apply)(_.value)
+
+    implicit val picklerFormulaValueBool: Pickler[FormulaValue.Bool] =
+      transformPickler(FormulaValue.Bool.apply)(_.value)
+
+    implicit val picklerFormulaValue: Pickler[FormulaValue] =
+      new Pickler[FormulaValue] {
+        private[this] final val KeyBool  = 'b'
+        private[this] final val KeyDbl   = 'd'
+        private[this] final val KeyEmpty = '0'
+        private[this] final val KeyStr   = 's'
+        override def pickle(a: FormulaValue)(implicit state: PickleState): Unit =
+          a match {
+            case b: FormulaValue.Bool  => state.enc.writeByte(KeyBool ); state.pickle(b)
+            case b: FormulaValue.Dbl   => state.enc.writeByte(KeyDbl  ); state.pickle(b)
+            case FormulaValue.Empty    => state.enc.writeByte(KeyEmpty)
+            case b: FormulaValue.Str   => state.enc.writeByte(KeyStr  ); state.pickle(b)
+          }
+        override def unpickle(implicit state: UnpickleState): FormulaValue =
+          state.dec.readByte match {
+            case KeyBool  => state.unpickle[FormulaValue.Bool]
+            case KeyDbl   => state.unpickle[FormulaValue.Dbl]
+            case KeyEmpty => FormulaValue.Empty
+            case KeyStr   => state.unpickle[FormulaValue.Str]
+          }
+      }
+
+    implicit val picklerFormulaAstValue: Pickler[FormulaAst.Value] =
+      transformPickler(FormulaAst.Value.apply)(_.value)
+
+  implicit val picklerFormulaCmpOp: Pickler[FormulaCmpOp] =
+    new Pickler[FormulaCmpOp] {
+      private[this] final val Key_eq = 0
+      private[this] final val Key_!= = 1
+      private[this] final val Key_<  = 2
+      private[this] final val Key_<= = 3
+      private[this] final val Key_>  = 4
+      private[this] final val Key_>= = 5
+      override def pickle(a: FormulaCmpOp)(implicit state: PickleState): Unit =
+        a match {
+          case FormulaCmpOp.`=` => state.enc.writeByte(Key_eq)
+          case FormulaCmpOp.!=  => state.enc.writeByte(Key_!=)
+          case FormulaCmpOp.<   => state.enc.writeByte(Key_< )
+          case FormulaCmpOp.<=  => state.enc.writeByte(Key_<=)
+          case FormulaCmpOp.>   => state.enc.writeByte(Key_> )
+          case FormulaCmpOp.>=  => state.enc.writeByte(Key_>=)
+        }
+      override def unpickle(implicit state: UnpickleState): FormulaCmpOp =
+        state.dec.readByte match {
+          case Key_eq => FormulaCmpOp.`=`
+          case Key_!= => FormulaCmpOp.!=
+          case Key_<  => FormulaCmpOp.<
+          case Key_<= => FormulaCmpOp.<=
+          case Key_>  => FormulaCmpOp.>
+          case Key_>= => FormulaCmpOp.>=
+        }
+    }
+
+    implicit val picklerFormulaAstCompare: Pickler[FormulaAst.Compare[Unit]] =
+      picklerFormulaCmpOp.xmap(FormulaAst.Compare((), _, ()))(_.op)
+
+    implicit val picklerFormulaFunction: Pickler[FormulaFunction] =
+      new Pickler[FormulaFunction] {
+        private[this] final val KeyAnd      = 0
+        private[this] final val KeyAverage  = 1
+        private[this] final val KeyCeiling  = 2
+        private[this] final val KeyFloor    = 3
+        private[this] final val KeyIf       = 4
+        private[this] final val KeyIsBlank  = 5
+        private[this] final val KeyIsBool   = 6
+        private[this] final val KeyIsNumber = 7
+        private[this] final val KeyIsText   = 8
+        private[this] final val KeyMax      = 9
+        private[this] final val KeyMin      = 10
+        private[this] final val KeyNot      = 11
+        private[this] final val KeyOr       = 12
+        private[this] final val KeyRound    = 13
+        override def pickle(a: FormulaFunction)(implicit state: PickleState): Unit =
+          a match {
+            case FormulaFunction.And      => state.enc.writeByte(KeyAnd     )
+            case FormulaFunction.Average  => state.enc.writeByte(KeyAverage )
+            case FormulaFunction.Ceiling  => state.enc.writeByte(KeyCeiling )
+            case FormulaFunction.Floor    => state.enc.writeByte(KeyFloor   )
+            case FormulaFunction.If       => state.enc.writeByte(KeyIf      )
+            case FormulaFunction.IsBlank  => state.enc.writeByte(KeyIsBlank )
+            case FormulaFunction.IsBool   => state.enc.writeByte(KeyIsBool  )
+            case FormulaFunction.IsNumber => state.enc.writeByte(KeyIsNumber)
+            case FormulaFunction.IsText   => state.enc.writeByte(KeyIsText  )
+            case FormulaFunction.Max      => state.enc.writeByte(KeyMax     )
+            case FormulaFunction.Min      => state.enc.writeByte(KeyMin     )
+            case FormulaFunction.Not      => state.enc.writeByte(KeyNot     )
+            case FormulaFunction.Or       => state.enc.writeByte(KeyOr      )
+            case FormulaFunction.Round    => state.enc.writeByte(KeyRound   )
+          }
+        override def unpickle(implicit state: UnpickleState): FormulaFunction =
+          state.dec.readByte match {
+            case KeyAnd      => FormulaFunction.And
+            case KeyAverage  => FormulaFunction.Average
+            case KeyCeiling  => FormulaFunction.Ceiling
+            case KeyFloor    => FormulaFunction.Floor
+            case KeyIf       => FormulaFunction.If
+            case KeyIsBlank  => FormulaFunction.IsBlank
+            case KeyIsBool   => FormulaFunction.IsBool
+            case KeyIsNumber => FormulaFunction.IsNumber
+            case KeyIsText   => FormulaFunction.IsText
+            case KeyMax      => FormulaFunction.Max
+            case KeyMin      => FormulaFunction.Min
+            case KeyNot      => FormulaFunction.Not
+            case KeyOr       => FormulaFunction.Or
+            case KeyRound    => FormulaFunction.Round
+          }
+      }
+
+    implicit val picklerFormulaAstFunction: Pickler[FormulaAst.Function[FormulaFunction, Unit]] =
+      new Pickler[FormulaAst.Function[FormulaFunction, Unit]] {
+        override def pickle(a: FormulaAst.Function[FormulaFunction, Unit])(implicit state: PickleState): Unit = {
+          state.pickle(a.function)
+          state.pickle(a.args)
+        }
+        override def unpickle(implicit state: UnpickleState): FormulaAst.Function[FormulaFunction, Unit] = {
+          val function = state.unpickle[FormulaFunction]
+          val args     = state.unpickle[List[Unit]]
+          FormulaAst.Function(function, args)
+        }
+      }
+
+    implicit val picklerFormulaFieldRefNumberField: Pickler[FormulaFieldRef.NumberField] =
+      transformPickler(FormulaFieldRef.NumberField.apply)(_.id)
+
+    implicit val picklerFormulaFieldRef: Pickler[FormulaFieldRef] =
+      new Pickler[FormulaFieldRef] {
+        private[this] final val KeyNumberField = 'n'
+        override def pickle(a: FormulaFieldRef)(implicit state: PickleState): Unit =
+          a match {
+            case b: FormulaFieldRef.NumberField => state.enc.writeByte(KeyNumberField); state.pickle(b)
+          }
+        override def unpickle(implicit state: UnpickleState): FormulaFieldRef =
+          state.dec.readByte match {
+            case KeyNumberField => state.unpickle[FormulaFieldRef.NumberField]
+          }
+      }
+
+    implicit val picklerFormulaAstField: Pickler[FormulaAst.Field[FormulaFieldRef]] =
+      picklerFormulaFieldRef.xmap(FormulaAst.Field(_))(_.field)
+
+    implicit val picklerFormulaAstAdd: Pickler[FormulaAst.Add[Unit]] =
+      ConstPickler(FormulaAst.Add((), ()))
+
+    implicit val picklerFormulaAstSubtract: Pickler[FormulaAst.Subtract[Unit]] =
+      ConstPickler(FormulaAst.Subtract((), ()))
+
+    implicit val picklerFormulaAstMultiply: Pickler[FormulaAst.Multiply[Unit]] =
+      ConstPickler(FormulaAst.Multiply((), ()))
+
+    implicit val picklerFormulaAstDivide: Pickler[FormulaAst.Divide[Unit]] =
+      ConstPickler(FormulaAst.Divide((), ()))
+
+    implicit val picklerFormulaAst: Pickler[ValidF[Unit]] =
+      new Pickler[ValidF[Unit]] {
+        private type A = Unit
+        private type F = FormulaFieldRef
+        private type Fn = FormulaFunction
+        private[this] final val KeyAdd      = '+'
+        private[this] final val KeyCompare  = '='
+        private[this] final val KeyDivide   = '/'
+        private[this] final val KeyField    = 'f'
+        private[this] final val KeyFunction = 'F'
+        private[this] final val KeyMultiply = '*'
+        private[this] final val KeySubtract = '-'
+        private[this] final val KeyValue    = 'v'
+        override def pickle(a: ValidF[Unit])(implicit state: PickleState): Unit =
+          a match {
+            case b: FormulaAst.Add[A]          => state.enc.writeByte(KeyAdd     ); state.pickle(b)
+            case b: FormulaAst.Compare[A]      => state.enc.writeByte(KeyCompare ); state.pickle(b)
+            case b: FormulaAst.Divide[A]       => state.enc.writeByte(KeyDivide  ); state.pickle(b)
+            case b: FormulaAst.Field[F]        => state.enc.writeByte(KeyField   ); state.pickle(b)
+            case b: FormulaAst.Function[Fn, A] => state.enc.writeByte(KeyFunction); state.pickle(b)
+            case b: FormulaAst.Multiply[A]     => state.enc.writeByte(KeyMultiply); state.pickle(b)
+            case b: FormulaAst.Subtract[A]     => state.enc.writeByte(KeySubtract); state.pickle(b)
+            case b: FormulaAst.Value           => state.enc.writeByte(KeyValue   ); state.pickle(b)
+          }
+        override def unpickle(implicit state: UnpickleState): ValidF[Unit] =
+          state.dec.readByte match {
+            case KeyAdd      => state.unpickle[FormulaAst.Add[A]]
+            case KeyCompare  => state.unpickle[FormulaAst.Compare[A]]
+            case KeyDivide   => state.unpickle[FormulaAst.Divide[A]]
+            case KeyField    => state.unpickle[FormulaAst.Field[F]]
+            case KeyFunction => state.unpickle[FormulaAst.Function[Fn, A]]
+            case KeyMultiply => state.unpickle[FormulaAst.Multiply[A]]
+            case KeySubtract => state.unpickle[FormulaAst.Subtract[A]]
+            case KeyValue    => state.unpickle[FormulaAst.Value]
           }
       }
 
