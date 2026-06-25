@@ -60,6 +60,8 @@ object FormulaEvalTest extends TestSuite {
       "addStrBool" - assertEval("\"bool is \" + true", Str("bool is TRUE"))
       "subDbl" - assertEval("5 - 2", Dbl(3))
       "mulDbl" - assertEval("3 * 4", Dbl(12))
+      "mulStrDblI" - assertEval("\"x\" * 4", Str("xxxx"))
+      "mulStrDblD" - assertEval("\"x\" * 4.5", Str("xxxxx"))
       "divDbl" - assertEval("12 / 3", Dbl(4))
       "divZero" - assertEvalError("12 / 0", "Division by zero.")
       "addError" - assertEvalError("1 + \"a\"", "Type mismatch.")

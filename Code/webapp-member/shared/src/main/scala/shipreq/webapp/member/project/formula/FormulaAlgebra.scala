@@ -169,6 +169,7 @@ object FormulaAlgebra {
       case Multiply(lhs, rhs) =>
         (lhs, rhs) match {
           case (Dbl(x), Dbl(y)) => \/-(Dbl(x * y))
+          case (Str(x), Dbl(y)) => \/-(Str(x * (y + 0.5).toInt))
           case _                => typeMismatch
         }
 
