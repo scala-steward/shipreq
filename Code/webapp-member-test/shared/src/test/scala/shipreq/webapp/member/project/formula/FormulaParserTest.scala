@@ -67,11 +67,11 @@ object FormulaParserTest extends TestSuite {
         lit("good"),
         multiply(lit(3), lit(4))
       )))
+    }
 
-      "field" - {
-        "direct" - assertParse("field:Rating", field("Rating"))
-        "quoted" - assertParse("field:\"Hot Dog\"", field("Hot Dog"))
-      }
+    "field" - {
+      "direct" - assertParse("field:Rating", field("Rating"))
+      "quoted" - assertParse("field:\"Hot Dog\"", field("Hot Dog"))
     }
 
     "combos" - {
