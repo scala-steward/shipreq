@@ -86,17 +86,20 @@ object FormulaAlgebra {
               fail("Invalid number of args for function: " + name)
 
           f match {
-            case FormulaFunction.And     => validWhen(true)
-            case FormulaFunction.Average => validWhen(a > 0)
-            case FormulaFunction.Ceiling => validWhen(a == 1)
-            case FormulaFunction.Floor   => validWhen(a == 1)
-            case FormulaFunction.If      => validWhen(a == 2 || a == 3)
-            case FormulaFunction.IsBlank => validWhen(a == 1)
-            case FormulaFunction.Max     => validWhen(a > 0)
-            case FormulaFunction.Min     => validWhen(a > 0)
-            case FormulaFunction.Not     => validWhen(a == 1)
-            case FormulaFunction.Or      => validWhen(true)
-            case FormulaFunction.Round   => validWhen(a == 1 || a == 2)
+            case FormulaFunction.And      => validWhen(true)
+            case FormulaFunction.Average  => validWhen(a > 0)
+            case FormulaFunction.Ceiling  => validWhen(a == 1)
+            case FormulaFunction.Floor    => validWhen(a == 1)
+            case FormulaFunction.If       => validWhen(a == 2 || a == 3)
+            case FormulaFunction.IsBlank  => validWhen(a == 1)
+            case FormulaFunction.IsBool   => validWhen(a == 1)
+            case FormulaFunction.IsNumber => validWhen(a == 1)
+            case FormulaFunction.IsText   => validWhen(a == 1)
+            case FormulaFunction.Max      => validWhen(a > 0)
+            case FormulaFunction.Min      => validWhen(a > 0)
+            case FormulaFunction.Not      => validWhen(a == 1)
+            case FormulaFunction.Or       => validWhen(true)
+            case FormulaFunction.Round    => validWhen(a == 1 || a == 2)
           }
 
         case None =>
@@ -296,6 +299,33 @@ object FormulaAlgebra {
               case arg :: Nil => arg match {
                 case Empty => \/-(Bool(true))
                 case _     => \/-(Bool(false))
+              }
+              case _ => invalidNumberOfFnArgs
+            }
+
+          case FormulaFunction.IsBool =>
+            args match {
+              case arg :: Nil => arg match {
+                case _: Bool => \/-(Bool(true))
+                case _       => \/-(Bool(false))
+              }
+              case _ => invalidNumberOfFnArgs
+            }
+
+          case FormulaFunction.IsNumber =>
+            args match {
+              case arg :: Nil => arg match {
+                case _: Dbl => \/-(Bool(true))
+                case _      => \/-(Bool(false))
+              }
+              case _ => invalidNumberOfFnArgs
+            }
+
+          case FormulaFunction.IsText =>
+            args match {
+              case arg :: Nil => arg match {
+                case _: Str => \/-(Bool(true))
+                case _      => \/-(Bool(false))
               }
               case _ => invalidNumberOfFnArgs
             }

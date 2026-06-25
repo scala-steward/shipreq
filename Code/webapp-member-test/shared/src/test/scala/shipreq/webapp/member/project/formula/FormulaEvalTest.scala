@@ -154,6 +154,19 @@ object FormulaEvalTest extends TestSuite {
       "isBlankFalseDbl" - assertEval("ISBLANK(1)", Bool(false))
       "isBlankFalseStr" - assertEval("ISBLANK(\"hello\")", Bool(false))
       "isBlankFalseBool" - assertEval("ISBLANK(true)", Bool(false))
+
+      "isBool1" - assertEval("ISBOOL(true)", Bool(true))
+      "isBool2" - assertEval("ISBOOL(false)", Bool(true))
+      "isBool3" - assertEval("ISBOOL(1.2)", Bool(false))
+      "isBool4" - assertEval("ISBOOL(\"hello\")", Bool(false))
+
+      "isNumber1" - assertEval("ISNUMBER(1.2)", Bool(true))
+      "isNumber2" - assertEval("ISNUMBER(true)", Bool(false))
+      "isNumber3" - assertEval("ISNUMBER(\"hello\")", Bool(false))
+
+      "isText1" - assertEval("ISTEXT(\"hello\")", Bool(true))
+      "isText2" - assertEval("ISTEXT(1.2)", Bool(false))
+      "isText3" - assertEval("ISTEXT(true)", Bool(false))
     }
 
     "fields" - {
