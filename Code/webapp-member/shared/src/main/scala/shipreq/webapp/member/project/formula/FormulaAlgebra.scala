@@ -251,6 +251,12 @@ object FormulaAlgebra {
               case _      => typeMismatch
             }.map(doubles => Dbl(doubles.reduce(f)))
 
+        def isType(f: PartialFunction[FormulaValue, Unit]): Res =
+          args match {
+            case arg :: Nil => \/-(Bool(f.isDefinedAt(arg)))
+            case _ => invalidNumberOfFnArgs
+          }
+
         fn match {
           case FormulaFunction.And =>
             foldBoolArgs(true)(_ && _)
@@ -295,40 +301,16 @@ object FormulaAlgebra {
             }
 
           case FormulaFunction.IsBlank =>
-            args match {
-              case arg :: Nil => arg match {
-                case Empty => \/-(Bool(true))
-                case _     => \/-(Bool(false))
-              }
-              case _ => invalidNumberOfFnArgs
-            }
+            isType { case Empty => }
 
           case FormulaFunction.IsBool =>
-            args match {
-              case arg :: Nil => arg match {
-                case _: Bool => \/-(Bool(true))
-                case _       => \/-(Bool(false))
-              }
-              case _ => invalidNumberOfFnArgs
-            }
+            isType { case _: Bool => }
 
           case FormulaFunction.IsNumber =>
-            args match {
-              case arg :: Nil => arg match {
-                case _: Dbl => \/-(Bool(true))
-                case _      => \/-(Bool(false))
-              }
-              case _ => invalidNumberOfFnArgs
-            }
+            isType { case _: Dbl => }
 
           case FormulaFunction.IsText =>
-            args match {
-              case arg :: Nil => arg match {
-                case _: Str => \/-(Bool(true))
-                case _      => \/-(Bool(false))
-              }
-              case _ => invalidNumberOfFnArgs
-            }
+            isType { case _: Str => }
 
           case FormulaFunction.Max =>
             reduceDbls(Math.max)
