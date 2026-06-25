@@ -127,6 +127,19 @@ object FormulaEvalTest extends TestSuite {
       "roundError" - assertEvalError("ROUND(\"a\")", "Type mismatch.")
       "roundScaleError" - assertEvalError("ROUND(1.2, \"a\")", "Type mismatch.")
 
+      "average1" - assertEval("AVERAGE(2)", Dbl(2))
+      "average2" - assertEval("AVERAGE(1, 2, 6)", Dbl(3))
+      "average3" - assertEval("AVERAGE(1.5, 2.5)", Dbl(2))
+      "averageError" - assertEvalError("AVERAGE(1, \"a\")", "Type mismatch.")
+
+      "max1" - assertEval("MAX(5)", Dbl(5))
+      "max2" - assertEval("MAX(1, 3, 2)", Dbl(3))
+      "maxError" - assertEvalError("MAX(1, \"a\")", "Type mismatch.")
+
+      "min1" - assertEval("MIN(5)", Dbl(5))
+      "min2" - assertEval("MIN(3, 1, 2)", Dbl(1))
+      "minError" - assertEvalError("MIN(1, \"a\")", "Type mismatch.")
+
       "isBlankTrue" - assertEval("ISBLANK(field:score)", Bool(true), fieldSet, req = req)
       "isBlankFalseDbl" - assertEval("ISBLANK(1)", Bool(false))
       "isBlankFalseStr" - assertEval("ISBLANK(\"hello\")", Bool(false))

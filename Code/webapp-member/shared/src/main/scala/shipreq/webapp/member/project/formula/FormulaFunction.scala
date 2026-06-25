@@ -6,8 +6,11 @@ sealed abstract class FormulaFunction(final val name: String)
 
 object FormulaFunction {
   case object And     extends FormulaFunction("AND")
+  case object Average extends FormulaFunction("AVERAGE")
   case object If      extends FormulaFunction("IF")
   case object IsBlank extends FormulaFunction("ISBLANK")
+  case object Max     extends FormulaFunction("MAX")
+  case object Min     extends FormulaFunction("MIN")
   case object Not     extends FormulaFunction("NOT")
   case object Or      extends FormulaFunction("OR")
   case object Round   extends FormulaFunction("ROUND")

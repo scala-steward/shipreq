@@ -1,5 +1,7 @@
 package shipreq.webapp.member.project.formula
 
+import cats.instances.list._
+import cats.syntax.traverse._
 import japgolly.microlibs.recursion._
 import java.math.{BigDecimal, RoundingMode}
 import java.util.regex.Pattern
@@ -85,8 +87,11 @@ object FormulaAlgebra {
 
           f match {
             case FormulaFunction.And     => validWhen(true)
+            case FormulaFunction.Average => validWhen(a > 0)
             case FormulaFunction.If      => validWhen(a == 2 || a == 3)
             case FormulaFunction.IsBlank => validWhen(a == 1)
+            case FormulaFunction.Max     => validWhen(a > 0)
+            case FormulaFunction.Min     => validWhen(a > 0)
             case FormulaFunction.Not     => validWhen(a == 1)
             case FormulaFunction.Or      => validWhen(true)
             case FormulaFunction.Round   => validWhen(a == 1 || a == 2)
@@ -232,9 +237,24 @@ object FormulaAlgebra {
             )
           )
 
+        def reduceDbls(f: (Double, Double) => Double): Res =
+          if (args.isEmpty)
+            invalidNumberOfFnArgs
+          else
+            args.traverse {
+              case Dbl(d) => \/-(d)
+              case _      => typeMismatch
+            }.map(doubles => Dbl(doubles.reduce(f)))
+
         fn match {
           case FormulaFunction.And =>
             foldBoolArgs(true)(_ && _)
+
+          case FormulaFunction.Average =>
+            reduceDbls(_ + _).flatMap {
+              case Dbl(d) => \/-(Dbl(d / args.size))
+              case _      => typeMismatch
+            }
 
           case FormulaFunction.If =>
             @inline def ifThen(b: Boolean, x: FormulaValue, y: FormulaValue): FormulaValue =
@@ -259,6 +279,12 @@ object FormulaAlgebra {
               }
               case _ => invalidNumberOfFnArgs
             }
+
+          case FormulaFunction.Max =>
+            reduceDbls(Math.max)
+
+          case FormulaFunction.Min =>
+            reduceDbls(Math.min)
 
           case FormulaFunction.Not =>
             args match {
