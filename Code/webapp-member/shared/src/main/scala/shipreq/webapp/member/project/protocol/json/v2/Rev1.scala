@@ -8,6 +8,7 @@ import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.event.RetiredGenericData._
 import shipreq.webapp.member.project.event._
 import shipreq.webapp.member.project.filter.Filter
+import shipreq.webapp.member.project.formula.Formula
 import shipreq.webapp.member.protocol.json.JsonCodec
 import shipreq.webapp.member.protocol.json.JsonCodec.Implicits._
 
@@ -585,6 +586,197 @@ object Rev1 {
         val c2 = c1.right
         val cn = Iterator.iterate(c2)(_.right).takeWhile(_.succeeded).toVector
         Right(FilterAst.AnyOf(c1, NonEmptyVector(c2, cn)))
+    })
+  }
+
+  // ===================================================================================================================
+  // Formula
+
+  private[this] object FormulaAstKeys {
+    final val KeyAstAdd      = "+"
+    final val KeyAstCompare  = "cmp"
+    final val KeyAstDivide   = "/"
+    final val KeyAstField    = "field"
+    final val KeyAstFunction = "fn"
+    final val KeyAstMultiply = "*"
+    final val KeyAstSubtract = "-"
+    final val KeyAstValue    = "val"
+  }
+
+  implicit lazy val codecValidFormula: JsonCodec[Formula.Valid] = {
+    import shipreq.webapp.member.project.formula._
+    import Formula.ValidF
+
+    implicit val decoderFormulaFieldRefNumberField: Decoder[FormulaFieldRef.NumberField] =
+      Decoder[CustomField.Number.Id].map(FormulaFieldRef.NumberField.apply)
+
+    implicit val encoderFormulaFieldRefNumberField: Encoder[FormulaFieldRef.NumberField] =
+      Encoder[CustomField.Number.Id].contramap(_.id)
+
+    implicit val decoderFormulaFieldRef: Decoder[FormulaFieldRef] = decodeSumBySoleKey {
+      case ("number", c) => c.as[FormulaFieldRef.NumberField]
+    }
+
+    implicit val encoderFormulaFieldRef: Encoder[FormulaFieldRef] = Encoder.instance {
+      case a: FormulaFieldRef.NumberField => Json.obj("number" -> a.asJson)
+    }
+
+    implicit val decoderFormulaValueDbl: Decoder[FormulaValue.Dbl] =
+      Decoder[Double].map(FormulaValue.Dbl.apply)
+
+    implicit val encoderFormulaValueDbl: Encoder[FormulaValue.Dbl] =
+      Encoder[Double].contramap(_.value)
+
+    implicit val decoderFormulaValueStr: Decoder[FormulaValue.Str] =
+      Decoder[String].map(FormulaValue.Str.apply)
+
+    implicit val encoderFormulaValueStr: Encoder[FormulaValue.Str] =
+      Encoder[String].contramap(_.value)
+
+    implicit val decoderFormulaValueBool: Decoder[FormulaValue.Bool] =
+      Decoder[Boolean].map(FormulaValue.Bool.apply)
+
+    implicit val encoderFormulaValueBool: Encoder[FormulaValue.Bool] =
+      Encoder[Boolean].contramap(_.value)
+
+    implicit val decoderFormulaValue: Decoder[FormulaValue] = decodeSumBySoleKey {
+      case ("bool", c) => c.as[FormulaValue.Bool]
+      case ("dbl" , c) => c.as[FormulaValue.Dbl]
+      case ("str" , c) => c.as[FormulaValue.Str]
+      case ("-"   , _) => Right(FormulaValue.Empty)
+    }
+
+    implicit val encoderFormulaValue: Encoder[FormulaValue] = Encoder.instance {
+      case a: FormulaValue.Bool => Json.obj("bool" -> a.asJson)
+      case a: FormulaValue.Dbl  => Json.obj("dbl"  -> a.asJson)
+      case a: FormulaValue.Str  => Json.obj("str"  -> a.asJson)
+      case FormulaValue.Empty   => Json.obj("-"    -> ().asJson)
+    }
+
+    implicit val encoderFormulaFunction: Encoder[FormulaFunction] =
+      Encoder[String].contramap(_.name)
+
+    implicit val decoderFormulaFunction: Decoder[FormulaFunction] =
+      Decoder[String].emap[FormulaFunction] { str =>
+        FormulaFunction.byName.get(str.toUpperCase) match {
+          case Some(f) => Right(f)
+          case None    => Left("Unknown function: " + str)
+        }
+      }
+
+    implicit val encoderFormulaCmpOp: Encoder[FormulaCmpOp] =
+      Encoder[String].contramap(_.symbol)
+
+    implicit val decoderFormulaCmpOp: Decoder[FormulaCmpOp] =
+      Decoder[String].emap[FormulaCmpOp] { str =>
+        FormulaCmpOp.bySymbol.get(str) match {
+          case Some(f) => Right(f)
+          case None    => Left("Unknown op: " + str)
+        }
+      }
+
+    import FormulaAstKeys._
+    type F = FormulaFieldRef
+    type Fn = FormulaFunction
+
+    implicit val encoderFormulaValueAst: Encoder[FormulaAst.Value] =
+      Encoder[FormulaValue].contramap(_.value)
+
+    implicit val decoderFormulaValueAst: Decoder[FormulaAst.Value] =
+      Decoder[FormulaValue].map(FormulaAst.Value.apply)
+
+    def decodeBinOp[A](name: String, f: (ACursor, ACursor) => A): Decoder[A] =
+      Decoder.instance { c =>
+        val c1 = c.downArray
+        val c2 = c1.right
+        if (c1.succeeded && c2.succeeded)
+          Right(f(c1, c2))
+        else
+          Left(DecodingFailure(s"$name requires a 2-element array", c.history))
+      }
+
+    implicit val encoderFormulaAdd: Encoder[FormulaAst.Add[Json]] =
+      Encoder.instance(a => Json.arr(a.lhs, a.rhs))
+
+    implicit val decoderFormulaAdd: Decoder[FormulaAst.Add[ACursor]] =
+      decodeBinOp("Add", FormulaAst.Add.apply[ACursor])
+
+    implicit val encoderFormulaSubtract: Encoder[FormulaAst.Subtract[Json]] =
+      Encoder.instance(a => Json.arr(a.lhs, a.rhs))
+
+    implicit val decoderFormulaSubtract: Decoder[FormulaAst.Subtract[ACursor]] =
+      decodeBinOp("Subtract", FormulaAst.Subtract.apply[ACursor])
+
+    implicit val encoderFormulaDivide: Encoder[FormulaAst.Divide[Json]] =
+      Encoder.instance(a => Json.arr(a.lhs, a.rhs))
+
+    implicit val decoderFormulaDivide: Decoder[FormulaAst.Divide[ACursor]] =
+      decodeBinOp("Divide", FormulaAst.Divide.apply[ACursor])
+
+    implicit val encoderFormulaMultiply: Encoder[FormulaAst.Multiply[Json]] =
+      Encoder.instance(a => Json.arr(a.lhs, a.rhs))
+
+    implicit val decoderFormulaMultiply: Decoder[FormulaAst.Multiply[ACursor]] =
+      decodeBinOp("Multiply", FormulaAst.Multiply.apply[ACursor])
+
+    implicit val encoderFormulaCompare: Encoder[FormulaAst.Compare[Json]] =
+      Encoder.instance(a => Json.arr(a.lhs, a.op.asJson, a.rhs))
+
+    implicit val decoderFormulaCompare: Decoder[FormulaAst.Compare[ACursor]] =
+      Decoder.instance { c =>
+        val c1 = c.downArray
+        val c2 = c1.right
+        val c3 = c2.right
+        if (c1.succeeded && c2.succeeded && c3.succeeded) {
+          c2.as[FormulaCmpOp].map(op => FormulaAst.Compare(c1, op, c3))
+        } else {
+          Left(DecodingFailure("Compare requires a 3-element array", c.history))
+        }
+      }
+
+    implicit val encoderFormulaFunctionAst: Encoder[FormulaAst.Function[Fn, Json]] =
+      Encoder.forProduct2("fn", "args")(a => (a.function, a.args))
+
+    implicit val decoderFormulaFunctionAst: Decoder[FormulaAst.Function[Fn, ACursor]] =
+      Decoder.instance { c =>
+        for {
+          fn <- c.get[Fn]("fn")
+        } yield {
+          val argsCursor = c.downField("args")
+          val c1 = argsCursor.downArray
+          val args = if (c1.succeeded) {
+            Iterator.iterate(c1)(_.right).takeWhile(_.succeeded).toList
+          } else {
+            List.empty[ACursor]
+          }
+          FormulaAst.Function(fn, args)
+        }
+      }
+
+    implicit val encoderFormulaFieldAst: Encoder[FormulaAst.Field[F]] =
+      Encoder[F].contramap(_.field)
+
+    implicit val decoderFormulaFieldAst: Decoder[FormulaAst.Field[F]] =
+      Decoder[F].map(FormulaAst.Field.apply)
+
+    JsonCodec.fix[ValidF]({
+      case a: FormulaAst.Add[Json]          => Json.obj(KeyAstAdd      -> a.asJson)
+      case a: FormulaAst.Compare[Json]      => Json.obj(KeyAstCompare  -> a.asJson)
+      case a: FormulaAst.Divide[Json]       => Json.obj(KeyAstDivide   -> a.asJson)
+      case a: FormulaAst.Field[F]           => Json.obj(KeyAstField    -> a.asJson)
+      case a: FormulaAst.Function[Fn, Json] => Json.obj(KeyAstFunction -> a.asJson)
+      case a: FormulaAst.Multiply[Json]     => Json.obj(KeyAstMultiply -> a.asJson)
+      case a: FormulaAst.Subtract[Json]     => Json.obj(KeyAstSubtract -> a.asJson)
+      case a: FormulaAst.Value              => Json.obj(KeyAstValue    -> a.asJson)
+    }, decoderFnSumBySoleKey {
+      case (KeyAstAdd     , c) => c.as[FormulaAst.Add[ACursor]]
+      case (KeyAstCompare , c) => c.as[FormulaAst.Compare[ACursor]]
+      case (KeyAstDivide  , c) => c.as[FormulaAst.Divide[ACursor]]
+      case (KeyAstField   , c) => c.as[FormulaAst.Field[F]]
+      case (KeyAstFunction, c) => c.as[FormulaAst.Function[Fn, ACursor]]
+      case (KeyAstMultiply, c) => c.as[FormulaAst.Multiply[ACursor]]
+      case (KeyAstSubtract, c) => c.as[FormulaAst.Subtract[ACursor]]
+      case (KeyAstValue   , c) => c.as[FormulaAst.Value]
     })
   }
 

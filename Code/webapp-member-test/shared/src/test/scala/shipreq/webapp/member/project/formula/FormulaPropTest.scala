@@ -1,9 +1,12 @@
 package shipreq.webapp.member.project.formula
 
 import japgolly.microlibs.testutil.TestUtil._
-import shipreq.webapp.base.test.BinaryTestUtil.assertRoundTripP
-import shipreq.webapp.member.test.project.RandomData
+import shipreq.base.test.JsonTestUtil
+import shipreq.webapp.base.test.BinaryTestUtil
 import shipreq.webapp.member.project.protocol.binary.Latest.pickleValidFormula
+import shipreq.webapp.member.project.protocol.json.Latest.codecValidFormula
+import shipreq.webapp.member.protocol.json.JsonCodec.Implicits._
+import shipreq.webapp.member.test.project.RandomData
 import sourcecode.Line
 import utest._
 
@@ -31,7 +34,12 @@ object FormulaPropTest extends TestSuite {
 
       "toBinaryAndBack" - {
         for (valid <- samples())
-          assertRoundTripP(valid)
+          BinaryTestUtil.assertRoundTripP(valid)
+      }
+
+      "toJsonAndBack" - {
+        for (valid <- samples())
+          JsonTestUtil.assertRoundTrip(valid)
       }
 
     }

@@ -14,5 +14,9 @@ object FormulaCmpOp {
 
   lazy val all = AdtMacros.adtValues[FormulaCmpOp]
 
-  implicit def univEq: UnivEq[FormulaCmpOp] = UnivEq.derive
+  implicit def univEq: UnivEq[FormulaCmpOp] =
+    UnivEq.derive
+
+  val bySymbol: Map[String, FormulaCmpOp] =
+    all.iterator.map(f => (f.symbol, f)).toMap
 }
