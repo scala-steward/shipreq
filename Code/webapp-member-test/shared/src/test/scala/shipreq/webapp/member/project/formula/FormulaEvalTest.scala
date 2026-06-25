@@ -140,6 +140,16 @@ object FormulaEvalTest extends TestSuite {
       "min2" - assertEval("MIN(3, 1, 2)", Dbl(1))
       "minError" - assertEvalError("MIN(1, \"a\")", "Type mismatch.")
 
+      "ceiling1" - assertEval("CEILING(1.2)", Dbl(2))
+      "ceiling2" - assertEval("CEILING(2.0)", Dbl(2))
+      "ceiling3" - assertEval("CEILING(-1.2)", Dbl(-1))
+      "ceilingError" - assertEvalError("CEILING(\"a\")", "Type mismatch.")
+
+      "floor1" - assertEval("FLOOR(1.8)", Dbl(1))
+      "floor2" - assertEval("FLOOR(2.0)", Dbl(2))
+      "floor3" - assertEval("FLOOR(-1.2)", Dbl(-2))
+      "floorError" - assertEvalError("FLOOR(\"a\")", "Type mismatch.")
+
       "isBlankTrue" - assertEval("ISBLANK(field:score)", Bool(true), fieldSet, req = req)
       "isBlankFalseDbl" - assertEval("ISBLANK(1)", Bool(false))
       "isBlankFalseStr" - assertEval("ISBLANK(\"hello\")", Bool(false))

@@ -2507,6 +2507,8 @@ object RandomData {
               gens :+= genFormulaFunction.flatMap {
                 case f@ FormulaFunction.And     => gNext.list(0 to 3).map(args => FormulaAst.Function(f, args))
                 case f@ FormulaFunction.Average => gNext.list(1 to 3).map(args => FormulaAst.Function(f, args))
+                case f@ FormulaFunction.Ceiling => gNext.map(a => FormulaAst.Function(f, a :: Nil))
+                case f@ FormulaFunction.Floor   => gNext.map(a => FormulaAst.Function(f, a :: Nil))
                 case f@ FormulaFunction.If      => gNext.list(2 to 3).map(args => FormulaAst.Function(f, args))
                 case f@ FormulaFunction.IsBlank => gNext.map(a => FormulaAst.Function(f, a :: Nil))
                 case f@ FormulaFunction.Max     => gNext.list(1 to 3).map(args => FormulaAst.Function(f, args))

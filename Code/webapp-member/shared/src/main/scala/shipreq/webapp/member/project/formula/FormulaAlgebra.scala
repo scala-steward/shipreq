@@ -88,6 +88,8 @@ object FormulaAlgebra {
           f match {
             case FormulaFunction.And     => validWhen(true)
             case FormulaFunction.Average => validWhen(a > 0)
+            case FormulaFunction.Ceiling => validWhen(a == 1)
+            case FormulaFunction.Floor   => validWhen(a == 1)
             case FormulaFunction.If      => validWhen(a == 2 || a == 3)
             case FormulaFunction.IsBlank => validWhen(a == 1)
             case FormulaFunction.Max     => validWhen(a > 0)
@@ -254,6 +256,24 @@ object FormulaAlgebra {
             reduceDbls(_ + _).flatMap {
               case Dbl(d) => \/-(Dbl(d / args.size))
               case _      => typeMismatch
+            }
+
+          case FormulaFunction.Ceiling =>
+            args match {
+              case arg :: Nil => arg match {
+                case Dbl(d) => \/-(Dbl(Math.ceil(d)))
+                case _       => typeMismatch
+              }
+              case _ => invalidNumberOfFnArgs
+            }
+
+          case FormulaFunction.Floor =>
+            args match {
+              case arg :: Nil => arg match {
+                case Dbl(d) => \/-(Dbl(Math.floor(d)))
+                case _       => typeMismatch
+              }
+              case _ => invalidNumberOfFnArgs
             }
 
           case FormulaFunction.If =>
