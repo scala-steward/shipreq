@@ -17,6 +17,7 @@ import shipreq.webapp.member.project.filter.FilterAlgebra
   *   validate  : FAlgebraM[ErrorMsg \/ *, PotentialF, Valid]
   *   unvalidate: FAlgebra [               ValidF,     Potential]
   *   eval      : FAlgebraM[ErrorMsg \/ *, ValidF,     FormulaValue]
+  *   fieldRefs : FAlgebra [               ValidF,     Set[FormulaFieldRef]]
   * }}}
   */
 object FormulaAlgebra {
@@ -348,5 +349,18 @@ object FormulaAlgebra {
             }
         }
     }
+  }
+
+  // ===================================================================================================================
+
+  val fieldRefs: FAlgebra[ValidF, Set[FormulaFieldRef]] = {
+    case _: Value         => Set.empty
+    case Add(x, y)        => x ++ y
+    case Subtract(x, y)   => x ++ y
+    case Multiply(x, y)   => x ++ y
+    case Divide(x, y)     => x ++ y
+    case Compare(x, _, y) => x ++ y
+    case Field(f)         => Set.empty + f
+    case Function(_, as)  => if (as.isEmpty) Set.empty else as.reduce(_ ++ _)
   }
 }
