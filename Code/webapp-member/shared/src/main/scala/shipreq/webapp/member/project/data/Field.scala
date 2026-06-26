@@ -606,13 +606,6 @@ object CustomField {
     case f: Implication   => f
   })
 
-  /** HACK: Default type set to "Any" which is a lie. Safe unless you try to change defaults. */
-  def fieldReqTypeRulesHack = Lens[CustomField, FieldReqTypeRules[Any]](_.fieldReqTypeRules)(n => {
-    case f: Number      => f.copy(fieldReqTypeRules = n.asInstanceOf[FieldReqTypeRules.ForNumField])
-    case f: Tag         => f.copy(fieldReqTypeRules = n.asInstanceOf[FieldReqTypeRules.ForTagField])
-    case f: Text        => f.copy(fieldReqTypeRules = n.asInstanceOf[FieldReqTypeRules.ForTextField])
-    case f: Implication => f.copy(fieldReqTypeRules = n.asInstanceOf[FieldReqTypeRules.ForImpField])
-  })
 
   def liveExplicitly = Lens[CustomField, Live](_.liveExplicitly)(n => {
     case f: Number      => f.copy(liveExplicitly = n)

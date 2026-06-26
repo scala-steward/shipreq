@@ -195,9 +195,6 @@ trait ApplyConfigEvent {
     def softDelete(id: CustomReqTypeId): Eval[Unit] =
       deleteOrRestore(id, Dead, ReqCodeLogic.inactivateBelongingToReqs)
 
-    private val fieldReqTypeRules1: Traversal[Project, FieldReqTypeRules[Any]] =
-      Project.customFields andThen FieldSet.customFieldsTraversal andThen CustomField.fieldReqTypeRulesHack
-
     private val reqTypeApplicability1: Traversal[Project, ApplicableReqTypes] =
       Project.applicableTags andThen ApplicableTag.applicableReqTypes
 
@@ -225,9 +222,15 @@ trait ApplyConfigEvent {
       }
 
       def removeFromReqTypeApplicability: Eval[Unit] = {
-        val f: EndoFn[ApplicableReqTypes]     = _.hardDelete(id)
-        val g: EndoFn[FieldReqTypeRules[Any]] = _.hardDelete(id)
-        reqTypeApplicability1.modify(f) compose fieldReqTypeRules1.modify(g)
+        val updateCustomFields: FieldSet.CustomFields => FieldSet.CustomFields =
+          _.modAll {
+            case f: CustomField.Number      => f.copy(fieldReqTypeRules = f.fieldReqTypeRules.hardDelete(id))
+            case f: CustomField.Text        => f.copy(fieldReqTypeRules = f.fieldReqTypeRules.hardDelete(id))
+            case f: CustomField.Tag         => f.copy(fieldReqTypeRules = f.fieldReqTypeRules.hardDelete(id))
+            case f: CustomField.Implication => f.copy(fieldReqTypeRules = f.fieldReqTypeRules.hardDelete(id))
+          }
+        reqTypeApplicability1.modify(_.hardDelete(id)) compose
+          Project.customFields.modify(updateCustomFields)
       }
 
       def deleteReqType: Eval[Unit] =
