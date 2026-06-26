@@ -44,12 +44,6 @@ private[formula] class FormulaParser(val input: ParserInput) extends ParsingUtil
 
   private def OWS = rule(zeroOrMore(Whitespace))
 
-  override def double: Rule1[Double] =
-    rule(
-      capture('-'.? ~ CharPredicate.Digit.+ ~ optional('.' ~ CharPredicate.Digit.*) ~ optional(anyOf("eE") ~ anyOf("+-").? ~ CharPredicate.Digit.+))
-      ~> toDoubleOption ~ popOptional[Double]
-    )
-
   private def literal: Rule1[Potential] = {
     def literalBool: Rule1[Potential] =
       rule(
