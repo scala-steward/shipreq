@@ -1,6 +1,3 @@
-* Add a version of `FieldReqTypeRules` for read-only fields
-  * Update RandomData
-
 * Add `CustomField.Formula{,.Id}`
   * Update RandomData
 

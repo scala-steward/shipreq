@@ -372,6 +372,45 @@ object RandomData {
     }
   }
 
+  def fieldReqTypeRulesRO[D](genReqTypeId: Option[Gen[ReqTypeId]], genDefault: Option[Gen[D]]): Gen[FieldReqTypeRulesRO[D]] = {
+    import FieldReqTypeRulesRO._
+
+    val genRes1 = Gen.pure(Resolution.NotApplicable)
+
+    val genRes: Gen[Resolution[D]] =
+      genDefault match {
+        case Some(gd) =>
+          val genRes2 = gd.map(Resolution.DefaultTo.apply)
+          Gen.chooseGen(genRes1, genRes2)
+        case None =>
+          genRes1
+      }
+
+    genReqTypeId match {
+      case Some(g) =>
+        for {
+          a <- g.set.mapBy(genRes)(0 to 4)
+          o <- genRes
+        } yield {
+          var seen = Set.empty[ReqTypeId]
+          val byReqTypeId =
+            a.iterator.flatMap { case (res, ids) =>
+              val newIds = ids -- seen
+              if (newIds.isEmpty)
+                Nil
+              else {
+                seen ++= newIds
+                newIds.iterator.map(_ -> res)
+              }
+            }.toMap
+          FieldReqTypeRulesRO(byReqTypeId, o)
+        }
+
+      case None =>
+        genRes.map(FieldReqTypeRulesRO(Map.empty, _))
+    }
+  }
+
   val fieldName: Gen[String] =
     unicodeChar.string(Grammar.fieldName.length.total).flatMap { s0 =>
       val s = DataValidators.field.name.stateless.corrector.full(s0)
