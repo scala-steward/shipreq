@@ -157,6 +157,7 @@ object FormulaAlgebra {
           case (Str(x), Str(y))  => \/-(Str(x + y))
           case (Str(x), Dbl(y))  => \/-(Str(x + doubleToString(y)))
           case (Str(x), Bool(y)) => \/-(Str(x + y.toString.toUpperCase))
+          case (x: Str, Empty)   => \/-(x)
           case _                 => typeMismatch
         }
 
