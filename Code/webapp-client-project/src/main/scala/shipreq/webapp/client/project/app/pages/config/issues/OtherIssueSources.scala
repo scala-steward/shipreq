@@ -33,34 +33,35 @@ object OtherIssueSources {
       val liveReqTypes = config.reqTypes.liveIds
       val fieldRules   = config.fieldRules(HideDead)
 
-      def liveExceptions(f: Field, mandatory: Boolean): Iterator[ReqType.Mnemonic] =
+      def liveExceptions(f: Field, rules: FieldReqTypeRules[Any], mandatory: Boolean): Iterator[ReqType.Mnemonic] =
         MutableArray(
-          f.fieldReqTypeRules
+          rules
             .perReqType
             .keysIterator
             .filter(liveReqTypes.contains)
-            .filter(fieldRules(_)(f.fieldId).isMandatory == mandatory)
+            .filter(rt => fieldRules(rt)(f.fieldId).isMandatory ==* mandatory)
             .map(config.reqTypes.need(_).mnemonic)
         ).sortBy(_.value).iterator()
 
       config.fields.iterator().filter(_.live(config) is Live).flatMap { f =>
+        f.fieldReqTypeRulesOption.flatMap { rules =>
+          val subtext: Option[String] =
+            if (rules.otherwise.isMandatory) {
+              val reqTypes = liveExceptions(f, rules, mandatory = false)
+              val sub =
+                if (reqTypes.isEmpty)
+                  "" // No exception, everything is mandatory
+                else
+                  UiText.sortedAndClause(reqTypes.map(_.value)) + " excepted"
+              Some(sub)
+            } else {
+              val reqTypes = liveExceptions(f, rules, mandatory = true)
+              Option.when(reqTypes.nonEmpty)(
+                UiText.sortedAndClause(reqTypes.map(_.value)) + " only")
+            }
 
-        val subtext: Option[String] =
-          if (f.fieldReqTypeRules.otherwise.isMandatory) {
-            val reqTypes = liveExceptions(f, mandatory = false)
-            val sub =
-              if (reqTypes.isEmpty)
-                "" // No exception, everything is mandatory
-              else
-                UiText.sortedAndClause(reqTypes.map(_.value)) + " excepted"
-            Some(sub)
-          } else {
-            val reqTypes = liveExceptions(f, mandatory = true)
-            Option.when(reqTypes.nonEmpty)(
-              UiText.sortedAndClause(reqTypes.map(_.value)) + " only")
-          }
-
-        subtext.map(_ => MandatoryField(config.fieldName(f.fieldId), subtext.filter(_.nonEmpty)))
+          subtext.map(_ => MandatoryField(config.fieldName(f.fieldId), subtext.filter(_.nonEmpty)))
+        }
       }
     }
 
