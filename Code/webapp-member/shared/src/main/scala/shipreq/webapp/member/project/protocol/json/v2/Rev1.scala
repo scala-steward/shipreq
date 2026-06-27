@@ -34,30 +34,6 @@ object Rev1 {
   // ===================================================================================================================
   // Project data
 
-  private implicit def decoderFieldReqTypeRulesROResolutionDefaultTo[D: Decoder]: Decoder[FieldReqTypeRulesRO.Resolution.DefaultTo[D]] =
-    Decoder[D].map(FieldReqTypeRulesRO.Resolution.DefaultTo.apply[D])
-
-  private implicit def encoderFieldReqTypeRulesROResolutionDefaultTo[D: Encoder]: Encoder[FieldReqTypeRulesRO.Resolution.DefaultTo[D]] =
-    Encoder[D].contramap(_.default)
-
-  private implicit def decoderFieldReqTypeRulesROResolution[D](implicit d1: Decoder[FieldReqTypeRulesRO.Resolution.DefaultTo[D]]): Decoder[FieldReqTypeRulesRO.Resolution[D]] =
-    decodeSumBySoleKeyOrConst[FieldReqTypeRulesRO.Resolution[D]](
-      "notApplicable" -> FieldReqTypeRulesRO.Resolution.NotApplicable,
-    ) {
-      case ("defaultTo", c) => c.as[FieldReqTypeRulesRO.Resolution.DefaultTo[D]]
-    }
-
-  private implicit def encoderFieldReqTypeRulesROResolution[D](implicit e1: Encoder[FieldReqTypeRulesRO.Resolution.DefaultTo[D]]): Encoder[FieldReqTypeRulesRO.Resolution[D]] = Encoder.instance {
-    case a: FieldReqTypeRulesRO.Resolution.DefaultTo[D] => Json.obj("defaultTo" -> a.asJson)
-    case FieldReqTypeRulesRO.Resolution.NotApplicable   => Json.fromString("notApplicable")
-  }
-
-  implicit def decoderFieldReqTypeRulesRO[D: Decoder]: Decoder[FieldReqTypeRulesRO[D]] =
-    Decoder.forProduct2("perReqType", "otherwise")(FieldReqTypeRulesRO.apply[D])
-
-  implicit def encoderFieldReqTypeRulesRO[D: Encoder]: Encoder[FieldReqTypeRulesRO[D]] =
-    Encoder.forProduct2("perReqType", "otherwise")(a => (a.perReqType, a.otherwise))
-
   implicit lazy val keyDecoderCustomFieldNumberId: KeyDecoder[CustomField.Number.Id] =
     KeyDecoder.decodeKeyInt.map(CustomField.Number.Id.apply)
 

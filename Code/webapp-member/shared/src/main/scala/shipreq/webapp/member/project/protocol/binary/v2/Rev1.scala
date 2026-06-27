@@ -19,7 +19,6 @@ import shipreq.webapp.member.project.text.Text
   * - Added CustomField.Number.Id
   * - Added Event.ProjectDelete
   * - Added Event.ProjectRestore
-  * - Added FieldReqTypeRulesRO
   * - Added Formula.Valid
   * - Added Project.deletionReason
   * - Added ProjectContent.reqNums (and deps)
@@ -293,38 +292,6 @@ object Rev1 {
 
   // ===================================================================================================================
   // Project data
-
-  implicit def picklerFieldReqTypeRulesRODefaultTo[D: Pickler]: Pickler[FieldReqTypeRulesRO.Resolution.DefaultTo[D]] =
-    transformPickler(FieldReqTypeRulesRO.Resolution.DefaultTo.apply[D])(_.default)
-
-  implicit def picklerFieldReqTypeRulesROResolution[D](implicit p1: Pickler[FieldReqTypeRulesRO.Resolution.DefaultTo[D]]): Pickler[FieldReqTypeRulesRO.Resolution[D]] =
-    new Pickler[FieldReqTypeRulesRO.Resolution[D]] {
-      private[this] final val KeyNotApplicable = 0
-      private[this] final val KeyDefaultTo     = 1
-      override def pickle(a: FieldReqTypeRulesRO.Resolution[D])(implicit state: PickleState): Unit =
-        a match {
-          case FieldReqTypeRulesRO.Resolution.NotApplicable    => state.enc.writeByte(KeyNotApplicable)
-          case b: FieldReqTypeRulesRO.Resolution.DefaultTo[D]  => state.enc.writeByte(KeyDefaultTo    ); state.pickle(b)
-        }
-      override def unpickle(implicit state: UnpickleState): FieldReqTypeRulesRO.Resolution[D] =
-        state.dec.readByte match {
-          case KeyNotApplicable => FieldReqTypeRulesRO.Resolution.NotApplicable
-          case KeyDefaultTo     => state.unpickle[FieldReqTypeRulesRO.Resolution.DefaultTo[D]]
-        }
-    }
-
-  implicit def picklerFieldReqTypeRulesRO[D: Pickler]: Pickler[FieldReqTypeRulesRO[D]] =
-    new Pickler[FieldReqTypeRulesRO[D]] {
-      override def pickle(a: FieldReqTypeRulesRO[D])(implicit state: PickleState): Unit = {
-        state.pickle(a.perReqType)
-        state.pickle(a.otherwise)
-      }
-      override def unpickle(implicit state: UnpickleState): FieldReqTypeRulesRO[D] = {
-        val perReqType = state.unpickle[Map[ReqTypeId, FieldReqTypeRulesRO.Resolution[D]]]
-        val otherwise  = state.unpickle[FieldReqTypeRulesRO.Resolution[D]]
-        FieldReqTypeRulesRO(perReqType, otherwise)
-      }
-    }
 
   implicit lazy val picklerCustomFieldNumberId: Pickler[CustomField.Number.Id] =
     pickleTaggedI(CustomField.Number.Id).reuseByUnivEq
