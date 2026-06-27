@@ -405,9 +405,7 @@ object IssueDetectors {
       val cfg = ctx.project.config
       for (f <- cfg.fields.customFields.values) {
         val isLive      = f.live(cfg) is Live
-        def allDeadOrNA =
-          f.fieldReqTypeRulesOption.exists(_.liveResolutionIterator(cfg.reqTypes).forall(_.isNA)) ||
-          f.fieldReqTypeRulesROOption.exists(_.liveResolutionIterator(cfg.reqTypes).forall(_.isNA))
+        def allDeadOrNA = f.fieldReqTypeRules.liveResolutionIterator(cfg.reqTypes).forall(_.isNA)
         if (isLive && allDeadOrNA)
           ctx.add(Issue.NonApplicableField(f))
       }

@@ -6,7 +6,7 @@ import japgolly.microlibs.recursion._
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.microlibs.utils.ConciseIntSetFormat
 import java.util.regex.Pattern
-import shipreq.base.util.{Applicable, ErrorMsg, OptionalBoolFn, TransitiveClosure, Util}
+import shipreq.base.util.{Applicable, ErrorMsg, OptionalBoolFn, TransitiveClosure}
 import shipreq.webapp.base.util._
 import shipreq.webapp.member.project.data
 import shipreq.webapp.member.project.data.DataImplicits._
@@ -622,6 +622,7 @@ object FilterAlgebra {
       }
 
     def byFieldProp(fieldArg: Filter.Valid.Field, criteria: FieldCriteria[FieldAttr, CompiledFilter]): CompiledFilter = {
+      import FieldReqTypeRules.Resolution
       import FieldAttr._
 
       (criteria, fieldArg) match {
@@ -660,7 +661,7 @@ object FilterAlgebra {
             if (reqNums.contains(req.id))
               false
             else {
-              val field = p.config.fields.custom(fid)
+              val field = p.config.fields.need(fid)
               val res = field.fieldReqTypeRules(req.reqTypeId)
               !res.isDefault
             }
@@ -711,7 +712,7 @@ object FilterAlgebra {
             if (reqNums.contains(req.id))
               false
             else {
-              val field = p.config.fields.custom(fid)
+              val field = p.config.fields.need(fid)
               val res = field.fieldReqTypeRules(req.reqTypeId)
               res.isDefault
             }
@@ -725,13 +726,7 @@ object FilterAlgebra {
 
         case (FieldCriteria.Attr(NotApplicable), \/-(id)) =>
           val field = p.config.fields.need(id)
-          val na1 = field.fieldReqTypeRulesOption.fold(Set.empty[ReqTypeId])(rules =>
-            p.config.reqTypesWithRes(rules)(FieldReqTypeRules.Resolution.NotApplicable).map(_.reqTypeId).toSet
-          )
-          val na2 = field.fieldReqTypeRulesROOption.fold(Set.empty[ReqTypeId])(rules =>
-            p.config.reqTypesWithResRO(rules)(FieldReqTypeRulesRO.Resolution.NotApplicable).map(_.reqTypeId).toSet
-          )
-          val na = Util.mergeSets(na1, na2)
+          val na = p.config.reqTypesWithRes(field.fieldReqTypeRules)(Resolution.NotApplicable).map(_.reqTypeId).toSet
           reqOnly(req => na.contains(req.reqTypeId))
 
         case (FieldCriteria.Attr(NotBlank), field) =>

@@ -119,9 +119,8 @@ sealed trait FieldId {
 }
 
 sealed trait Field {
-  def fieldType: FieldType
-  def fieldReqTypeRulesOption: Option[FieldReqTypeRules[Any]]
-  def fieldReqTypeRulesROOption: Option[FieldReqTypeRulesRO[Any]] = None
+  def fieldType        : FieldType
+  def fieldReqTypeRules: FieldReqTypeRules[Any]
 
   def live(cfg: ProjectConfig): Live
 
@@ -144,8 +143,7 @@ sealed trait StaticField extends Field with FieldId {
   /** Whether or not this field can be removed from users' field lists. */
   def existence: Mandatory
 
-  def fieldReqTypeRules: FieldReqTypeRules[Impossible]
-  override final def fieldReqTypeRulesOption = Some(fieldReqTypeRules)
+  override def fieldReqTypeRules: FieldReqTypeRules[Impossible]
 
   override final def live(cfg: ProjectConfig) = Live
 
@@ -419,7 +417,6 @@ object CustomField {
     override def toString = s"CustomField.Number($id, $name, $desc, $range, $decimalPlaces, $fieldReqTypeRules, $liveExplicitly)"
     override def independentName = Some(name)
     override def live(cfg: ProjectConfig) = liveExplicitly
-    override def fieldReqTypeRulesOption = Some(fieldReqTypeRules)
 
     lazy val fieldReqTypeRulesByResolution =
       fieldReqTypeRules.byResolution
@@ -452,7 +449,6 @@ object CustomField {
     override def toString = s"CustomField.Text($id, $name, $fieldReqTypeRules, $liveExplicitly)"
     override def independentName = Some(name)
     override def live(cfg: ProjectConfig) = liveExplicitly
-    override def fieldReqTypeRulesOption = Some(fieldReqTypeRules)
 
     lazy val fieldReqTypeRulesByResolution =
       fieldReqTypeRules.byResolution
@@ -501,9 +497,6 @@ object CustomField {
 
     override def live(cfg: ProjectConfig) =
       liveExplicitly & cfg.tags.live(tagId)
-
-    override def fieldReqTypeRulesOption =
-      Some(fieldReqTypeRules)
 
     lazy val fieldReqTypeRulesByResolution =
       fieldReqTypeRules.byResolution
@@ -572,9 +565,6 @@ object CustomField {
 
     override def live(cfg: ProjectConfig) =
       liveExplicitly & cfg.live(reqTypeId)
-
-    override def fieldReqTypeRulesOption =
-      Some(fieldReqTypeRules)
 
     lazy val fieldReqTypeRulesByResolution =
       fieldReqTypeRules.byResolution

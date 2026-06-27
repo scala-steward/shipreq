@@ -145,7 +145,7 @@ final case class ProjectConfig(customIssueTypes: CustomIssueTypeIMap,
   lazy val liveCustomFieldsWithMandatory: CustomField.Lists = {
     val m = new CustomField.MutableLists
     for (f <- fields.customFields.valuesIterator)
-      if (f.fieldReqTypeRulesOption.exists(_.containsMandatory) && f.live(this).is(Live))
+      if (f.fieldReqTypeRules.containsMandatory && f.live(this).is(Live))
         m += f
     m.result()
   }
@@ -256,9 +256,6 @@ final case class ProjectConfig(customIssueTypes: CustomIssueTypeIMap,
     }
 
   def reqTypesWithRes[D](rules: FieldReqTypeRules[D])(res: FieldReqTypeRules.Resolution[D]): Iterator[ReqType] =
-    reqTypes.all.iterator.filter(rt => rules(rt.reqTypeId) == res)
-
-  def reqTypesWithResRO[D](rules: FieldReqTypeRulesRO[D])(res: FieldReqTypeRulesRO.Resolution[D]): Iterator[ReqType] =
     reqTypes.all.iterator.filter(rt => rules(rt.reqTypeId) == res)
 
   val applicability: ProjectApplicability.Default = {
