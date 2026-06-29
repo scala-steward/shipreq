@@ -1,7 +1,9 @@
 package shipreq.webapp.member.project.formula
 
 import japgolly.microlibs.testutil.TestUtil._
+import shipreq.base.util._
 import shipreq.webapp.member.project.data._
+import shipreq.webapp.member.project.data.DataImplicits._
 import shipreq.webapp.member.project.formula.FormulaValue._
 import sourcecode.Line
 import utest._
@@ -20,13 +22,65 @@ object FormulaEvalTest extends TestSuite {
     }
   }
 
+  private def runEval(input: String,
+                      fieldSet: FieldSet,
+                      reqNums: ReqData.Numbers,
+                      req: Req): ErrorMsg \/ FormulaValue = {
+    val formula = parseAndValidate(input, fieldSet)
+
+    val formulaFieldId = CustomField.Formula.Id(999)
+    val formulaField = CustomField.Formula(
+      id = formulaFieldId,
+      name = "formula_test",
+      desc = None,
+      fieldReqTypeRules = FieldReqTypeRules.const(FieldReqTypeRules.Resolution.DefaultTo(ValidFormula(formula))),
+      liveExplicitly = Live
+    )
+
+    val updatedFieldSet = fieldSet.copy(
+      customFields = fieldSet.customFields.add(formulaField),
+      order = fieldSet.order :+ formulaFieldId
+    )
+
+    val r = if (req == null) FormulaTestShared.req else req
+
+    val reqTypes = r.reqTypeId match {
+      case cid: CustomReqTypeId =>
+        val customReqType = CustomReqType(
+          id = cid,
+          mnemonic = ReqType.Mnemonic("TEST"),
+          oldMnemonics = Set.empty,
+          name = "Test",
+          description = None,
+          implication = Optional,
+          live = Live
+        )
+        ReqTypes(emptyDataMap(CustomReqType).add(customReqType))
+      case _: StaticReqType =>
+        ReqTypes.empty
+    }
+
+    val cfg = ProjectConfig(
+      customIssueTypes = emptyDataMap(CustomIssueType),
+      reqTypes = reqTypes,
+      fields = updatedFieldSet,
+      tags = Tags.empty
+    )
+
+    val cache = new FormulaEvalCache(cfg, reqNums, Map(r.id -> r.reqTypeId))
+
+    cache(formulaFieldId)(r) match {
+      case \/-(eval) => eval.value
+      case -\/(NotApplicable) => -\/(ErrorMsg("Not applicable"))
+    }
+  }
+
   private def assertEval(input: String,
                          expected: FormulaValue,
                          fieldSet: FieldSet = FieldSet.empty,
                          reqNums: ReqData.Numbers = ReqData.Numbers.empty,
                          req: Req = null)(implicit q: Line): Unit = {
-    val formula = parseAndValidate(input, fieldSet)
-    Formula.Valid.eval(formula, fieldSet, reqNums, req) match {
+    runEval(input, fieldSet, reqNums, req) match {
       case \/-(value) => assertEq(input, value, expected)
       case -\/(err)   => fail(s"Eval failed: ${err.value}")
     }
@@ -37,8 +91,7 @@ object FormulaEvalTest extends TestSuite {
                               fieldSet: FieldSet = FieldSet.empty,
                               reqNums: ReqData.Numbers = ReqData.Numbers.empty,
                               req: Req = null)(implicit q: Line): Unit = {
-    val valid = parseAndValidate(input, fieldSet)
-    Formula.Valid.eval(valid, fieldSet, reqNums, req) match {
+    runEval(input, fieldSet, reqNums, req) match {
       case \/-(value) => fail(s"Eval succeeded with $value, expected failure: $expectedErrorMsg")
       case -\/(err)   => assertEq(input, err.value, expectedErrorMsg)
     }

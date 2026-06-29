@@ -2,7 +2,7 @@ package shipreq.webapp.member.project.formula
 
 import japgolly.microlibs.recursion._
 import shipreq.base.util.ErrorMsg
-import shipreq.webapp.member.project.data.{FieldSet, Req, ReqData}
+import shipreq.webapp.member.project.data.FieldSet
 
 object Formula {
 
@@ -38,9 +38,6 @@ object Formula {
   object Valid extends FormulaAst.Dsl {
     override type Fn = FormulaFunction
     override type Field = FormulaFieldRef
-
-    def eval(formula: Valid, fieldSet: FieldSet, reqNums: ReqData.Numbers, req: Req): ErrorMsg \/ FormulaValue =
-      Recursion.cataM(FormulaAlgebra.eval(fieldSet, reqNums, req))(formula)
 
     def toPotential(formula: Valid, fieldSet: FieldSet): Potential =
       Recursion.cata(FormulaAlgebra.unvalidate(fieldSet))(formula)

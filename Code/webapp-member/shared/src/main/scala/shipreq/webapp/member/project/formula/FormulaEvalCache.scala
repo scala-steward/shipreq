@@ -1,5 +1,6 @@
 package shipreq.webapp.member.project.formula
 
+import japgolly.microlibs.recursion._
 import japgolly.microlibs.utils.Memo
 import shipreq.base.util._
 import shipreq.webapp.member.project.data._
@@ -82,7 +83,8 @@ final class FormulaEvalCache(cfg          : ProjectConfig,
         field.fieldReqTypeRules(req.reqTypeId) match {
 
           case FieldReqTypeRules.Resolution.DefaultTo(formula) =>
-            val value    = Formula.Valid.eval(formula.formula, cfg.fields, reqNums, req)
+            val algebra  = FormulaAlgebra.eval(cfg.fields, reqNums, req)
+            val value    = Recursion.cataM(algebra)(formula.formula)
             val live     = liveField & req.live(cfg.reqTypes)
             val validity = validityLookup(req.reqTypeId)
             val result   = Eval(value, live, validity)
