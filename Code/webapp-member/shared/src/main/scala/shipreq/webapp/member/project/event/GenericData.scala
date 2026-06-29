@@ -5,6 +5,7 @@ import japgolly.microlibs.nonempty._
 import shipreq.base.util._
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.filter.Filter.Implicits._
+import shipreq.webapp.member.project.formula.ValidFormula
 import shipreq.webapp.member.project.text.Text
 import shipreq.webapp.member.project.text.Text.Equality._
 import shipreq.webapp.member.project.util.GenericData
@@ -148,6 +149,62 @@ object CodeGroupGD extends GenericData {
 
   def apply(code: ReqCode.Value, title: Text.CodeGroupTitle.OptionalText): NonEmptyValues =
     NonEmpty.force(emptyValues + ValueForCode(code) + ValueForTitle(title))
+}
+
+// █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
+
+object CustomFormulaFieldGD extends GenericData {
+  sealed abstract class Attr extends AttrBase
+  sealed abstract class Value extends ValueBase
+
+  case object Desc extends Attr {
+    override type Data = Option[String]
+    override def apply(data: Data) = ValueForDesc(data)
+    override val dataEquality: Eq[Data] = implicitly[Eq[Option[String]]]
+  }
+  final case class ValueForDesc(value: Desc.Data) extends Value {
+    override val attr: Desc.type = Desc
+    override def equals(o: Any): Boolean = o match {
+      case v2: ValueForDesc => Desc.dataEquality.eqv(value, v2.value)
+      case _ => false
+    }
+  }
+
+  case object FieldReqTypeRules extends Attr {
+    override type Data = FieldReqTypeRules[ValidFormula]
+    override def apply(data: Data) = ValueForFieldReqTypeRules(data)
+    override val dataEquality: Eq[Data] = implicitly[Eq[FieldReqTypeRules[ValidFormula]]]
+  }
+  final case class ValueForFieldReqTypeRules(value: FieldReqTypeRules.Data) extends Value {
+    override val attr: FieldReqTypeRules.type = FieldReqTypeRules
+    override def equals(o: Any): Boolean = o match {
+      case v2: ValueForFieldReqTypeRules => FieldReqTypeRules.dataEquality.eqv(value, v2.value)
+      case _ => false
+    }
+  }
+
+  case object Name extends Attr {
+    override type Data = String
+    override def apply(data: Data) = ValueForName(data)
+    override val dataEquality: Eq[Data] = implicitly[Eq[String]]
+  }
+  final case class ValueForName(value: Name.Data) extends Value {
+    override val attr: Name.type = Name
+    override def equals(o: Any): Boolean = o match {
+      case v2: ValueForName => Name.dataEquality.eqv(value, v2.value)
+      case _ => false
+    }
+  }
+
+  override implicit val equalityAttr: Order[Attr] with UnivEq[Attr] =
+    Util.univEqAndArbitraryOrder(Vector(Desc, FieldReqTypeRules, Name))
+
+  @inline override implicit def equalityValue: UnivEq[Value] = UnivEq.force
+
+  override val attrs = NonEmptySet[Attr](Desc, FieldReqTypeRules, Name)
+
+  def apply(name: String, desc: Option[String], fieldReqTypeRules: FieldReqTypeRules[ValidFormula]): NonEmptyValues =
+    NonEmpty.force(emptyValues + ValueForName(name) + ValueForDesc(desc) + ValueForFieldReqTypeRules(fieldReqTypeRules))
 }
 
 // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████

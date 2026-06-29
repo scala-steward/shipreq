@@ -92,6 +92,11 @@ val gens = List(
     "Parents"            -> "TagInTree.Parents",
     "Children"           -> "TagInTree.Children",
   ),
+  Gen("CustomFormulaFieldGD")(
+    "Name"              -> "String",
+    "Desc"              -> "Option[String]",
+    "FieldReqTypeRules" -> "FieldReqTypeRules[ValidFormula]",
+  ),
   Gen("CustomNumberFieldGD")(
     "Name"              -> "String",
     "Desc"              -> "Option[String]",
@@ -169,6 +174,7 @@ val content =
      |import shipreq.base.util._
      |import shipreq.webapp.member.project.data._
      |import shipreq.webapp.member.project.filter.Filter.Implicits._
+     |import shipreq.webapp.member.project.formula.ValidFormula
      |import shipreq.webapp.member.project.text.Text
      |import shipreq.webapp.member.project.text.Text.Equality._
      |import shipreq.webapp.member.project.util.GenericData

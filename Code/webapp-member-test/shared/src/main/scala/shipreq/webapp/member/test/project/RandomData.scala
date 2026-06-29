@@ -2676,6 +2676,23 @@ object RandomData {
     private lazy val derivativeTags: Gen[DerivativeTags] =
       RandomData.derivativeTags(applicableTagId)
 
+    private def fieldReqTypeRulesFormula: Gen[FieldReqTypeRules[ValidFormula]] =
+      fieldReqTypeRules[ValidFormula](
+        Some(reqTypeId),
+        Some(RandomData.formula.valid.gen(None).map(ValidFormula.apply)),
+        allowOptional  = false,
+        allowMandatory = false
+      )
+
+    object customFormulaFieldGD extends GenericDataGen(CustomFormulaFieldGD) {
+      import gd._
+      override def valueFor(a: Attr): Gen[Value] = a match {
+        case Name              => fieldName                map Name             .apply
+        case Desc              => desc                     map Desc             .apply
+        case FieldReqTypeRules => fieldReqTypeRulesFormula map FieldReqTypeRules.apply
+      }
+    }
+
     object customNumberFieldGD extends GenericDataGen(CustomNumberFieldGD) {
       import gd._
       private def mdp = DataValidators.numberField.maxDecimalPlaces
@@ -3065,6 +3082,12 @@ object RandomData {
     val genManualIssueUpdate = Gen.apply2(ManualIssueUpdate)(manualIssueId, manualIssueText)
     val genManualIssueDelete = manualIssueId.map(ManualIssueDelete)
 
+    val genFieldCustomFormulaCreate: Gen[FieldCustomFormulaCreate] =
+      Gen.apply2(FieldCustomFormulaCreate)(customFieldFormulaId, customFormulaFieldGD.nonEmptyValues)
+
+    val genFieldCustomFormulaUpdate: Gen[FieldCustomFormulaUpdate] =
+      Gen.apply2(FieldCustomFormulaUpdate)(customFieldFormulaId, customFormulaFieldGD.nonEmptyValues)
+
     val genFieldCustomNumberCreate: Gen[FieldCustomNumberCreate] =
       Gen.apply2(FieldCustomNumberCreate)(customFieldNumberId, customNumberFieldGD.nonEmptyValues)
 
@@ -3076,67 +3099,69 @@ object RandomData {
 
     val activeEventGens: NonEmptyVector[Gen[ActiveEvent]] =
       valuesForAdt[ActiveEvent, Gen[ActiveEvent]] {
-        case _: AccessUpdate            => genAccessUpdate
-        case _: ApplicableTagCreate     => genApplicableTagCreate
-        case _: ApplicableTagUpdate     => genApplicableTagUpdate
-        case _: CodeGroupCreate         => genCodeGroupCreate
-        case _: CodeGroupsDelete        => genCodeGroupsDelete
-        case _: CodeGroupUpdate         => genCodeGroupUpdate
-        case _: ContentRestore          => genContentRestore
-        case _: CustomIssueTypeCreate   => genCustomIssueTypeCreate
-        case _: CustomIssueTypeDelete   => genCustomIssueTypeDelete
-        case _: CustomIssueTypeRestore  => genCustomIssueTypeRestore
-        case _: CustomIssueTypeUpdate   => genCustomIssueTypeUpdate
-        case _: CustomReqTypeCreate     => genCustomReqTypeCreate
-        case _: CustomReqTypeDeleteHard => genCustomReqTypeDeleteHard
-        case _: CustomReqTypeDeleteSoft => genCustomReqTypeDeleteSoft
-        case _: CustomReqTypeRestore    => genCustomReqTypeRestore
-        case _: CustomReqTypeUpdate     => genCustomReqTypeUpdate
-        case _: FieldCustomDelete       => genFieldCustomDelete
-        case _: FieldCustomImpCreate    => genFieldCustomImpCreate
-        case _: FieldCustomImpUpdate    => genFieldCustomImpUpdate
-        case _: FieldCustomNumberCreate => genFieldCustomNumberCreate
-        case _: FieldCustomNumberUpdate => genFieldCustomNumberUpdate
-        case _: FieldCustomRestore      => genFieldCustomRestore
-        case _: FieldCustomTagCreate    => genFieldCustomTagCreate
-        case _: FieldCustomTagUpdate    => genFieldCustomTagUpdate
-        case _: FieldCustomTextCreate   => genFieldCustomTextCreate
-        case _: FieldCustomTextUpdate   => genFieldCustomTextUpdate
-        case _: FieldReposition         => genFieldReposition
-        case _: FieldStaticAdd          => genFieldStaticAdd
-        case _: FieldStaticRemove       => genFieldStaticRemove
-        case _: GenericReqCreate        => genGenericReqCreate
-        case _: GenericReqTitleSet      => genGenericReqTitleSet
-        case _: GenericReqTypeSet       => genGenericReqTypeSet
-        case _: ManualIssueCreate       => genManualIssueCreate
-        case _: ManualIssueDelete       => genManualIssueDelete
-        case _: ManualIssueUpdate       => genManualIssueUpdate
-        case _: ProjectDelete           => genProjectDelete
-        case _: ProjectNameSet          => genProjectNameSet
-        case _: ProjectRestore.type     => genProjectRestore
-        case _: ProjectTemplateApply    => genProjectTemplateApply
-        case _: ReqCodesPatch           => genReqCodesPatch
-        case _: ReqFieldCustomNumberSet => genReqFieldCustomNumberSet
-        case _: ReqFieldCustomTextSet   => genReqFieldCustomTextSet
-        case _: ReqImplicationsPatch    => genReqImplicationsPatch
-        case _: ReqsDelete              => genReqsDelete
-        case _: ReqTagsPatch            => genReqTagsPatch
-        case _: SavedViewCreate         => genSavedViewCreate
-        case _: SavedViewDefaultSet     => genSavedViewDefaultSet
-        case _: SavedViewDelete         => genSavedViewDelete
-        case _: SavedViewUpdate         => genSavedViewUpdate
-        case _: TagDelete               => genTagDelete
-        case _: TagGroupCreate          => genTagGroupCreate
-        case _: TagGroupUpdate          => genTagGroupUpdate
-        case _: TagRestore              => genTagRestore
-        case _: UseCaseCreate           => genUseCaseCreate
-        case _: UseCaseStepCreate       => genUseCaseStepCreate
-        case _: UseCaseStepDelete       => genUseCaseStepDelete
-        case _: UseCaseStepRestore      => genUseCaseStepRestore
-        case _: UseCaseStepShiftLeft    => genUseCaseStepShiftLeft
-        case _: UseCaseStepShiftRight   => genUseCaseStepShiftRight
-        case _: UseCaseStepUpdate       => genUseCaseStepUpdate
-        case _: UseCaseTitleSet         => genUseCaseTitleSet
+        case _: AccessUpdate             => genAccessUpdate
+        case _: ApplicableTagCreate      => genApplicableTagCreate
+        case _: ApplicableTagUpdate      => genApplicableTagUpdate
+        case _: CodeGroupCreate          => genCodeGroupCreate
+        case _: CodeGroupsDelete         => genCodeGroupsDelete
+        case _: CodeGroupUpdate          => genCodeGroupUpdate
+        case _: ContentRestore           => genContentRestore
+        case _: CustomIssueTypeCreate    => genCustomIssueTypeCreate
+        case _: CustomIssueTypeDelete    => genCustomIssueTypeDelete
+        case _: CustomIssueTypeRestore   => genCustomIssueTypeRestore
+        case _: CustomIssueTypeUpdate    => genCustomIssueTypeUpdate
+        case _: CustomReqTypeCreate      => genCustomReqTypeCreate
+        case _: CustomReqTypeDeleteHard  => genCustomReqTypeDeleteHard
+        case _: CustomReqTypeDeleteSoft  => genCustomReqTypeDeleteSoft
+        case _: CustomReqTypeRestore     => genCustomReqTypeRestore
+        case _: CustomReqTypeUpdate      => genCustomReqTypeUpdate
+        case _: FieldCustomDelete        => genFieldCustomDelete
+        case _: FieldCustomFormulaCreate => genFieldCustomFormulaCreate
+        case _: FieldCustomFormulaUpdate => genFieldCustomFormulaUpdate
+        case _: FieldCustomImpCreate     => genFieldCustomImpCreate
+        case _: FieldCustomImpUpdate     => genFieldCustomImpUpdate
+        case _: FieldCustomNumberCreate  => genFieldCustomNumberCreate
+        case _: FieldCustomNumberUpdate  => genFieldCustomNumberUpdate
+        case _: FieldCustomRestore       => genFieldCustomRestore
+        case _: FieldCustomTagCreate     => genFieldCustomTagCreate
+        case _: FieldCustomTagUpdate     => genFieldCustomTagUpdate
+        case _: FieldCustomTextCreate    => genFieldCustomTextCreate
+        case _: FieldCustomTextUpdate    => genFieldCustomTextUpdate
+        case _: FieldReposition          => genFieldReposition
+        case _: FieldStaticAdd           => genFieldStaticAdd
+        case _: FieldStaticRemove        => genFieldStaticRemove
+        case _: GenericReqCreate         => genGenericReqCreate
+        case _: GenericReqTitleSet       => genGenericReqTitleSet
+        case _: GenericReqTypeSet        => genGenericReqTypeSet
+        case _: ManualIssueCreate        => genManualIssueCreate
+        case _: ManualIssueDelete        => genManualIssueDelete
+        case _: ManualIssueUpdate        => genManualIssueUpdate
+        case _: ProjectDelete            => genProjectDelete
+        case _: ProjectNameSet           => genProjectNameSet
+        case _: ProjectRestore.type      => genProjectRestore
+        case _: ProjectTemplateApply     => genProjectTemplateApply
+        case _: ReqCodesPatch            => genReqCodesPatch
+        case _: ReqFieldCustomNumberSet  => genReqFieldCustomNumberSet
+        case _: ReqFieldCustomTextSet    => genReqFieldCustomTextSet
+        case _: ReqImplicationsPatch     => genReqImplicationsPatch
+        case _: ReqsDelete               => genReqsDelete
+        case _: ReqTagsPatch             => genReqTagsPatch
+        case _: SavedViewCreate          => genSavedViewCreate
+        case _: SavedViewDefaultSet      => genSavedViewDefaultSet
+        case _: SavedViewDelete          => genSavedViewDelete
+        case _: SavedViewUpdate          => genSavedViewUpdate
+        case _: TagDelete                => genTagDelete
+        case _: TagGroupCreate           => genTagGroupCreate
+        case _: TagGroupUpdate           => genTagGroupUpdate
+        case _: TagRestore               => genTagRestore
+        case _: UseCaseCreate            => genUseCaseCreate
+        case _: UseCaseStepCreate        => genUseCaseStepCreate
+        case _: UseCaseStepDelete        => genUseCaseStepDelete
+        case _: UseCaseStepRestore       => genUseCaseStepRestore
+        case _: UseCaseStepShiftLeft     => genUseCaseStepShiftLeft
+        case _: UseCaseStepShiftRight    => genUseCaseStepShiftRight
+        case _: UseCaseStepUpdate        => genUseCaseStepUpdate
+        case _: UseCaseTitleSet          => genUseCaseTitleSet
       }
 
     val retiredEventGens: NonEmptyVector[Gen[RetiredEvent]] =

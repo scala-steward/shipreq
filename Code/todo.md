@@ -1,11 +1,6 @@
 * Add `FormulaFieldRef.FormulaField`
   * Prevent cycles in formula fields (add to `DataProp`?)
-
-* Add events for create & update of formula fields
-  * Add generic data `CustomFormulaFieldGD`
-  * Add codecs
-  * Update RandomData and RandomEventStream
-  * Update ApplyEvent
+  * Prevent referencing self in formula fields (add to `DataProp`?)
 
 * Add commands for create & update of formula fields
   * Add codecs
