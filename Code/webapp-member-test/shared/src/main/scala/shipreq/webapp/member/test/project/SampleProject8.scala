@@ -4,6 +4,7 @@ import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.event.Event._
 import shipreq.webapp.member.project.event._
 import shipreq.webapp.member.project.filter.{CompiledFilter, Filter, FilterAlgebra}
+import shipreq.webapp.member.project.formula.FormulaEvalCache
 import shipreq.webapp.member.project.text._
 import shipreq.webapp.member.test.WebappTestUtil
 import shipreq.webapp.member.test.WebappTestUtil._
@@ -25,7 +26,9 @@ object SampleProject8 {
   lazy val plainText  = PlainText.ForProject.noCtx(project)
   lazy val textSearch = TextSearch(project, plainText)
   lazy val filterValidator = FilterAlgebra.validate(project.config)
-  lazy val filterCompiler = FilterDead.memo(Filter.Valid.compiler(project, plainText, textSearch, _, applyFilterDeadToReqs = false))
+
+  lazy val filterCompiler = FilterDead.memo(Filter.Valid.compiler(
+    project, plainText, textSearch, FormulaEvalCache.empty, _, applyFilterDeadToReqs = false))
 
   def needFilter(str: String, filterDead: FilterDead): CompiledFilter = {
     val f = Filter.parseAndValidate(str, filterValidator).getOrThrow().get

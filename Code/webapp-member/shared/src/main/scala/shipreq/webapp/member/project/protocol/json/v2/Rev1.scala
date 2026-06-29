@@ -8,7 +8,7 @@ import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.event.RetiredGenericData._
 import shipreq.webapp.member.project.event._
 import shipreq.webapp.member.project.filter.Filter
-import shipreq.webapp.member.project.formula.Formula
+import shipreq.webapp.member.project.formula.{Formula, ValidFormula}
 import shipreq.webapp.member.protocol.json.JsonCodec
 import shipreq.webapp.member.protocol.json.JsonCodec.Implicits._
 
@@ -34,6 +34,15 @@ object Rev1 {
   // ===================================================================================================================
   // Project data
 
+  implicit lazy val keyDecoderCustomFieldFormulaId: KeyDecoder[CustomField.Formula.Id] =
+    KeyDecoder.decodeKeyInt.map(CustomField.Formula.Id.apply)
+
+  implicit lazy val keyEncoderCustomFieldFormulaId: KeyEncoder[CustomField.Formula.Id] =
+    KeyEncoder.encodeKeyInt.contramap(_.value)
+
+  implicit lazy val codecCustomFieldFormulaId: JsonCodec[CustomField.Formula.Id] =
+    codecTaggedI(CustomField.Formula.Id)
+
   implicit lazy val keyDecoderCustomFieldNumberId: KeyDecoder[CustomField.Number.Id] =
     KeyDecoder.decodeKeyInt.map(CustomField.Number.Id.apply)
 
@@ -44,17 +53,19 @@ object Rev1 {
     codecTaggedI(CustomField.Number.Id)
 
   implicit lazy val decoderCustomFieldId: Decoder[CustomFieldId] = decodeSumBySoleKey {
-    case ("imp" , c) => c.as[CustomField.Implication.Id]
-    case ("num" , c) => c.as[CustomField.Number.Id]
-    case ("tag" , c) => c.as[CustomField.Tag.Id]
-    case ("text", c) => c.as[CustomField.Text.Id]
+    case ("imp"    , c) => c.as[CustomField.Implication.Id]
+    case ("num"    , c) => c.as[CustomField.Number.Id]
+    case ("formula", c) => c.as[CustomField.Formula.Id]
+    case ("tag"    , c) => c.as[CustomField.Tag.Id]
+    case ("text"   , c) => c.as[CustomField.Text.Id]
   }
 
   implicit lazy val encoderCustomFieldId: Encoder[CustomFieldId] = Encoder.instance {
-    case a: CustomField.Implication.Id => Json.obj("imp"  -> a.asJson)
-    case a: CustomField.Number.Id      => Json.obj("num"  -> a.asJson)
-    case a: CustomField.Tag.Id         => Json.obj("tag"  -> a.asJson)
-    case a: CustomField.Text.Id        => Json.obj("text" -> a.asJson)
+    case a: CustomField.Implication.Id => Json.obj("imp"     -> a.asJson)
+    case a: CustomField.Formula.Id     => Json.obj("formula" -> a.asJson)
+    case a: CustomField.Number.Id      => Json.obj("num"     -> a.asJson)
+    case a: CustomField.Tag.Id         => Json.obj("tag"     -> a.asJson)
+    case a: CustomField.Text.Id        => Json.obj("text"    -> a.asJson)
   }
 
   implicit lazy val decoderFieldId: Decoder[FieldId] = decodeSumBySoleKeyOrConst[FieldId](
@@ -65,10 +76,11 @@ object Rev1 {
     "otherTags" -> StaticField.OtherTags,
     "allTags"   -> StaticField.AllTags,
   ) {
-    case ("imp" , c) => c.as[CustomField.Implication.Id]
-    case ("num" , c) => c.as[CustomField.Number.Id]
-    case ("tag" , c) => c.as[CustomField.Tag.Id]
-    case ("text", c) => c.as[CustomField.Text.Id]
+    case ("imp"    , c) => c.as[CustomField.Implication.Id]
+    case ("formula", c) => c.as[CustomField.Formula.Id]
+    case ("num"    , c) => c.as[CustomField.Number.Id]
+    case ("tag"    , c) => c.as[CustomField.Tag.Id]
+    case ("text"   , c) => c.as[CustomField.Text.Id]
   }
 
   implicit lazy val encoderFieldId: Encoder[FieldId] = Encoder.instance {
@@ -78,10 +90,11 @@ object Rev1 {
     case StaticField.StepGraph         => Json.fromString("stepGraph")
     case StaticField.OtherTags         => Json.fromString("otherTags")
     case StaticField.AllTags           => Json.fromString("allTags")
-    case a: CustomField.Implication.Id => Json.obj("imp"  -> a.asJson)
-    case a: CustomField.Number.Id      => Json.obj("num"  -> a.asJson)
-    case a: CustomField.Tag.Id         => Json.obj("tag"  -> a.asJson)
-    case a: CustomField.Text.Id        => Json.obj("text" -> a.asJson)
+    case a: CustomField.Implication.Id => Json.obj("imp"     -> a.asJson)
+    case a: CustomField.Formula.Id     => Json.obj("formula" -> a.asJson)
+    case a: CustomField.Number.Id      => Json.obj("num"     -> a.asJson)
+    case a: CustomField.Tag.Id         => Json.obj("tag"     -> a.asJson)
+    case a: CustomField.Text.Id        => Json.obj("text"    -> a.asJson)
   }
 
   // ===================================================================================================================
@@ -603,7 +616,7 @@ object Rev1 {
     final val KeyAstValue    = "val"
   }
 
-  implicit lazy val codecValidFormula: JsonCodec[Formula.Valid] = {
+  implicit lazy val codecFormulaValid: JsonCodec[Formula.Valid] = {
     import shipreq.webapp.member.project.formula._
     import Formula.ValidF
 
@@ -779,6 +792,9 @@ object Rev1 {
       case (KeyAstValue   , c) => c.as[FormulaAst.Value]
     })
   }
+
+  implicit lazy val codecValidFormula: JsonCodec[ValidFormula] =
+    codecFormulaValid.xmap(ValidFormula.apply)(_.formula)
 
   // ===================================================================================================================
   // Events

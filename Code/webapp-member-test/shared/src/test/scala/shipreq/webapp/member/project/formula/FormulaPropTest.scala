@@ -3,8 +3,8 @@ package shipreq.webapp.member.project.formula
 import japgolly.microlibs.testutil.TestUtil._
 import shipreq.base.test.JsonTestUtil
 import shipreq.webapp.base.test.BinaryTestUtil
-import shipreq.webapp.member.project.protocol.binary.Latest.pickleValidFormula
-import shipreq.webapp.member.project.protocol.json.Latest.codecValidFormula
+import shipreq.webapp.member.project.protocol.binary.Latest.pickleFormulaValid
+import shipreq.webapp.member.project.protocol.json.Latest.codecFormulaValid
 import shipreq.webapp.member.protocol.json.JsonCodec.Implicits._
 import shipreq.webapp.member.test.project.RandomData
 import sourcecode.Line

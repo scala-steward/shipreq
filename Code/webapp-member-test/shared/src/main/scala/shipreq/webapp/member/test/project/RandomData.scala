@@ -26,6 +26,7 @@ import shipreq.webapp.base.test._
 import shipreq.webapp.base.util._
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.event.ProjectEvents
+import shipreq.webapp.member.project.formula.ValidFormula
 import shipreq.webapp.member.project.issue.IssueCategory
 import shipreq.webapp.member.project.sort.SortMethod
 import shipreq.webapp.member.project.text
@@ -331,21 +332,22 @@ object RandomData {
   // -------------------------------------------------------------------------------------------------------------------
   // Fields
 
-  def fieldReqTypeRules[D](genReqTypeId: Option[Gen[ReqTypeId]], genDefault: Option[Gen[D]]): Gen[FieldReqTypeRules[D]] = {
+  def fieldReqTypeRules[D](genReqTypeId: Option[Gen[ReqTypeId]], genDefault: Option[Gen[D]],
+                           allowOptional: Boolean = true,
+                           allowMandatory: Boolean = true): Gen[FieldReqTypeRules[D]] = {
     import FieldReqTypeRules._
 
-    val genRes1 = Gen.pure(Resolution.NotApplicable)
-    val genRes2 = Gen.pure(Resolution.Optional)
-    val genRes3 = Gen.pure(Resolution.Mandatory)
+    var resGens = NonEmptyVector.one[Gen[Resolution[D]]](Gen.pure(Resolution.NotApplicable))
+    if (allowOptional)
+      resGens :+= Gen.pure(Resolution.Optional)
+    if (allowMandatory)
+      resGens :+= Gen.pure(Resolution.Mandatory)
+
+    for (gd <- genDefault)
+      resGens :+= gd.map(Resolution.DefaultTo.apply)
 
     val genRes: Gen[Resolution[D]] =
-      genDefault match {
-        case Some(gd) =>
-          val genRes4 = gd.map(Resolution.DefaultTo.apply)
-          Gen.chooseGen(genRes1, genRes2, genRes3, genRes4)
-        case None =>
-          Gen.chooseGen(genRes1, genRes2, genRes3)
-      }
+      Gen.chooseGenNE(resGens)
 
     genReqTypeId match {
       case Some(g) =>
@@ -396,8 +398,11 @@ object RandomData {
   val customFieldImplicationId =
     id map CustomField.Implication.Id
 
+  val customFieldFormulaId =
+    id map CustomField.Formula.Id
+
   val customFieldId: Gen[CustomFieldId] =
-    Gen.chooseGen(customFieldTextId, customFieldTagId, customFieldImplicationId)
+    Gen.chooseGen(customFieldTextId, customFieldTagId, customFieldImplicationId, customFieldFormulaId)
 
   val fieldRefKey =
     Gen.alpha.string(1 to 4)
@@ -467,6 +472,20 @@ object RandomData {
     } yield
       CustomField.Number(id, name, desc, range, decimalPlaces, fieldReqTypeRules, liveExplicitly)
 
+  def customFieldFormula(genReqTypeId: Option[Gen[ReqTypeId]]): Gen[CustomField.Formula] =
+    for {
+      id             <- customFieldFormulaId
+      name           <- fieldName
+      desc           <- Gen.string.option
+      rules          <- fieldReqTypeRules[ValidFormula](
+                          genReqTypeId,
+                          Some(formula.valid.gen(None).map(ValidFormula.apply)),
+                          allowOptional  = false,
+                          allowMandatory = false)
+      liveExplicitly <- live
+    } yield
+      CustomField.Formula(id, name, desc, rules, liveExplicitly)
+
   def customField(genReqTypeId: Option[Gen[ReqTypeId]],
                   rulesAny: Gen[FieldReqTypeRules[Impossible]],
                   rulesTag: Gen[FieldReqTypeRules.ForTagField],
@@ -475,11 +494,13 @@ object RandomData {
                   tagFields: Boolean): Gen[CustomField] = {
     lazy val txt: Gen[CustomField] = customFieldText(rulesAny)
     lazy val num: Gen[CustomField] = customFieldNumber(genReqTypeId)
+    lazy val fml: Gen[CustomField] = customFieldFormula(genReqTypeId)
     customFieldType.flatMap {
       case CustomFieldType.Text        => txt
       case CustomFieldType.Number      => num
       case CustomFieldType.Tag         => if (tagFields) customFieldTag(tagGroupId, rulesTag, derivTags) else txt
       case CustomFieldType.Implication => if (impFields) customFieldImplication(reqTypeId, rulesAny) else txt
+      case CustomFieldType.Formula     => fml
     }
   }
 
@@ -2353,6 +2374,7 @@ object RandomData {
         val gl = specialBuiltInFieldFilterOk.map[Valid.Field](-\/(_))
         import SpecialBuiltInField._
         Gen.chooseGen(gr, gr, gr, gl).flatMap {
+          case \/-(id: CustomField.Formula    .Id) => fieldAttr.map(a => FilterAst.FieldProp(\/-(id), a: FieldCriteriaF[A]))
           case \/-(id: CustomField.Number     .Id) => fieldAttr.map(a => FilterAst.FieldProp(\/-(id), a: FieldCriteriaF[A]))
           case \/-(id: CustomField.Tag        .Id) => fieldAttr.map(a => FilterAst.FieldProp(\/-(id), a: FieldCriteriaF[A]))
           case \/-(id: CustomField.Text       .Id) => fieldAttrNoDefault.map(FilterAst.FieldProp(\/-(id), _))

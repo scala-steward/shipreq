@@ -71,6 +71,7 @@ final case class ProjectConfig(customIssueTypes: CustomIssueTypeIMap,
   // Fields
 
   val customFieldNonUniqueName: CustomField => String = {
+    case f: CustomField.Formula     => f.name
     case f: CustomField.Number      => f.name
     case f: CustomField.Text        => f.name
     case f: CustomField.Tag         => f.name(tags.tree)
@@ -126,6 +127,9 @@ final case class ProjectConfig(customIssueTypes: CustomIssueTypeIMap,
 
   lazy val liveCustomFields: List[CustomField] =
     fields.customFields.valuesIterator.filter(_.live(this) is Live).toList
+
+  lazy val liveCustomFormulaFields: List[CustomField.Formula] =
+    fields.customFormulaFields.filter(_.live(this) is Live)
 
   lazy val liveCustomNumberFields: List[CustomField.Number] =
     fields.customNumberFields.filter(_.live(this) is Live)
@@ -235,22 +239,24 @@ final case class ProjectConfig(customIssueTypes: CustomIssueTypeIMap,
       case HideDead =>
         Memo { reqTypeId =>
           FieldSetRules(
-            imp    = fields.custom(_).fieldReqTypeRules(reqTypeId),
-            num    = fields.custom(_).fieldReqTypeRules(reqTypeId),
-            tag    = tagFieldRulesFixedHideDead(_).fixed(reqTypeId),
-            text   = fields.custom(_).fieldReqTypeRules(reqTypeId),
-            static = _.fieldReqTypeRules(reqTypeId),
+            imp     = fields.custom(_).fieldReqTypeRules(reqTypeId),
+            formula = fields.custom(_).fieldReqTypeRules(reqTypeId),
+            num     = fields.custom(_).fieldReqTypeRules(reqTypeId),
+            tag     = tagFieldRulesFixedHideDead(_).fixed(reqTypeId),
+            text    = fields.custom(_).fieldReqTypeRules(reqTypeId),
+            static  = _.fieldReqTypeRules(reqTypeId),
           )
         }
 
       case ShowDead =>
         Memo { reqTypeId =>
           FieldSetRules(
-            imp    = fields.custom(_).fieldReqTypeRules(reqTypeId),
-            num    = fields.custom(_).fieldReqTypeRules(reqTypeId),
-            tag    = tagFieldRulesFixedShowDead(_).fixed(reqTypeId),
-            text   = fields.custom(_).fieldReqTypeRules(reqTypeId),
-            static = _.fieldReqTypeRules(reqTypeId),
+            imp     = fields.custom(_).fieldReqTypeRules(reqTypeId),
+            formula = fields.custom(_).fieldReqTypeRules(reqTypeId),
+            num     = fields.custom(_).fieldReqTypeRules(reqTypeId),
+            tag     = tagFieldRulesFixedShowDead(_).fixed(reqTypeId),
+            text    = fields.custom(_).fieldReqTypeRules(reqTypeId),
+            static  = _.fieldReqTypeRules(reqTypeId),
           )
         }
     }
@@ -262,6 +268,7 @@ final case class ProjectConfig(customIssueTypes: CustomIssueTypeIMap,
     val rulesForReqType = fieldRules(HideDead)
     ProjectApplicability {
       case f: CustomField.Implication.Id => rulesForReqType(_).imp(f).applicability
+      case f: CustomField.Formula    .Id => rulesForReqType(_).formula(f).applicability
       case f: CustomField.Number     .Id => rulesForReqType(_).num(f).applicability
       case f: CustomField.Tag        .Id => rulesForReqType(_).tag(f).applicability
       case f: CustomField.Text       .Id => rulesForReqType(_).text(f).applicability

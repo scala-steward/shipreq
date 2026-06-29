@@ -8,12 +8,15 @@ import shipreq.webapp.member.project.data.savedview.{ImpGraphConfig, SavedView}
 import shipreq.webapp.member.project.data.{Live => _, _}
 import shipreq.webapp.member.project.event._
 import shipreq.webapp.member.project.filter.Filter
-import shipreq.webapp.member.project.formula.Formula
+import shipreq.webapp.member.project.formula.{Formula, ValidFormula}
 import shipreq.webapp.member.project.sort.SortMethod
 import shipreq.webapp.member.project.text.Text
 
 /** v2.1
   *
+  * - Added CustomFieldType.Formula
+  * - Added CustomField.Formula
+  * - Added CustomField.Formula.Id
   * - Added CustomFieldType.Number
   * - Added CustomField.Number
   * - Added CustomField.Number.Id
@@ -293,18 +296,23 @@ object Rev1 {
   // ===================================================================================================================
   // Project data
 
+  implicit lazy val picklerCustomFieldFormulaId: Pickler[CustomField.Formula.Id] =
+    pickleTaggedI(CustomField.Formula.Id).reuseByUnivEq
+
   implicit lazy val picklerCustomFieldNumberId: Pickler[CustomField.Number.Id] =
     pickleTaggedI(CustomField.Number.Id).reuseByUnivEq
 
   implicit lazy val picklerCustomFieldType: Pickler[CustomFieldType] =
     new Pickler[CustomFieldType] {
       private[this] final val KeyImplication = 'i'
+      private[this] final val KeyFormula     = 'f'
       private[this] final val KeyNumber      = 'n'
       private[this] final val KeyTag         = 't'
       private[this] final val KeyText        = 'x'
       override def pickle(a: CustomFieldType)(implicit state: PickleState): Unit =
         a match {
           case CustomFieldType.Implication => state.enc.writeByte(KeyImplication)
+          case CustomFieldType.Formula     => state.enc.writeByte(KeyFormula    )
           case CustomFieldType.Number      => state.enc.writeByte(KeyNumber     )
           case CustomFieldType.Tag         => state.enc.writeByte(KeyTag        )
           case CustomFieldType.Text        => state.enc.writeByte(KeyText       )
@@ -312,6 +320,7 @@ object Rev1 {
       override def unpickle(implicit state: UnpickleState): CustomFieldType =
         state.dec.readByte match {
           case KeyImplication => CustomFieldType.Implication
+          case KeyFormula     => CustomFieldType.Formula
           case KeyNumber      => CustomFieldType.Number
           case KeyTag         => CustomFieldType.Tag
           case KeyText        => CustomFieldType.Text
@@ -321,12 +330,14 @@ object Rev1 {
   implicit lazy val picklerCustomFieldId: Pickler[CustomFieldId] =
     new Pickler[CustomFieldId] {
       private[this] final val KeyImplication = 'i'
+      private[this] final val KeyFormula     = 'f'
       private[this] final val KeyNumber      = 'n'
       private[this] final val KeyTag         = 't'
       private[this] final val KeyText        = 'x'
       override def pickle(a: CustomFieldId)(implicit state: PickleState): Unit =
         a match {
           case b: CustomField.Implication.Id => state.enc.writeByte(KeyImplication); state.pickle(b)
+          case b: CustomField.Formula    .Id => state.enc.writeByte(KeyFormula    ); state.pickle(b)
           case b: CustomField.Number     .Id => state.enc.writeByte(KeyNumber     ); state.pickle(b)
           case b: CustomField.Tag        .Id => state.enc.writeByte(KeyTag        ); state.pickle(b)
           case b: CustomField.Text       .Id => state.enc.writeByte(KeyText       ); state.pickle(b)
@@ -334,10 +345,30 @@ object Rev1 {
       override def unpickle(implicit state: UnpickleState): CustomFieldId =
         state.dec.readByte match {
           case KeyImplication => state.unpickle[CustomField.Implication.Id]
+          case KeyFormula     => state.unpickle[CustomField.Formula    .Id]
           case KeyNumber      => state.unpickle[CustomField.Number     .Id]
           case KeyTag         => state.unpickle[CustomField.Tag        .Id]
           case KeyText        => state.unpickle[CustomField.Text       .Id]
         }
+    }
+
+  implicit lazy val picklerCustomFieldFormula: Pickler[CustomField.Formula] =
+    new Pickler[CustomField.Formula] {
+      override def pickle(a: CustomField.Formula)(implicit state: PickleState): Unit = {
+        state.pickle(a.id)
+        state.pickle(a.name)
+        state.pickle(a.desc)
+        state.pickle(a.fieldReqTypeRules)
+        state.pickle(a.liveExplicitly)
+      }
+      override def unpickle(implicit state: UnpickleState): CustomField.Formula = {
+        val id                = state.unpickle[CustomField.Formula.Id]
+        val name              = state.unpickle[String]
+        val desc              = state.unpickle[Option[String]]
+        val fieldReqTypeRules = state.unpickle[FieldReqTypeRules.ForFormulaField]
+        val liveExplicitly    = state.unpickle[Live]
+        CustomField.Formula(id, name, desc, fieldReqTypeRules, liveExplicitly)
+      }
     }
 
   implicit lazy val picklerCustomFieldNumber: Pickler[CustomField.Number] =
@@ -368,12 +399,14 @@ object Rev1 {
   implicit lazy val picklerCustomField: Pickler[CustomField] =
     new Pickler[CustomField] {
       private[this] final val KeyImplication = 'i'
+      private[this] final val KeyFormula     = 'f'
       private[this] final val KeyNumber      = 'n'
       private[this] final val KeyTag         = 't'
       private[this] final val KeyText        = 'x'
       override def pickle(a: CustomField)(implicit state: PickleState): Unit =
         a match {
           case b: CustomField.Implication => state.enc.writeByte(KeyImplication); state.pickle(b)
+          case b: CustomField.Formula     => state.enc.writeByte(KeyFormula    ); state.pickle(b)
           case b: CustomField.Number      => state.enc.writeByte(KeyNumber     ); state.pickle(b)
           case b: CustomField.Tag         => state.enc.writeByte(KeyTag        ); state.pickle(b)
           case b: CustomField.Text        => state.enc.writeByte(KeyText       ); state.pickle(b)
@@ -381,6 +414,7 @@ object Rev1 {
       override def unpickle(implicit state: UnpickleState): CustomField =
         state.dec.readByte match {
           case KeyImplication => state.unpickle[CustomField.Implication]
+          case KeyFormula     => state.unpickle[CustomField.Formula    ]
           case KeyNumber      => state.unpickle[CustomField.Number     ]
           case KeyTag         => state.unpickle[CustomField.Tag        ]
           case KeyText        => state.unpickle[CustomField.Text       ]
@@ -390,6 +424,7 @@ object Rev1 {
   implicit lazy val picklerFieldId: Pickler[FieldId] =
     new Pickler[FieldId] {
       private[this] final val KeyCustomImplication       = 'i'
+      private[this] final val KeyCustomFormula           = 'f'
       private[this] final val KeyCustomNumber            = 'n'
       private[this] final val KeyCustomTag               = 't'
       private[this] final val KeyCustomText              = 'x'
@@ -402,6 +437,7 @@ object Rev1 {
       override def pickle(a: FieldId)(implicit state: PickleState): Unit =
         a match {
           case b: CustomField.Implication.Id => state.enc.writeByte(KeyCustomImplication          ); state.pickle(b)
+          case b: CustomField.Formula    .Id => state.enc.writeByte(KeyCustomFormula              ); state.pickle(b)
           case b: CustomField.Number     .Id => state.enc.writeByte(KeyCustomNumber               ); state.pickle(b)
           case b: CustomField.Tag        .Id => state.enc.writeByte(KeyCustomTag                  ); state.pickle(b)
           case b: CustomField.Text       .Id => state.enc.writeByte(KeyCustomText                 ); state.pickle(b)
@@ -415,6 +451,7 @@ object Rev1 {
       override def unpickle(implicit state: UnpickleState): FieldId =
         state.dec.readByte match {
           case KeyCustomImplication       => state.unpickle[CustomField.Implication.Id]
+          case KeyCustomFormula           => state.unpickle[CustomField.Formula    .Id]
           case KeyCustomNumber            => state.unpickle[CustomField.Number     .Id]
           case KeyCustomTag               => state.unpickle[CustomField.Tag        .Id]
           case KeyCustomText              => state.unpickle[CustomField.Text       .Id]
@@ -434,6 +471,7 @@ object Rev1 {
       private[this] final val KeyUseCaseStepGraph = 'G'
       private[this] final val KeyUseCaseSteps     = 'T'
       private[this] final val KeyCustomTag        = 't'
+      private[this] final val KeyFormula          = 'f'
       private[this] final val KeyNumber           = 'n'
       private[this] final val KeyText             = 'x'
       private[this] final val KeyStaticTag        = '#'
@@ -443,6 +481,7 @@ object Rev1 {
           case StaticFieldType.ImplicationGraph => state.enc.writeByte(KeyImplicationGraph)
           case StaticFieldType.UseCaseSteps     => state.enc.writeByte(KeyUseCaseSteps    )
           case StaticFieldType.UseCaseStepGraph => state.enc.writeByte(KeyUseCaseStepGraph)
+          case CustomFieldType.Formula          => state.enc.writeByte(KeyFormula         )
           case CustomFieldType.Number           => state.enc.writeByte(KeyNumber          )
           case CustomFieldType.Text             => state.enc.writeByte(KeyText            )
           case CustomFieldType.Tag              => state.enc.writeByte(KeyCustomTag       )
@@ -454,6 +493,7 @@ object Rev1 {
           case KeyImplicationGraph => StaticFieldType.ImplicationGraph
           case KeyUseCaseSteps     => StaticFieldType.UseCaseSteps
           case KeyUseCaseStepGraph => StaticFieldType.UseCaseStepGraph
+          case KeyFormula          => CustomFieldType.Formula
           case KeyNumber           => CustomFieldType.Number
           case KeyText             => CustomFieldType.Text
           case KeyCustomTag        => CustomFieldType.Tag
@@ -1013,7 +1053,7 @@ object Rev1 {
   // ===================================================================================================================
   // Formula
 
-  implicit lazy val pickleValidFormula: Pickler[Formula.Valid] = {
+  implicit lazy val pickleFormulaValid: Pickler[Formula.Valid] = {
     import shipreq.webapp.member.project.formula._
     import Formula.ValidF
 
@@ -1220,6 +1260,9 @@ object Rev1 {
 
     pickleFix[ValidF]
   }
+
+  implicit lazy val pickleValidFormula: Pickler[ValidFormula] =
+    pickleFormulaValid.xmap(ValidFormula.apply)(_.formula)
 
   // ===================================================================================================================
   // Events

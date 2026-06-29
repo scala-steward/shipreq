@@ -146,11 +146,20 @@ object DataProp {
           s"Defaults for ${n.name} field are out of range [${n.min}, ${n.max}]: ${bad.mkString(", ")}")
       }).forall(filteredFields { case n: CustomField.Number => n })
 
+    def formulaFieldsNeverOptionalOrMandatory =
+      Prop.atom[CustomField.Formula]("Never Optional or Mandatory", f => {
+        val bad = f.fieldReqTypeRules.resolutionIterator().filter(r =>
+          (r ==* FieldReqTypeRules.Resolution.Optional) || (r ==* FieldReqTypeRules.Resolution.Mandatory)
+        ).toList
+        Option.when(bad.nonEmpty)(
+          s"Formula field ${f.name} contains invalid rule resolutions (cannot be Optional or Mandatory): ${bad.mkString(", ")}")
+      }).forall(filteredFields { case f: CustomField.Formula => f })
+
     def fieldSet = "FieldSet" rename_: (
       ids ∧ fields ∧
       orderNoDups ∧ orderCustomFieldsIso ∧ orderHasAllMandatoryStaticFields ∧
       tagFieldsUnique ∧ implicationFieldsUnique ∧ noDuplicateTagFieldReqTypeResolutions ∧
-      numFieldDefaultsInRange
+      numFieldDefaultsInRange ∧ formulaFieldsNeverOptionalOrMandatory
     )
 
     val all =

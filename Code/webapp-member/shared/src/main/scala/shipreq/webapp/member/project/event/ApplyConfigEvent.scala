@@ -224,6 +224,7 @@ trait ApplyConfigEvent {
       def removeFromReqTypeApplicability: Eval[Unit] = {
         val updateCustomFields: FieldSet.CustomFields => FieldSet.CustomFields =
           _.modAll {
+            case f: CustomField.Formula     => f.copy(fieldReqTypeRules = f.fieldReqTypeRules.hardDelete(id))
             case f: CustomField.Number      => f.copy(fieldReqTypeRules = f.fieldReqTypeRules.hardDelete(id))
             case f: CustomField.Text        => f.copy(fieldReqTypeRules = f.fieldReqTypeRules.hardDelete(id))
             case f: CustomField.Tag         => f.copy(fieldReqTypeRules = f.fieldReqTypeRules.hardDelete(id))

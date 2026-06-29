@@ -1,20 +1,5 @@
-* Add a version of `FieldReqTypeRules` for read-only fields
-  * Update RandomData
-
-* Add `CustomField.Formula{,.Id}`
-  * Update RandomData
-
 * Add `FormulaFieldRef.FormulaField`
   * Prevent cycles in formula fields (add to `DataProp`?)
-    * Will need a new algebra to extract field refs
-
-* Formula eval cache
-  * Data required is `FieldSet, ReqData.Numbers, Requirements, Itself`
-  * Keys will be `CustomField.Formula.Id, ReqId`
-  * Vaules will be `ErrorMsg \/ FormulaValue, Live, Valid` (maybe wrapped in `IfApplicable`)
-    * Create a nominal type and use in `ProjectText`
-    * (When a live cell references a dead one it would be `(\/-(_), Live, Invalid)`)
-  * Internal to `Project` makes access easy but is less efficient than being externally cached
 
 * Add events for create & update of formula fields
   * Add generic data `CustomFormulaFieldGD`
@@ -40,9 +25,14 @@
 
 * Filters
   * Allow filtering based on formula field values (just like with number fields)
+  * Validate `field:Score=default` works as expected
+  * Validate `field:Score<op>123` works as expected for all comparison ops
 
 * Issue detection
   * Live formulas that reference dead fields
+    * Numeric fields
+    * Formula fields (and test transitivity)
+    * `FormulaEvalCache.Eval.validity` should be `Invalid` - test renders as an issue in UI
   * Live formula cells that contain errors
   * Formula field reqType rules are all dead or N/A (rule already in-place, confirm works)
 

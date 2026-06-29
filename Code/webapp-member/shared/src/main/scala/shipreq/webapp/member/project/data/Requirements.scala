@@ -576,4 +576,7 @@ final case class Requirements(genericReqs: GenericReqs,
           .filter(need(_).reqTypeId !=* id)
           .toSet
     }
+
+  lazy val reqTypeLookup: Map[ReqId, ReqTypeId] =
+    reqIterator().map(r => (r.id, r.reqTypeId)).toMap
 }

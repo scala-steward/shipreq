@@ -33,6 +33,7 @@ object StaticFieldType {
 
 object CustomFieldType {
   case object Implication extends CustomFieldType("Implication")
+  case object Formula     extends CustomFieldType("Formula")
   case object Number      extends CustomFieldType("Numeric")
   case object Tag         extends CustomFieldType("Tag")
   case object Text        extends CustomFieldType("Text")
@@ -400,6 +401,7 @@ object CustomField {
 
   def referencesCustomReqType(id: CustomReqTypeId): CustomField => Boolean = {
     case _: CustomField.Number
+       | _: CustomField.Formula
        | _: CustomField.Tag
        | _: CustomField.Text        => false
     case f: CustomField.Implication => f.reqTypeId.foldId(_ => false, _ ==* id)
@@ -437,6 +439,34 @@ object CustomField {
     object IdAccess extends ObjDataId[Number.type, Number, Id] {
       override def id(d: Number) = d.id
       override val unapplyData: AnyRef => Option[Number] = {case r: Number => Some(r); case _ => None}
+    }
+  }
+
+  // -------------------------------------------------------------------------------------------------------------------
+  /** Note: `fieldReqTypeRules` must not contain `Optional` or `Mandatory`. This is checked in `DataProp`. */
+  @Lenses
+  final case class Formula(id               : Formula.Id,
+                           name             : String,
+                           desc             : Option[String],
+                           fieldReqTypeRules: FieldReqTypeRules.ForFormulaField,
+                           liveExplicitly   : Live) extends CustomField(CustomFieldType.Formula) {
+    override def toString = s"CustomField.Formula($id, $name, $desc, $fieldReqTypeRules, $liveExplicitly)"
+    override def independentName = Some(name)
+    override def live(cfg: ProjectConfig) = liveExplicitly
+
+    lazy val fieldReqTypeRulesByResolution =
+      fieldReqTypeRules.byResolution
+  }
+
+  object Formula {
+
+    final case class Id(value: Int) extends CustomFieldId {
+      override def toString = s"CustomField.Formula.Id($value)"
+    }
+
+    object IdAccess extends ObjDataId[Formula.type, Formula, Id] {
+      override def id(d: Formula) = d.id
+      override val unapplyData: AnyRef => Option[Formula] = {case r: Formula => Some(r); case _ => None}
     }
   }
 
@@ -601,6 +631,7 @@ object CustomField {
 
   val independentName = monocle.Optional[CustomField, String](_.independentName)(n => {
     case Text(a, _, b, c) => Text(a, n, b, c)
+    case f: Formula       => f
     case f: Number        => f
     case f: Tag           => f
     case f: Implication   => f
@@ -608,6 +639,7 @@ object CustomField {
 
 
   def liveExplicitly = Lens[CustomField, Live](_.liveExplicitly)(n => {
+    case f: Formula     => f.copy(liveExplicitly = n)
     case f: Number      => f.copy(liveExplicitly = n)
     case f: Text        => f.copy(liveExplicitly = n)
     case f: Tag         => f.copy(liveExplicitly = n)
@@ -615,6 +647,7 @@ object CustomField {
   })
 
   implicit def equalImplication: UnivEq[Implication] = UnivEq.derive
+  implicit def equalFormula    : UnivEq[Formula]     = UnivEq.derive
   implicit def equalNumber     : UnivEq[Number]      = UnivEq.derive
   implicit def equalTag        : UnivEq[Tag]         = UnivEq.derive
   implicit def equalText       : UnivEq[Text]        = UnivEq.derive
@@ -622,14 +655,16 @@ object CustomField {
 
   final class MutableLists {
     var imps = List.empty[CustomField.Implication]
+    var fmls = List.empty[CustomField.Formula]
     var nums = List.empty[CustomField.Number]
     var tags = List.empty[CustomField.Tag]
     var text = List.empty[CustomField.Text]
 
-    def isEmpty() = imps.isEmpty && nums.isEmpty && tags.isEmpty && text.isEmpty
+    def isEmpty() = imps.isEmpty && fmls.isEmpty && nums.isEmpty && tags.isEmpty && text.isEmpty
 
     def +=(cf: CustomField): Unit =
       cf match {
+        case f: CustomField.Formula     => fmls ::= f
         case f: CustomField.Number      => nums ::= f
         case f: CustomField.Text        => text ::= f
         case f: CustomField.Tag         => tags ::= f
@@ -637,11 +672,12 @@ object CustomField {
       }
 
     def result(): Lists =
-      Lists(imps, nums, tags, text)
+      Lists(imps, fmls, nums, tags, text)
   }
 
   final case class Lists(
     imps: List[CustomField.Implication],
+    fmls: List[CustomField.Formula],
     nums: List[CustomField.Number],
     tags: List[CustomField.Tag],
     text: List[CustomField.Text],
@@ -651,6 +687,7 @@ object CustomField {
     def contains(id: CustomField.Tag        .Id): Boolean = tags.exists(_.id ==* id)
     def contains(id: CustomField.Implication.Id): Boolean = imps.exists(_.id ==* id)
     def contains(id: CustomField.Number     .Id): Boolean = nums.exists(_.id ==* id)
+    def contains(id: CustomField.Formula    .Id): Boolean = fmls.exists(_.id ==* id)
   }
 }
 
@@ -722,6 +759,9 @@ final case class FieldSet(customFields: FieldSet.CustomFields,
 
   def customImpFields: List[CustomField.Implication] =
     splitFields.imps
+
+  def customFormulaFields: List[CustomField.Formula] =
+    splitFields.fmls
 
   def customNumberFields: List[CustomField.Number] =
     splitFields.nums
