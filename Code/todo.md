@@ -2,10 +2,6 @@
   * Prevent cycles in formula fields (add to `DataProp`?)
   * Prevent referencing self in formula fields (add to `DataProp`?)
 
-* Add commands for create & update of formula fields
-  * Add codecs
-  * Update MakeEvent
-
 * WCP compilation
   * Add UI for formula fields
     * Add formula editor
