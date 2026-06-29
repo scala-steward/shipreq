@@ -27,7 +27,7 @@ object Dependencies {
   }
 
   object Circe {
-    private val mm = MultiModule.jvmAndJs("io.circe", "0.14.15")
+    private val mm = MultiModule.jvmAndJs("io.circe", "0.14.16")
     val core    = mm("circe-core")
     val parser  = mm("circe-parser")
     val testing = mm("circe-testing")
