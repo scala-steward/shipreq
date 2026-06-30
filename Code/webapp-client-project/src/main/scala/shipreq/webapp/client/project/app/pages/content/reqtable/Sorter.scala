@@ -7,7 +7,7 @@ import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.data.derivation._
 import shipreq.webapp.member.project.data.savedview._
 import shipreq.webapp.member.project.data.savedview.{Column => C, SortCriterion => SC}
-import shipreq.webapp.member.project.formula.FormulaEvalCache
+import shipreq.webapp.member.project.formula.{FormulaEvalCache, FormulaValue}
 import shipreq.webapp.member.project.sort.Sorter._
 import shipreq.webapp.member.project.sort.{Sorter => SorterBase}
 import shipreq.webapp.member.project.text.PlainText
@@ -21,7 +21,7 @@ object Sorter {
   /**
    * Project data prepared in a way that various sorts will use.
    */
-  final class Setup(val p: Project, plainText: PlainText.ForProject.NoCtx, formulaEvalCache: FormulaEvalCache) {
+  final class Setup(val p: Project, plainText: PlainText.ForProject.NoCtx, val formulaEvalCache: FormulaEvalCache) {
 
     def normalisedText(f: PlainText.ForProject.NoCtx => String) =
       DataLogic.normaliseStringForSorting(f(plainText))
@@ -141,6 +141,34 @@ object Sorter {
       )
     )
 
+  def customFormulaFieldSorter(fid: CustomField.Formula.Id): SorterForSMCB =
+    SorterForSMCB(bp =>
+      sorter[FormulaValue](
+        prep = setup => {
+          val evalCache = setup.formulaEvalCache(fid)
+
+          {
+            case row: Row.ForReq =>
+              evalCache(row.req) match {
+                case \/-(eval) =>
+                  eval.value match {
+                    case \/-(v) => v
+                    case -\/(e) => FormulaValue.Str(PlainText.formulaErrFmt(e))
+                  }
+                case -\/(_) =>
+                  FormulaValue.Empty
+              }
+            case _: Row.ForCodeGroup =>
+              FormulaValue.Empty
+          }
+        },
+        sort = customFormulaFieldSortFn(bp),
+      )
+    )
+
+  private def customFormulaFieldSortFn(bp: BlankPlacement): SortFn[FormulaValue] =
+    SortFn(FormulaValue.compare).considerBlanks(_ ==* FormulaValue.Empty)(bp)
+
   // ===================================================================================================================
   // Sort criteria
 
@@ -155,6 +183,7 @@ object Sorter {
         case id: CustomField.Text       .Id => customTextFieldSorter(id, c)
         case id: CustomField.Tag        .Id => tagSorter(Row.cfTag(id), _.p.config.tags.orderByPos)
         case id: CustomField.Implication.Id => pubidVectorSorter(Row.cfImp(id))
+        case id: CustomField.Formula    .Id => customFormulaFieldSorter(id)
       }
     case C.Title                            => titleSorter
     case C.Code                             => reqCodeSorter

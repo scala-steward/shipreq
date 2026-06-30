@@ -76,9 +76,10 @@ final class FormulaEvalCache(cfg          : ProjectConfig,
 
   private val evalCache: CustomField.Formula.Id => Req => Result =
     Memo { fid =>
-      val field     = cfg.fields.custom(fid)
-      val liveField = field.live(cfg)
+      val field          = cfg.fields.custom(fid)
+      val liveField      = field.live(cfg)
       val validityLookup = validityCache(fid)
+
       memoByReqId { req =>
         field.fieldReqTypeRules(req.reqTypeId) match {
 

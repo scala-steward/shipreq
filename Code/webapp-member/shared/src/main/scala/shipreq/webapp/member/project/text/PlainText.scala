@@ -525,8 +525,11 @@ object PlainText {
 
     override def formulaEval(eval: FormulaEvalCache.Eval): String =
       eval.value match {
-        case \/-(v)   => v.show
-        case -\/(err) => "#ERR: " + err.value
+        case \/-(v) => v.show
+        case -\/(e) => formulaErrFmt(e)
       }
   }
+
+  def formulaErrFmt(e: ErrorMsg): String =
+    "#ERR: " + e.value
 }

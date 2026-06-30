@@ -27,6 +27,7 @@
     * Formula cells
       * Display okay?
       * KBNav
+  * Sorting by formulas in ReqTable
 
 * Filters
   * Allow filtering based on formula field values (just like with number fields)
