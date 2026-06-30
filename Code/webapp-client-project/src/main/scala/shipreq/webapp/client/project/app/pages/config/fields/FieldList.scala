@@ -13,6 +13,7 @@ import shipreq.webapp.client.project.feature.Usage
 import shipreq.webapp.client.project.util.DataReusability._
 import shipreq.webapp.client.project.widgets.{ProjectWidgets, ViewTags}
 import shipreq.webapp.member.project.data._
+import shipreq.webapp.member.project.formula.Formula
 import shipreq.webapp.member.project.protocol.websocket.UpdateConfigCmd.FieldUpdateOrder
 
 object FieldList {
@@ -227,6 +228,11 @@ object FieldList {
 
             case f: CustomField.Number =>
               renderDetailRules(p, f.fieldReqTypeRulesByResolution)(p.pw.number(_, f.decimalPlaces, Live, Valid))
+
+            case f: CustomField.Formula =>
+              renderDetailRules(p, f.fieldReqTypeRulesByResolution)(v =>
+                Formula.Valid.toText(v.formula, p.config.fields)
+              )
 
             case StaticField.OtherTags =>
               val desc = <.div("Displays tags not assigned to a field.")

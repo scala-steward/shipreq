@@ -7,6 +7,7 @@ import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.data.derivation._
 import shipreq.webapp.member.project.data.savedview._
 import shipreq.webapp.member.project.data.savedview.{Column => C, SortCriterion => SC}
+import shipreq.webapp.member.project.formula.FormulaEvalCache
 import shipreq.webapp.member.project.sort.Sorter._
 import shipreq.webapp.member.project.sort.{Sorter => SorterBase}
 import shipreq.webapp.member.project.text.PlainText
@@ -20,7 +21,7 @@ object Sorter {
   /**
    * Project data prepared in a way that various sorts will use.
    */
-  final class Setup(val p: Project, plainText: PlainText.ForProject.NoCtx) {
+  final class Setup(val p: Project, plainText: PlainText.ForProject.NoCtx, formulaEvalCache: FormulaEvalCache) {
 
     def normalisedText(f: PlainText.ForProject.NoCtx => String) =
       DataLogic.normaliseStringForSorting(f(plainText))

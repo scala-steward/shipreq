@@ -103,11 +103,12 @@ object ReqTablePage {
 
     val pxRows: Px[Vector[Row]] =
       for {
-        p  <- pxProject
-        v  <- pxActiveView
-        pw <- pxProjectWidgets
-        fc <- pxFilterCompilerFromFD
-      } yield Logic.rowsForTable(p, v, pw.plainText, fc(v.filterDead))
+        p   <- pxProject
+        v   <- pxActiveView
+        pw  <- pxProjectWidgets
+        fec <- pxFormulaEvalCache
+        fc  <- pxFilterCompilerFromFD
+      } yield Logic.rowsForTable(p, v, pw.plainText, fec, fc(v.filterDead))
 
     val pxRowIdsWithWholeRowAsync: Px[Set[Row.SourceId]] =
       pxProps(_.rowAsync.keySet)

@@ -13,6 +13,7 @@ import shipreq.webapp.member.project.data.derivation.VirtualProjectTags.Derivati
 import shipreq.webapp.member.project.data.derivation._
 import shipreq.webapp.member.project.data.savedview._
 import shipreq.webapp.member.project.filter.{CompiledFilter, Filter}
+import shipreq.webapp.member.project.formula.FormulaEvalCache
 import shipreq.webapp.member.project.sort.FusedSorters
 import shipreq.webapp.member.project.text.PlainText
 import shipreq.webapp.member.project.util.ReqCodeTreeItem
@@ -483,11 +484,11 @@ private[reqtable] object Logic {
   // ===================================================================================================================
   // Sorting
 
-  def sorter(p: Project, view: View, pt: PlainText.ForProject.NoCtx): IterableOnce[Row] => MutableArray[Row] = {
+  def sorter(p: Project, view: View, pt: PlainText.ForProject.NoCtx, fec: FormulaEvalCache): IterableOnce[Row] => MutableArray[Row] = {
     val init   = view.order.init map Sorter.inconclusive
     val last   = view.order.last |> Sorter.conclusive
     val sorter = new FusedSorters(NonEmptyVector.end(init, last))
-    val setup  = new Sorter.Setup(p, pt)
+    val setup  = new Sorter.Setup(p, pt, fec)
     sorter.result(setup, None)
   }
 
@@ -642,13 +643,14 @@ private[reqtable] object Logic {
   // Thinks like tag/issue lookup, filter compiler, etc can be cached by their own dependencies rather than
   // holistically externally
 
-  def rowsForTable(p : Project,
-                   v : View,
-                   pt: PlainText.ForProject.NoCtx,
-                   fc: Filter.Valid.Compiler): Vector[Row] = {
+  def rowsForTable(p  : Project,
+                   v  : View,
+                   pt : PlainText.ForProject.NoCtx,
+                   fec: FormulaEvalCache,
+                   fc : Filter.Valid.Compiler): Vector[Row] = {
 
     def r1: Array       [Row] = gather(p, v, fc)
-    def r2: MutableArray[Row] = sorter(p, v, pt)(r1)
+    def r2: MutableArray[Row] = sorter(p, v, pt, fec)(r1)
     val r3: Vector      [Row] = consolidateAdjacentDups(r2.iterator())
     val r4: Vector      [Row] = if (v.viewReqCodesAsTree) addReqCodeTreeToRows(r3) else r3
     r4
