@@ -184,7 +184,7 @@ object TableRow {
 
   val consolidateTitles = consolidateText(renderGroupBase(Column.Title))
 
-  final case class Field(group: Int, value: Option[IssueField[EditorFeature.FieldKey]])
+  final case class Field(group: Int, value: Option[IssueField[FieldKey, EditorFeature.FieldKey]])
 
   object Field {
     implicit def univEq: UnivEq[Field] = UnivEq.derive

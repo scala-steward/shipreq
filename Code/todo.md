@@ -23,6 +23,10 @@
   * For reqtypes that are N/A to a formula field:
     * Ensure formula field isn't rendered in ReqDetail
     * Ensure formula cell is rendered as N/A in ReqTable
+  * Issues screen
+    * Formula cells
+      * Display okay?
+      * KBNav
 
 * Filters
   * Allow filtering based on formula field values (just like with number fields)
