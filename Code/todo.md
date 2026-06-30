@@ -15,7 +15,14 @@
       * ✅ Maybe just right-align no matter what
 
 * Manually test UI
-  * Styling of formula cells when Dead and/or Invalid
+  * Display of formula cells in both ReqTable and ReqDetail
+    * When field is Live
+    * When field is Dead
+  * Styling of formula cells when eval is Dead and/or Invalid
+  * KBNav in both ReqTable and ReqDetail
+  * For reqtypes that are N/A to a formula field:
+    * Ensure formula field isn't rendered in ReqDetail
+    * Ensure formula cell is rendered as N/A in ReqTable
 
 * Filters
   * Allow filtering based on formula field values (just like with number fields)

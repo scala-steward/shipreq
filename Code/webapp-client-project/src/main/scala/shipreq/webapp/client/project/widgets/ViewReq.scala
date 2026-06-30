@@ -114,15 +114,16 @@ final class ViewReq[A](data            : Data,
   }
 
   val render: RenderFeature.FieldKey.ForSomeReq => IfApplicable[A] = {
-    case RenderFeature.FieldKey.CustomNumberField(field) => customFieldNumber(field)
-    case RenderFeature.FieldKey.CustomTextField(field)   => customFieldText(field)
-    case RenderFeature.FieldKey.CustomFieldTags(field)   => fieldTags(field)
-    case RenderFeature.FieldKey.Implications   (scope)   => imps(scope)
-    case RenderFeature.FieldKey.Codes                    => \/-(codes)
-    case RenderFeature.FieldKey.Title                    => \/-(title)
-    case RenderFeature.FieldKey.ReqType                  => \/-(reqType)
-    case RenderFeature.FieldKey.OtherTags                => \/-(otherTags)
-    case RenderFeature.FieldKey.AllTags                  => \/-(allTags)
+    case RenderFeature.FieldKey.CustomFormulaField(field) => customFieldFormula(field)
+    case RenderFeature.FieldKey.CustomNumberField(field)  => customFieldNumber(field)
+    case RenderFeature.FieldKey.CustomTextField(field)    => customFieldText(field)
+    case RenderFeature.FieldKey.CustomFieldTags(field)    => fieldTags(field)
+    case RenderFeature.FieldKey.Implications   (scope)    => imps(scope)
+    case RenderFeature.FieldKey.Codes                     => \/-(codes)
+    case RenderFeature.FieldKey.Title                     => \/-(title)
+    case RenderFeature.FieldKey.ReqType                   => \/-(reqType)
+    case RenderFeature.FieldKey.OtherTags                 => \/-(otherTags)
+    case RenderFeature.FieldKey.AllTags                   => \/-(allTags)
   }
 
   val editable: EditorFeature.FieldKey.ForSomeReq => IfApplicable[A] =

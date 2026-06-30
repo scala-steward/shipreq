@@ -419,6 +419,14 @@ object ReqDetail {
             val headerLive = project.config.fields.customFields.need(id).live(project.config)
             val dataLive = headerLive & data.live
             id match {
+
+              case id: CustomField.Formula.Id =>
+                withoutReusability(fieldName(id)) { cell =>
+                  cell.nonDirectlyEditableNavParent(
+                    view.customFieldFormula(id) getOrElse emptySpan
+                  )
+                }
+
               case id: CustomField.Text.Id =>
                 genericEditableRow(
                   name       = fieldName(id),

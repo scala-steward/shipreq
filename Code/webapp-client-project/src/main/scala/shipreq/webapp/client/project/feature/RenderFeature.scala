@@ -18,6 +18,7 @@ import shipreq.webapp.member.project.text.ProjectText.{Context => PCtx}
   * 2. Apply the current [[FilterDead]] setting to get a [[RenderFeature.ForProject]]
   *
   * 3. Pass the [[RenderFeature.ForProject]] to downstream components for them to use.
+  *    This will end up resulting in calls to `ViewReq#render`.
   */
 object RenderFeature {
 
