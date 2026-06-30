@@ -27,6 +27,7 @@ import shipreq.webapp.member.feature.{EditControlsFeature, PreviewFeature}
 import shipreq.webapp.member.project.data.ExternalPubid.LookupFailure
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.event.{Event, VerifiedEvent}
+import shipreq.webapp.member.project.formula.FormulaEvalCache
 import shipreq.webapp.member.project.library.NewEvents
 import shipreq.webapp.member.project.protocol.websocket.{CreateContentCmd, UpdateContentCmd}
 import shipreq.webapp.member.project.text.ProjectText.SetRenderStyle
@@ -53,6 +54,7 @@ object ReqDetail {
                                reqDetailRC          : RouterCtl[ExternalPubid],
                                webWorker            : WebWorkerClient.Instance,
                                pxProject            : Px[Project],
+                               pxFormulaEvalCache   : Px[FormulaEvalCache],
                                pxViewReqDataCache   : Px[ViewReqDataCache],
                                pxTextSearch         : Px[TextSearch],
                                pxProjectWidgetsNoCtx: Px[ProjectWidgets.NoCtx]) {
@@ -121,12 +123,15 @@ object ReqDetail {
       viewReqDataCache(filterDead)(req.id)
 
     val pxView: Px[Reusable[ViewReq[VdomTag]]] =
-      pxProjectWidgets.value.map { pw =>
-        Reusable.ap(
-          Reusable.byRef(viewData),
-          Reusable.byRef(pw),
-        )(_(_).withFullReqTypeFmt.withImplicationsSetStyle(SetRenderStyle.MultiLineDetailed))
-      }
+      for {
+        pw  <- pxProjectWidgets.value
+        fec <- sp.pxFormulaEvalCache
+      } yield
+        Reusable.implicitly(
+          (Reusable.byRef(viewData), Reusable.byRef(pw), Reusable.byRef(fec))
+        ).map { case (viewData, pw, fec) =>
+          viewData(pw, fec).withFullReqTypeFmt.withImplicationsSetStyle(SetRenderStyle.MultiLineDetailed)
+        }
 
     val useCaseData: Option[UseCaseData] =
       req match {

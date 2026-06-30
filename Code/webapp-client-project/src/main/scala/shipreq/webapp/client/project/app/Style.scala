@@ -1556,6 +1556,8 @@ object Style extends StyleSheet.Inline {
   // ===================================================================================================================
   object widgets {
 
+    def formula = number
+
     val number = styleF(D.`live * validity`) { case (live, validity) => styleS(
       mixinIf(live is Dead)(deadMaybeValid(validity)),
       mixinIf(live.is(Live) && validity.is(Invalid))(hasErrorColor),

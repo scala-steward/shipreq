@@ -6,6 +6,7 @@ import japgolly.microlibs.stdlib_ext.MutableArray
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.microlibs.utils.Memo
 import java.net.URL
+import java.util.regex.Pattern
 import scala.collection.immutable.TreeMap
 import scala.collection.{Factory, Iterable}
 import scala.reflect.ClassTag
@@ -439,4 +440,10 @@ object Util {
         ArraySeq.unsafeWrapArray(result)
     }
   }
+
+  private val trailingZeros = Pattern.compile("\\.0+$")
+
+  def doubleToString(d: Double): String =
+    trailingZeros.matcher(d.toString).replaceFirst("")
+
 }

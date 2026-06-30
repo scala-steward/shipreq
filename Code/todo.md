@@ -14,6 +14,9 @@
       * Headers should be right-aligned if contents (are all / contain) numbers
       * ✅ Maybe just right-align no matter what
 
+* Manually test UI
+  * Styling of formula cells when Dead and/or Invalid
+
 * Filters
   * Allow filtering based on formula field values (just like with number fields)
   * Validate `field:Score=default` works as expected

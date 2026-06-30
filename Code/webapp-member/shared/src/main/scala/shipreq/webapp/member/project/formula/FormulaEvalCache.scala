@@ -86,7 +86,7 @@ final class FormulaEvalCache(cfg          : ProjectConfig,
             val algebra  = FormulaAlgebra.eval(cfg.fields, reqNums, req)
             val value    = Recursion.cataM(algebra)(formula.formula)
             val live     = liveField & req.live(cfg.reqTypes)
-            val validity = validityLookup(req.reqTypeId)
+            val validity = Invalid.when(value.isLeft) & validityLookup(req.reqTypeId)
             val result   = Eval(value, live, validity)
             \/-(result)
 

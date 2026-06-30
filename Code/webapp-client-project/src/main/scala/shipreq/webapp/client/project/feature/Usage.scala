@@ -10,6 +10,7 @@ import shipreq.webapp.client.project.app.pages.root.SpecialRouterCtl
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.data.derivation._
 import shipreq.webapp.member.project.filter._
+import shipreq.webapp.member.project.formula.FormulaEvalCache
 import shipreq.webapp.member.project.text.{PlainText, TextSearch}
 
 final class Usage(p: Project, router: SpecialRouterCtl) {
@@ -42,6 +43,7 @@ final class Usage(p: Project, router: SpecialRouterCtl) {
         p,
         PlainText.ForProject.noCtx.empty,
         TextSearch.empty,
+        FormulaEvalCache.empty,
         fd,
         applyFilterDeadToReqs = true
       ))

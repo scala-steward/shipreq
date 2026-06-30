@@ -4,7 +4,6 @@ import cats.instances.list._
 import cats.syntax.traverse._
 import japgolly.microlibs.recursion._
 import java.math.{BigDecimal, RoundingMode}
-import java.util.regex.Pattern
 import shipreq.base.util.ErrorMsg
 import shipreq.webapp.member.project.data.DataImplicits._
 import shipreq.webapp.member.project.data.{FieldSet, Req, ReqData}
@@ -38,11 +37,6 @@ object FormulaAlgebra {
 
   @inline private def fail(err: String) = -\/(ErrorMsg(err))
 
-  private val trailingZeros = Pattern.compile("\\.0+$")
-
-  private def doubleToString(d: Double): String =
-    trailingZeros.matcher(d.toString).replaceFirst("")
-
   // ===================================================================================================================
 
   val unparse: FAlgebra[PotentialF, AtomOrComposite[String]] = {
@@ -57,18 +51,17 @@ object FormulaAlgebra {
     }
 
     {
-      case Value(Empty)       => ""
-      case Value(Bool(true))  => "true"
-      case Value(Bool(false)) => "false"
-      case Value(Dbl(d))      => doubleToString(d)
-      case Value(Str(s))      => '"' ~ s.replace("\"", "\"\"") ~ '"'
-      case Add(l, r)          => composite("(", l.atom ~ " + " ~ r.atom, ")")
-      case Subtract(l, r)     => composite("(", l.atom ~ " - " ~ r.atom, ")")
-      case Multiply(l, r)     => composite("(", l.atom ~ " * " ~ r.atom, ")")
-      case Divide(l, r)       => composite("(", l.atom ~ " / " ~ r.atom, ")")
-      case Field(f)           => "field:" ~ quoteFieldName(f)
-      case Compare(l, op, r)  => composite("(", l.noParens ~ ' ' ~ op.symbol ~ ' ' ~ r.atom, ")")
-      case Function(f, args)  => f.toUpperCase ~ '(' ~ args.iterator.map(_.noParens).mkString(", ") ~ ')'
+      case Value(Empty)      => ""
+      case Value(b: Bool)    => b.show
+      case Value(d: Dbl)     => d.show
+      case Value(Str(s))     => '"' ~ s.replace("\"", "\"\"") ~ '"'
+      case Add(l, r)         => composite("(", l.atom ~ " + " ~ r.atom, ")")
+      case Subtract(l, r)    => composite("(", l.atom ~ " - " ~ r.atom, ")")
+      case Multiply(l, r)    => composite("(", l.atom ~ " * " ~ r.atom, ")")
+      case Divide(l, r)      => composite("(", l.atom ~ " / " ~ r.atom, ")")
+      case Field(f)          => "field:" ~ quoteFieldName(f)
+      case Compare(l, op, r) => composite("(", l.noParens ~ ' ' ~ op.symbol ~ ' ' ~ r.atom, ")")
+      case Function(f, args) => f.toUpperCase ~ '(' ~ args.iterator.map(_.noParens).mkString(", ") ~ ')'
     }
   }
 
@@ -156,8 +149,8 @@ object FormulaAlgebra {
         (lhs, rhs) match {
           case (Dbl(x), Dbl(y))  => \/-(Dbl(x + y))
           case (Str(x), Str(y))  => \/-(Str(x + y))
-          case (Str(x), Dbl(y))  => \/-(Str(x + doubleToString(y)))
-          case (Str(x), Bool(y)) => \/-(Str(x + y.toString.toUpperCase))
+          case (Str(x), y: Dbl)  => \/-(Str(x + y.show))
+          case (Str(x), y: Bool) => \/-(Str(x + y.show))
           case (x: Str, Empty)   => \/-(x)
           case _                 => typeMismatch
         }

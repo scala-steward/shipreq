@@ -6,6 +6,7 @@ import scala.collection.immutable.SortedSet
 import shipreq.base.util._
 import shipreq.webapp.member.project.data.DataImplicits._
 import shipreq.webapp.member.project.data._
+import shipreq.webapp.member.project.formula.FormulaEvalCache
 import shipreq.webapp.member.project.util.Must._
 import shipreq.webapp.member.project.util.ReqCodeTreeItem
 
@@ -140,6 +141,8 @@ abstract class ProjectText[+Ctx <: Context, Out](project: Project, final val ctx
   protected val useCaseFlowElement: UseCaseStep.Focus => Out
 
   def whenBlankButMandatory: Out
+
+  def formulaEval(eval: FormulaEvalCache.Eval): Out
 
   def pastPubids(ids: SortedSet[ExternalPubid]): Out
 

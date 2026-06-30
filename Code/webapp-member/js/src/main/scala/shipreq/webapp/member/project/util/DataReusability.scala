@@ -14,6 +14,7 @@ import shipreq.webapp.member.project.data.savedview.ImpGraphConfig
 import shipreq.webapp.member.project.event.{EventOrd, ProjectEvents}
 import shipreq.webapp.member.project.filter.Filter.Implicits._
 import shipreq.webapp.member.project.filter.{CompiledFilter, Filter}
+import shipreq.webapp.member.project.formula.FormulaEvalCache
 import shipreq.webapp.member.project.issue.{Issue, Issues}
 import shipreq.webapp.member.project.protocol.websocket.SavedViewCmd
 import shipreq.webapp.member.project.text.Atom.CodeBlockDetail
@@ -273,4 +274,10 @@ abstract class DataReusability extends BaseReusability {
 
   implicit def reusabilityDouble: Reusability[Double] =
     Reusability.byUnivEq
+
+  implicit def reusabilityReqDataNumbers: Reusability[ReqData.Numbers] =
+    Reusability.byRef
+
+  implicit def reusabilityFormulaEvalCache: Reusability[FormulaEvalCache] =
+    Reusability.byRef
 }

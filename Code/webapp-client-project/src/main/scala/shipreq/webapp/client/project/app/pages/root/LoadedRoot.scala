@@ -26,8 +26,9 @@ import shipreq.webapp.client.project.feature.{Usage, _}
 import shipreq.webapp.client.project.util.DataReusability._
 import shipreq.webapp.client.project.widgets._
 import shipreq.webapp.member.feature.PreviewFeature
-import shipreq.webapp.member.project.data.{FilterDead, HideDead, Project, ProjectConfig, ReqId}
+import shipreq.webapp.member.project.data.{FilterDead, HideDead, Project, ProjectConfig, ReqData, ReqId, ReqTypeId}
 import shipreq.webapp.member.project.filter.Filter
+import shipreq.webapp.member.project.formula.FormulaEvalCache
 import shipreq.webapp.member.project.library.ProjectLibrary
 import shipreq.webapp.member.project.protocol.websocket._
 import shipreq.webapp.member.project.text.{PlainText, ProjectText, TextSearch}
@@ -163,18 +164,35 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitDataWithoutE
     private val setNewReqButton: Reusable[SetStateFnPure[NewReqButton.State]] =
       Reusable.fn.state($ zoomStateL State.newReqButton).setStateFn
 
+    private val pxReqDataNumbers: Px[ReqData.Numbers] =
+      pxProject.map(_.content.reqNums).withReuse
+
+    private val pxReqTypeLookup: Px[Map[ReqId, ReqTypeId]] = {
+      implicit val reusability: Reusability[Map[ReqId, ReqTypeId]] =
+        Reusability.byRef || Reusability.map[ReqId, ReqTypeId]
+      pxProject.map(_.content.reqs.reqTypeLookup).withReuse
+    }
+
+    private val pxFormulaEvalCache: Px[FormulaEvalCache] =
+      for {
+        cfg           <- pxProjectConfig
+        reqNums       <- pxReqDataNumbers
+        reqTypeLookup <- pxReqTypeLookup
+      } yield new FormulaEvalCache(cfg, reqNums, reqTypeLookup)
+
     private val pxViewReqDataCache: Px[ViewReqDataCache] =
       pxProject.map(ViewReqDataCache.apply)
 
     private val pxViewReqCache: Px[ViewReqCache.ToVdom[ProjectText.Context.None]] =
-      Px.apply3(pxViewReqDataCache, pxProjectWidgets, pxViewTagsForReq)(ViewReqCache.apply)
+      Px.apply4(pxViewReqDataCache, pxProjectWidgets, pxFormulaEvalCache, pxViewTagsForReq)(ViewReqCache.apply)
 
     private val pxViewReqCacheText: Px[ViewReqCache[ProjectText.Context.None, String]] = {
       for {
-        c  <- pxViewReqDataCache
-        pt <- pxPlainText
-        vt <- pxViewTags
-      } yield ViewReqCache(c, pt, vt.forPlainTextViewReqCache)
+        c   <- pxViewReqDataCache
+        pt  <- pxPlainText
+        fec <- pxFormulaEvalCache
+        vt  <- pxViewTags
+      } yield ViewReqCache(c, pt, fec, vt.forPlainTextViewReqCache)
     }
 
     private val pxRenderFeature: Px[FilterDead => RenderFeature.ToVdom.NoCtx.IfApplicable.ForProject] =
@@ -191,7 +209,8 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitDataWithoutE
         p  <- pxProject
         pt <- pxPlainText
         ts <- pxTextSearch
-      } yield FilterDead.memoLazy(Filter.Valid.compiler(p, pt, ts, _, applyFilterDeadToReqs = false))
+        fc <- pxFormulaEvalCache
+      } yield FilterDead.memoLazy(Filter.Valid.compiler(p, pt, ts, fc, _, applyFilterDeadToReqs = false))
 
     private val pxFilterCompilerHideDead: Px[Filter.Valid.Compiler] =
       pxFilterCompilerFromFilterDead.map(_(HideDead))
@@ -348,6 +367,7 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitDataWithoutE
         pxPlainText            = pxPlainText,
         pxTextSearch           = pxTextSearch,
         pxProjectWidgets       = pxProjectWidgets,
+        pxFormulaEvalCache     = pxFormulaEvalCache,
         pxFilterCompilerFromFD = pxFilterCompilerFromFilterDead,
         assetManifest          = initPageData.assetManifest,
         reqDetailRC            = routerCtlEP,
@@ -366,13 +386,14 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitDataWithoutE
         project           <- pxProject
         vt                <- pxViewTags
         vrdc              <- pxViewReqDataCache
+        fec               <- pxFormulaEvalCache
       } yield reqDetailId.map { id =>
         val row = EditorFeature.RowKey.req(id)
         val aw  = editAsyncW(row).mapKey(AsyncKey.ToReqDetail)
         val ew  = editW.forReq(id)
         val ctx = ProjectText.Context.Req(id)
         val pt  = PlainText.ForProject(project, ctx)
-        val vrc = ViewReqCache(vrdc, pt, vt.forPlainTextViewReqCache)
+        val vrc = ViewReqCache(vrdc, pt, fec, vt.forPlainTextViewReqCache)
         val rff = RenderFeature.ToText.ReqCtx.ApplicableOption.prepare(project, vrc, pt)
 
         (s: State) => {
@@ -397,6 +418,7 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitDataWithoutE
       reqDetailRC           = routerCtlEP,
       webWorker             = webWorkerClient,
       pxProject             = pxProject,
+      pxFormulaEvalCache    = pxFormulaEvalCache,
       pxViewReqDataCache    = pxViewReqDataCache,
       pxTextSearch          = pxTextSearch,
       pxProjectWidgetsNoCtx = pxProjectWidgets,

@@ -23,10 +23,12 @@ import shipreq.webapp.member.feature.EditControlsFeature
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.data.derivation._
 import shipreq.webapp.member.project.data.savedview._
+import shipreq.webapp.member.project.formula.FormulaEvalCache
 import shipreq.webapp.member.project.text.{PlainText, ProjectText}
 
 final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]],
-                  pxPlainText         : Px[PlainText.ForProject.NoCtx]) {
+                  pxPlainText         : Px[PlainText.ForProject.NoCtx],
+                  pxFormulaEvalCache  : Px[FormulaEvalCache]) {
   import Table._
 
   private val tableNavigationFeature = TableNavigationFeature.NoRowSpans
@@ -79,7 +81,7 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]],
 
         def renderRows(rows: Vector[Row]): VdomArray = {
           val applicability = pxProjectApplicability.value()
-          val reqViewInputs: ReqRow.ViewInput = (p.config, p.pw, pxPubidFmt.value())
+          val reqViewInputs: ReqRow.ViewInput = (p.config, p.pw, pxPubidFmt.value(), pxFormulaEvalCache.value())
 
           rows.toVdomArray { genericRow =>
             val rowAsync = p.rowAsync(genericRow.sourceId)
@@ -334,7 +336,7 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]],
   private object ReqRow extends RowTemplate[
       FieldKey.ForSomeReq,
       Row.ForReq,
-      (ProjectConfig, ProjectWidgets.NoCtx, ProjectWidgets.NoCtx#PubidFormat),
+      (ProjectConfig, ProjectWidgets.NoCtx, ProjectWidgets.NoCtx#PubidFormat, FormulaEvalCache),
     ]("ReqRow") {
 
     override protected val rowToColumnToEditorField =
@@ -346,7 +348,7 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]],
     override protected def reusabilityRowEditor = implicitly
 
     override protected def viewMaker(row: RowData, fd: FilterDead, vi: ViewInput): Column => Reusable[TagMod] = {
-      val (cfg, pw, pubidFmt) = vi
+      val (cfg, pw, pubidFmt, fec) = vi
 
       val viewReq = ViewReq.Data(
         req              = row.req,
@@ -360,7 +362,7 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]],
         pastPubids       = SortedSet.empty[ExternalPubid], // ReqTable doesn't display pastPubids
         impsAreMandatory = cfg.reqTypes.idsRequiringImplication.contains(row.req.reqTypeId),
         fieldRules       = row.fieldRules
-      ).apply(pw)
+      ).apply(pw, fec)
 
       def renderCodes: VdomElement =
         if (row.exp.reqCodeTree.values.nonEmpty)

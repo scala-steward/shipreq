@@ -7,6 +7,7 @@ import scala.collection.immutable.SortedSet
 import shipreq.base.util.SafeStringOps._
 import shipreq.base.util._
 import shipreq.webapp.member.project.data._
+import shipreq.webapp.member.project.formula.FormulaEvalCache
 import shipreq.webapp.member.project.text.Atom.{AnyAtom, DisplayReqRef}
 import shipreq.webapp.member.project.text.GrammarSpec.Surrounds
 import shipreq.webapp.member.project.text.ProjectText.SetRenderStyle
@@ -521,5 +522,11 @@ object PlainText {
 
     def textWithoutMarkup(text: Text.AnyOptional, live: Live): String =
       nestedText(live, text, includeMarkup = false)
+
+    override def formulaEval(eval: FormulaEvalCache.Eval): String =
+      eval.value match {
+        case \/-(v)   => v.show
+        case -\/(err) => "#ERR: " + err.value
+      }
   }
 }

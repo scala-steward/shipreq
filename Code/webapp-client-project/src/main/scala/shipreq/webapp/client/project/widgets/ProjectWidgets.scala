@@ -14,6 +14,7 @@ import shipreq.webapp.client.project.app.WebWorkerClient
 import shipreq.webapp.member.UiText
 import shipreq.webapp.member.jsfacade.KaTeX
 import shipreq.webapp.member.project.data.{Contextualise, Plain, _}
+import shipreq.webapp.member.project.formula.FormulaEvalCache
 import shipreq.webapp.member.project.text.Atom.DisplayReqRef
 import shipreq.webapp.member.project.text.ProjectText.SetRenderStyle
 import shipreq.webapp.member.project.text.Text.AnyOptional
@@ -542,6 +543,11 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
       case Some(rt) => f(rt)
       case None     => <.span("?")
     }
+
+  override def formulaEval(eval: FormulaEvalCache.Eval): VdomTag = {
+    val str = plainText.formulaEval(eval)
+    <.span(*.formula((eval.live, eval.validity)), str)
+  }
 
   override def useCaseStepTextAndFlow(step: UseCaseStepFlowText.TextAndFlow[AnyOptional, Set[UseCaseStepId]], live: Live): VdomTag =
     makeUseCaseStepTextAndFlow(step, live)(useCaseFlowElementsById(_).iterator())
