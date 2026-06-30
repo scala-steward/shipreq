@@ -234,7 +234,7 @@ object Dependencies {
   val httpCore     = jvmOnly("org.apache.httpcomponents"   % "httpcore"              % "4.4.16")
   val jaegerClient = jvmOnly("io.jaegertracing"            % "jaeger-client"         % "1.8.1")
   val javaMail     = jvmOnly("com.sun.mail"                % "javax.mail"            % "1.6.2")
-  val postgresql   = jvmOnly("org.postgresql"              % "postgresql"            % "42.7.11")
+  val postgresql   = jvmOnly("org.postgresql"              % "postgresql"            % "42.7.12")
   val redisson     = jvmOnly("org.redisson"                % "redisson"              % "4.6.1")
   val scaffeine    = jvmOnly("com.github.blemale"         %% "scaffeine"             % "5.3.0")
   val scalaCheck   = jvmOnly("org.scalacheck"             %% "scalacheck"            % "1.19.0")
