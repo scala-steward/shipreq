@@ -11,6 +11,7 @@ import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.data.savedview._
 import shipreq.webapp.member.project.data.savedview.{Column => C, SortCriterion => SC}
 import shipreq.webapp.member.project.filter.Filter
+import shipreq.webapp.member.project.formula.FormulaEvalCache
 import shipreq.webapp.member.project.sort.SortMethod._
 import shipreq.webapp.member.project.sort.Sorter.{BlankPlacement, BlanksFirst, BlanksLast, Dir, FlipDir, KeepDir}
 import shipreq.webapp.member.project.text.{Atom, PlainText, TextSearch}
@@ -31,16 +32,17 @@ object LogicPropTest extends TestSuite {
       else
         _ => true
 
-    val plainText      = PlainText.ForProject.noCtx(p)
-    val textSearch     = TextSearch(p, plainText)
-    val filterCompiler = Filter.Valid.compiler(p, plainText, textSearch, fd, applyFilterDeadToReqs = false)
-    val gathered       = Logic.gather[Vector](p, v, filterCompiler)
-    val gatheredG      = gathered.iterator.filterSubType[Row.ForReq].toList
-    val rowReqCodes    = gathered.flatMap(codesInRow)
-    val rowGReqIds     = gatheredG.map(_.req.id).toSet
-    val srcGReqIds     = p.content.reqs.idIterator().filterSubType[GenericReqId].filter(expectVisible).toSet
-    val finalRows      = Logic.rowsForTable(p, v, plainText, filterCompiler)
-    val tableStats     = Logic.stats(p, finalRows)
+    val plainText        = PlainText.ForProject.noCtx(p)
+    val formulaEvalCache = FormulaEvalCache.fromProject(p)
+    val textSearch       = TextSearch(p, plainText)
+    val filterCompiler   = Filter.Valid.compiler(p, plainText, textSearch, formulaEvalCache, fd, applyFilterDeadToReqs = false)
+    val gathered         = Logic.gather[Vector](p, v, filterCompiler)
+    val gatheredG        = gathered.iterator.filterSubType[Row.ForReq].toList
+    val rowReqCodes      = gathered.flatMap(codesInRow)
+    val rowGReqIds       = gatheredG.map(_.req.id).toSet
+    val srcGReqIds       = p.content.reqs.idIterator().filterSubType[GenericReqId].filter(expectVisible).toSet
+    val finalRows        = Logic.rowsForTable(p, v, plainText, formulaEvalCache, filterCompiler)
+    val tableStats       = Logic.stats(p, finalRows)
 
     val expectedVisibleReqCodes = {
       val b = Set.newBuilder[ReqCode.Value]
@@ -90,9 +92,9 @@ object LogicPropTest extends TestSuite {
     def universalSort = {
       val revOrder  = v.order.reverse
       val revCri    = v.copy(order = revOrder)
-      val sorted    = Logic.sorter(p, v, plainText)(gathered).iterator().to(Vector)
+      val sorted    = Logic.sorter(p, v, plainText, formulaEvalCache)(gathered).iterator().to(Vector)
       def criRev    = E.equal("cri.rev.rev = cri", revOrder.reverse, v.order)
-      def sortTwice = E.equal("sort.sort = sort", Logic.sorter(p, v, plainText)(sorted).iterator().to(Vector), sorted)
+      def sortTwice = E.equal("sort.sort = sort", Logic.sorter(p, v, plainText, formulaEvalCache)(sorted).iterator().to(Vector), sorted)
       def sortRev   = reverseSortOnReverseCri(sorted, revCri)
       (criRev ∧ sortRev ∧ sortTwice) rename "Universal sort props"
     }
@@ -146,7 +148,7 @@ object LogicPropTest extends TestSuite {
 
     def sortBy(c: SC.Inconclusive): Vector[Row] = {
       val (sc, input) = sortCriAndGather(c)
-      Logic.sorter(p, newTableSettingsForSort(sc), plainText)(input).iterator().to(Vector)
+      Logic.sorter(p, newTableSettingsForSort(sc), plainText, formulaEvalCache)(input).iterator().to(Vector)
     }
 
     def newTableSettingsForSort(sc: SortCriteria): View =
@@ -194,7 +196,7 @@ object LogicPropTest extends TestSuite {
 
     def sortByPubid: IndivSortIB = (sm, dir) => {
       val sc     = SortCriteria(Vector.empty, SC.Conclusive(C.Pubid, sm))
-      val sorted = Logic.sorter(p, newTableSettingsForSort(sc), plainText)(gathered).iterator().to(Vector)
+      val sorted = Logic.sorter(p, newTableSettingsForSort(sc), plainText, formulaEvalCache)(gathered).iterator().to(Vector)
       val na     = ("", -1)
       val pubids = sorted.map {
         case r: Row.ForReq       => pubidExtract(p)(r.req.pubid)
@@ -245,6 +247,7 @@ object LogicPropTest extends TestSuite {
       case C.CustomField(id) =>
         id match {
           case _: CustomField.Implication.Id => nop
+          case _: CustomField.Formula    .Id => nop
           case _: CustomField.Number     .Id => nop
           case _: CustomField.Tag        .Id => nop
           case _: CustomField.Text       .Id => nop

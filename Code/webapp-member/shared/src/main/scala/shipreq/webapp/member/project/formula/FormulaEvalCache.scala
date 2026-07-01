@@ -35,6 +35,13 @@ object FormulaEvalCache {
       ReqData.Numbers.empty,
       Map.empty
     )
+
+  def fromProject(p: Project): FormulaEvalCache =
+    new FormulaEvalCache(
+      p.config,
+      p.content.reqNums,
+      p.content.reqs.reqTypeLookup
+    )
 }
 
 final class FormulaEvalCache(cfg          : ProjectConfig,

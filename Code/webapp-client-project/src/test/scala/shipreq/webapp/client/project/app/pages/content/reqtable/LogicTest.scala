@@ -13,6 +13,7 @@ import shipreq.webapp.member.project.data.savedview.{Column => C, SortCriterion 
 import shipreq.webapp.member.project.event.{CustomImpFieldGD, Event => E, GenericReqGD, UseCaseGD, UseCaseStepGD}
 import shipreq.webapp.member.project.filter.FilterAst.OrderOp
 import shipreq.webapp.member.project.filter.{Filter, FilterAst, IntensionalReqSet}
+import shipreq.webapp.member.project.formula.FormulaEvalCache
 import shipreq.webapp.member.project.issue.IssueCategory
 import shipreq.webapp.member.project.sort.SortMethod._
 import shipreq.webapp.member.project.text.{PlainText, Text, TextSearch}
@@ -106,9 +107,10 @@ object LogicTest extends TestSuite {
   }
 
   private def gatherSortConsolidate(p: Project, v: View, pt: PlainText.ForProject.NoCtx, ts: TextSearch): Vector[Row] = {
-    val fc                    = Filter.Valid.compiler(p, pt, ts, v.filterDead, applyFilterDeadToReqs = false)
+    val fec                   = FormulaEvalCache.fromProject(p)
+    val fc                    = Filter.Valid.compiler(p, pt, ts, fec, v.filterDead, applyFilterDeadToReqs = false)
     def r1: Array       [Row] = Logic.gather(p, v, fc)
-    def r2: MutableArray[Row] = Logic.sorter(p, v, pt)(r1)
+    def r2: MutableArray[Row] = Logic.sorter(p, v, pt, fec)(r1)
     val r3: Vector      [Row] = Logic.consolidateAdjacentDups(r2.iterator())
 
 //    def renderReq(reqId: ReqId) = PlainText.pubidByReqId(reqId, p)
