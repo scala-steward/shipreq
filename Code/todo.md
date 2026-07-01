@@ -19,6 +19,7 @@
   * Validate `field:Score<op>123` works as expected for all comparison ops
 
 * Issue detection
+  * Live formulas that reference out-of-bounds numbers
   * Live formulas that reference dead fields
     * Numeric fields
     * Formula fields (and test transitivity)
