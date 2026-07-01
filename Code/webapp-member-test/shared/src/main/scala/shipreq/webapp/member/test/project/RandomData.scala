@@ -477,6 +477,7 @@ object RandomData {
       id             <- customFieldFormulaId
       name           <- fieldName
       desc           <- Gen.string.option
+      decimalPlaces  <- Gen.chooseInt(DataValidators.numberField.maxDecimalPlaces)
       rules          <- fieldReqTypeRules[ValidFormula](
                           genReqTypeId,
                           Some(formula.valid.gen(None).map(ValidFormula.apply)),
@@ -484,7 +485,7 @@ object RandomData {
                           allowMandatory = false)
       liveExplicitly <- live
     } yield
-      CustomField.Formula(id, name, desc, rules, liveExplicitly)
+      CustomField.Formula(id, name, desc, decimalPlaces, rules, liveExplicitly)
 
   def customField(genReqTypeId: Option[Gen[ReqTypeId]],
                   rulesAny: Gen[FieldReqTypeRules[Impossible]],
@@ -2686,9 +2687,11 @@ object RandomData {
 
     object customFormulaFieldGD extends GenericDataGen(CustomFormulaFieldGD) {
       import gd._
+      private def mdp = DataValidators.numberField.maxDecimalPlaces
       override def valueFor(a: Attr): Gen[Value] = a match {
         case Name              => fieldName                map Name             .apply
         case Desc              => desc                     map Desc             .apply
+        case DecimalPlaces     => Gen.chooseInt(mdp)       map DecimalPlaces    .apply
         case FieldReqTypeRules => fieldReqTypeRulesFormula map FieldReqTypeRules.apply
       }
     }

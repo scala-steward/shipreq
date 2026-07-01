@@ -991,17 +991,20 @@ object Rev1 {
 
       implicit val codecValueForName              = JsonCodec.xmap(ValueForName             .apply)(_.value)
       implicit val codecValueForDesc              = JsonCodec.xmap(ValueForDesc             .apply)(_.value)
+      implicit val codecValueForDecimalPlaces     = JsonCodec.xmap(ValueForDecimalPlaces    .apply)(_.value)
       implicit val codecValueForFieldReqTypeRules = JsonCodec.xmap(ValueForFieldReqTypeRules.apply)(_.value)
 
       implicit val decoderValue: Decoder[Value] = decodeSumBySoleKey {
         case ("name"    , c) => c.as[ValueForName]
         case ("desc"    , c) => c.as[ValueForDesc]
+        case ("dp"      , c) => c.as[ValueForDecimalPlaces]
         case ("reqTypes", c) => c.as[ValueForFieldReqTypeRules]
       }
 
       implicit val encoderValue: Encoder[Value] = Encoder.instance {
         case a: ValueForName              => Json.obj("name"     -> a.asJson)
         case a: ValueForDesc              => Json.obj("desc"     -> a.asJson)
+        case a: ValueForDecimalPlaces     => Json.obj("dp"       -> a.asJson)
         case a: ValueForFieldReqTypeRules => Json.obj("reqTypes" -> a.asJson)
       }
 

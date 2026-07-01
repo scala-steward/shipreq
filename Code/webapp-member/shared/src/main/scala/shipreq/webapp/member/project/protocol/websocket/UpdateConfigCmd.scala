@@ -42,6 +42,7 @@ object UpdateConfigCmd {
 
   final case class CustomFieldCreateFormula(name             : String,
                                             desc             : Option[String],
+                                            decimalPlaces    : Int,
                                             fieldReqTypeRules: FieldReqTypeRules.ForFormulaField) extends ToModifyFields
 
   final case class CustomFieldUpdateFormula(id: CustomField.Formula.Id,
@@ -356,13 +357,15 @@ object UpdateConfigCmd {
         override def pickle(a: CustomFieldCreateFormula)(implicit state: PickleState): Unit = {
           state.pickle(a.name)
           state.pickle(a.desc)
+          state.pickle(a.decimalPlaces)
           state.pickle(a.fieldReqTypeRules)
         }
         override def unpickle(implicit state: UnpickleState): CustomFieldCreateFormula = {
           val name              = state.unpickle[String]
           val desc              = state.unpickle[Option[String]]
+          val decimalPlaces     = state.unpickle[Int]
           val fieldReqTypeRules = state.unpickle[FieldReqTypeRules.ForFormulaField]
-          CustomFieldCreateFormula(name, desc, fieldReqTypeRules)
+          CustomFieldCreateFormula(name, desc, decimalPlaces, fieldReqTypeRules)
         }
       }
 

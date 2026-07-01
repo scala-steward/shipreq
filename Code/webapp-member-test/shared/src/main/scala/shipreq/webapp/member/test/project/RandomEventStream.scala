@@ -501,9 +501,11 @@ final class ApplicableEventGen(emptyState: State, curState: State, config: Rando
 
   object customFormulaFieldGD extends GenericDataGen(CustomFormulaFieldGD) {
     import gd._
+    private def mdp = DataValidators.numberField.maxDecimalPlaces
     override def valueFor(a: Attr) = a match {
       case Name              => fieldName                map Name             .apply
       case Desc              => desc                     map Desc             .apply
+      case DecimalPlaces     => Gen.chooseInt(mdp)       map DecimalPlaces    .apply
       case FieldReqTypeRules => fieldReqTypeRulesFormula map FieldReqTypeRules.apply
     }
   }

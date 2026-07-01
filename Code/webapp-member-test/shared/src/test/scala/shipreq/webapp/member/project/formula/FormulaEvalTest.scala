@@ -33,6 +33,7 @@ object FormulaEvalTest extends TestSuite {
       id = formulaFieldId,
       name = "formula_test",
       desc = None,
+      decimalPlaces = 2,
       fieldReqTypeRules = FieldReqTypeRules.const(FieldReqTypeRules.Resolution.DefaultTo(ValidFormula(formula))),
       liveExplicitly = Live
     )

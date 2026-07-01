@@ -684,26 +684,30 @@ trait ApplyConfigEvent {
     val ^ = CustomFormulaFieldGD
     val GD = GenericDataApp[CustomField.Formula](^)
 
-    val validateDesc = validateO(V.formulaField.desc)
+    val validateDesc          = validateO(V.formulaField.desc)
+    val validateDecimalPlaces = validateI(V.formulaField.decimalPlaces)(_.toString)
 
     def applyCreate(e: FieldCustomFormulaCreate): Eval[Unit] = {
       implicit val vs = e.vs
       for {
         name          <- GD.need(^.Name).flatMap(validateName)
         desc          <- GD.need(^.Desc).flatMap(validateDesc)
+        decimalPlaces <- GD.need(^.DecimalPlaces).flatMap(validateDecimalPlaces)
         reqTypeRules  <- GD.need(^.FieldReqTypeRules)
-        f              = CustomField.Formula(e.id, name, desc, reqTypeRules, Live)
+        f              = CustomField.Formula(e.id, name, desc, decimalPlaces, reqTypeRules, Live)
         _             <- create(f)
       } yield ()
     }
 
-    val updateName              = validateName >>=@ CustomField.Formula.name
-    val updateDesc              = validateDesc >>=@ CustomField.Formula.desc
+    val updateName              = validateName          >>=@ CustomField.Formula.name
+    val updateDesc              = validateDesc          >>=@ CustomField.Formula.desc
+    val updateDecimalPlaces     = validateDecimalPlaces >>=@ CustomField.Formula.decimalPlaces
     val updateFieldReqTypeRules = fieldUpdateFn(CustomField.Formula.fieldReqTypeRules)
 
     val updateValues = GD.updateEachValue {
       case v: ^.ValueForName              => updateName             (v.value)
       case v: ^.ValueForDesc              => updateDesc             (v.value)
+      case v: ^.ValueForDecimalPlaces     => updateDecimalPlaces    (v.value)
       case v: ^.ValueForFieldReqTypeRules => updateFieldReqTypeRules(v.value)
     }
 

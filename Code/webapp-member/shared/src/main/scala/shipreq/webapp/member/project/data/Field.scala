@@ -448,9 +448,10 @@ object CustomField {
   final case class Formula(id               : Formula.Id,
                            name             : String,
                            desc             : Option[String],
+                           decimalPlaces    : Int,
                            fieldReqTypeRules: FieldReqTypeRules.ForFormulaField,
                            liveExplicitly   : Live) extends CustomField(CustomFieldType.Formula) {
-    override def toString = s"CustomField.Formula($id, $name, $desc, $fieldReqTypeRules, $liveExplicitly)"
+    override def toString = s"CustomField.Formula($id, $name, $desc, $decimalPlaces, $fieldReqTypeRules, $liveExplicitly)"
     override def independentName = Some(name)
     override def live(cfg: ProjectConfig) = liveExplicitly
 

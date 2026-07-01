@@ -157,6 +157,19 @@ object CustomFormulaFieldGD extends GenericData {
   sealed abstract class Attr extends AttrBase
   sealed abstract class Value extends ValueBase
 
+  case object DecimalPlaces extends Attr {
+    override type Data = Int
+    override def apply(data: Data) = ValueForDecimalPlaces(data)
+    override val dataEquality: Eq[Data] = implicitly[Eq[Int]]
+  }
+  final case class ValueForDecimalPlaces(value: DecimalPlaces.Data) extends Value {
+    override val attr: DecimalPlaces.type = DecimalPlaces
+    override def equals(o: Any): Boolean = o match {
+      case v2: ValueForDecimalPlaces => DecimalPlaces.dataEquality.eqv(value, v2.value)
+      case _ => false
+    }
+  }
+
   case object Desc extends Attr {
     override type Data = Option[String]
     override def apply(data: Data) = ValueForDesc(data)
@@ -197,14 +210,14 @@ object CustomFormulaFieldGD extends GenericData {
   }
 
   override implicit val equalityAttr: Order[Attr] with UnivEq[Attr] =
-    Util.univEqAndArbitraryOrder(Vector(Desc, FieldReqTypeRules, Name))
+    Util.univEqAndArbitraryOrder(Vector(DecimalPlaces, Desc, FieldReqTypeRules, Name))
 
   @inline override implicit def equalityValue: UnivEq[Value] = UnivEq.force
 
-  override val attrs = NonEmptySet[Attr](Desc, FieldReqTypeRules, Name)
+  override val attrs = NonEmptySet[Attr](DecimalPlaces, Desc, FieldReqTypeRules, Name)
 
-  def apply(name: String, desc: Option[String], fieldReqTypeRules: FieldReqTypeRules[ValidFormula]): NonEmptyValues =
-    NonEmpty.force(emptyValues + ValueForName(name) + ValueForDesc(desc) + ValueForFieldReqTypeRules(fieldReqTypeRules))
+  def apply(name: String, desc: Option[String], decimalPlaces: Int, fieldReqTypeRules: FieldReqTypeRules[ValidFormula]): NonEmptyValues =
+    NonEmpty.force(emptyValues + ValueForName(name) + ValueForDesc(desc) + ValueForDecimalPlaces(decimalPlaces) + ValueForFieldReqTypeRules(fieldReqTypeRules))
 }
 
 // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████

@@ -95,6 +95,7 @@ val gens = List(
   Gen("CustomFormulaFieldGD")(
     "Name"              -> "String",
     "Desc"              -> "Option[String]",
+    "DecimalPlaces"     -> "Int",
     "FieldReqTypeRules" -> "FieldReqTypeRules[ValidFormula]",
   ),
   Gen("CustomNumberFieldGD")(

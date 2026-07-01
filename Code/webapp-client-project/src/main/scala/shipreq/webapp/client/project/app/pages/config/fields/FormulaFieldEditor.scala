@@ -22,7 +22,8 @@ import shipreq.webapp.member.ui.AutosizeTextarea
 object FormulaFieldEditor {
   import DataImplicits._
 
-  def FieldNameDesc = "Description"
+  def FieldNameDesc          = "Description"
+  def FieldNameDecimalPlaces = "Decimal Places"
 
   final case class Props(state     : StateSnapshot[State],
                          cfg       : ProjectConfig,
@@ -36,10 +37,11 @@ object FormulaFieldEditor {
   }
 
   @Lenses
-  final case class State(idOption: Option[CustomField.Formula.Id],
-                         name    : String,
-                         desc    : String,
-                         rules   : ReqTypeRulesEditor.ForFormulaFields.State) {
+  final case class State(idOption     : Option[CustomField.Formula.Id],
+                         name         : String,
+                         desc         : String,
+                         decimalPlaces: String,
+                         rules        : ReqTypeRulesEditor.ForFormulaFields.State) {
 
     def validatorState(cfg: ProjectConfig): DataValidators.field.State =
       DataValidators.field.State.from(idOption, cfg)
@@ -51,10 +53,11 @@ object FormulaFieldEditor {
         for {
           _name  <- PotentialChange.fromDisjunction(DataValidators.field.name(vs).unnamed(name).leftMap(_ => ()))
           _desc  <- PotentialChange.fromDisjunction(DataValidators.formulaField.desc.unnamed(desc).leftMap(_ => ()))
-          _rules <- PotentialChange.needFromOption(rules.validation(cfg.reqTypes).resultWhenValid(_ => Valid)) // TODO
-        } yield (_name, _desc, _rules)
+          _dp    <- PotentialChange.fromDisjunction(DataValidators.formulaField.decimalPlaces.unnamed(decimalPlaces).leftMap(_ => ()))
+          _rules <- PotentialChange.needFromOption(rules.validation(cfg.reqTypes).resultWhenValid(_ => Valid))
+        } yield (_name, _desc, _dp, _rules)
 
-      pass1.flatMap { case (name, desc, rules) =>
+      pass1.flatMap { case (name, desc, decimalPlaces, rules) =>
         idOption match {
 
           case Some(id) =>
@@ -62,6 +65,7 @@ object FormulaFieldEditor {
             val b = CustomFormulaFieldGD.valueBuilder()
             b.addIfChanged(CustomFormulaFieldGD.Name             )(old.name             , name)
             b.addIfChanged(CustomFormulaFieldGD.Desc             )(old.desc             , desc)
+            b.addIfChanged(CustomFormulaFieldGD.DecimalPlaces    )(old.decimalPlaces    , decimalPlaces)
             b.addIfChanged(CustomFormulaFieldGD.FieldReqTypeRules)(old.fieldReqTypeRules, rules)
             PotentialChange.fromOption(b.nev()).map { newValues =>
               UpdateConfigCmd.CustomFieldUpdateFormula(id, newValues)
@@ -71,6 +75,7 @@ object FormulaFieldEditor {
             val cmd = UpdateConfigCmd.CustomFieldCreateFormula(
               name              = name,
               desc              = desc,
+              decimalPlaces     = decimalPlaces,
               fieldReqTypeRules = rules,
             )
             PotentialChange.Success(cmd)
@@ -82,20 +87,22 @@ object FormulaFieldEditor {
   object State {
     def empty: State =
       apply(
-        idOption = None,
-        name     = "",
-        desc     = "",
-        rules    = ReqTypeRulesEditor.State.empty,
+        idOption      = None,
+        name          = "",
+        desc          = "",
+        decimalPlaces = "0",
+        rules         = ReqTypeRulesEditor.State.empty,
       )
 
     def init(id: CustomField.Formula.Id, cfg: ProjectConfig): State = {
       val f = cfg.fields.custom(id)
       apply(
-        idOption = Some(id),
-        name     = f.name,
-        desc     = f.desc.getOrElse(""),
-        rules    = ReqTypeRulesEditor.State.init(cfg, f.fieldReqTypeRulesByResolution)(
-                     v => Formula.Valid.toText(v.formula, cfg.fields)),
+        idOption      = Some(id),
+        name          = f.name,
+        desc          = f.desc.getOrElse(""),
+        decimalPlaces = f.decimalPlaces.toString,
+        rules         = ReqTypeRulesEditor.State.init(cfg, f.fieldReqTypeRulesByResolution)(
+                          v => Formula.Valid.toText(v.formula, cfg.fields)),
       )
     }
 
@@ -126,6 +133,13 @@ object FormulaFieldEditor {
       FormulaParser.parse(txt).leftMap(_ => ErrorMsg("Invalid formula."))
         .flatMap(Formula.Potential.validate(_, p.cfg.fields))
         .map(ValidFormula(_))
+
+    val decimalPlacesField =
+      Form.Field.text
+        .withLabel(FieldNameDecimalPlaces)
+        .withState(p.state.zoomStateL(State.decimalPlaces))
+        .withValidator(DataValidators.formulaField.decimalPlaces.unnamed)
+        .withEnabled(p.enabled)
 
     @UsesSemanticUiManually
     val reqTypeRulesEditorDefaultWidget: ReqTypeRulesEditor.DefaultWidgetFn[ValidFormula] =
@@ -169,6 +183,7 @@ object FormulaFieldEditor {
       Form(
         nameField,
         descField,
+        decimalPlacesField,
       )(ValidationUX.Full),
       rules)
   }
