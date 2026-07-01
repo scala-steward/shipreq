@@ -25,7 +25,6 @@ object FormulaValue {
         case (Dbl(a), Dbl(b))   => java.lang.Double.compare(a, b)
         case (Str(a), Str(b))   => a.compareTo(b)
         case (Bool(a), Bool(b)) => java.lang.Boolean.compare(a, b)
-        case (Empty, Empty)     => 0
         case _ =>
           def priority(v: FormulaValue): Int = v match {
             case Empty   => 0
