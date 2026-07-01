@@ -39,8 +39,8 @@ object FormulaValue {
           def priority(v: FormulaValue): Int = v match {
             case Empty   => 0
             case _: Bool => 1
-            case _: Dbl  => 2
-            case _: Str  => 3
+            case _: Str  => 2
+            case _: Dbl  => 3
           }
           priority(x) - priority(y)
       }
