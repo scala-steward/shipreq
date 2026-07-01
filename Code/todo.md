@@ -6,6 +6,7 @@
   * Add decimal places to formula fields
   * Field Config / list / Details column: optimise summary
   * Allow empty into arithmetic rather than `#ERR: Type mismatch`
+  * Add auto-complete to formula editor
 
 * Manually test UI
   * Issues screen
