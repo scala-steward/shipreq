@@ -544,8 +544,8 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
       case None     => <.span("?")
     }
 
-  override def formulaEval(eval: FormulaEvalCache.Eval): VdomTag = {
-    val str = plainText.formulaEval(eval)
+  override def formulaEval(eval: FormulaEvalCache.Eval, fid: CustomField.Formula.Id): VdomTag = {
+    val str = plainText.formulaEval(eval, fid)
     <.span(*.formula((eval.live, eval.validity)), str)
   }
 

@@ -3,7 +3,6 @@ package shipreq.webapp.member.project.formula
 import cats.instances.list._
 import cats.syntax.traverse._
 import japgolly.microlibs.recursion._
-import java.math.{BigDecimal, RoundingMode}
 import shipreq.base.util.{ErrorMsg, Util}
 import shipreq.webapp.member.project.data.DataImplicits._
 import shipreq.webapp.member.project.data.{FieldSet, Req, ReqData}
@@ -327,8 +326,8 @@ object FormulaAlgebra {
             foldBoolArgs(false)(_ || _)
 
           case FormulaFunction.Round =>
-            def round(d: Double, scale: Double): Double =
-              new BigDecimal(d).setScale(scale.toInt, RoundingMode.HALF_UP).doubleValue
+            @inline def round(d: Double, scale: Double): Double =
+              Util.setScale(d, scale.toInt)
             args match {
               case arg :: Nil => arg match {
                 case Dbl(d) => \/-(Dbl(round(d, 0)))

@@ -5,6 +5,7 @@ import cats.{Applicative, Eq, Order}
 import japgolly.microlibs.stdlib_ext.MutableArray
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.microlibs.utils.Memo
+import java.math.{BigDecimal, RoundingMode}
 import java.net.URL
 import java.util.regex.Pattern
 import scala.collection.immutable.TreeMap
@@ -446,4 +447,6 @@ object Util {
   def doubleToString(d: Double): String =
     trailingZeros.matcher(d.toString).replaceFirst("")
 
+  def setScale(d: Double, decimalPlaces: Int): Double =
+    new BigDecimal(d).setScale(decimalPlaces, RoundingMode.HALF_UP).doubleValue
 }

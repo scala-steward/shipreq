@@ -84,7 +84,7 @@ final class ViewReq[A](data            : Data,
   }
 
   def customFieldFormula(fid: CustomField.Formula.Id): IfApplicable[A] =
-    formulaEvalCache(fid)(data.req).map(pt.formulaEval)
+    formulaEvalCache(fid)(data.req).map(pt.formulaEval(_, fid))
 
   def customFieldNumber(id: CustomField.Number.Id): IfApplicable[A] =
     data.fieldRules.num(id) match {
