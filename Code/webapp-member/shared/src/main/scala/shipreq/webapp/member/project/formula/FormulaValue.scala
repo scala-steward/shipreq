@@ -1,27 +1,18 @@
 package shipreq.webapp.member.project.formula
 
-import shipreq.base.util.Util
-
-sealed trait FormulaValue {
-  def show: String
-}
+sealed trait FormulaValue
 
 object FormulaValue {
-  final case class Dbl(value: Double) extends FormulaValue {
-    override def show = Util.doubleToString(value)
-  }
 
-  final case class Str(value: String) extends FormulaValue {
-    override def show = value
-  }
+  final case class Dbl(value: Double) extends FormulaValue
+
+  final case class Str(value: String) extends FormulaValue
 
   final case class Bool(value: Boolean) extends FormulaValue {
-    override def show = value.toString.toUpperCase
+    def show = value.toString.toUpperCase
   }
 
-  case object Empty extends FormulaValue {
-    override def show = ""
-  }
+  case object Empty extends FormulaValue
 
   implicit def univEq: UnivEq[FormulaValue] =
     UnivEq.derive

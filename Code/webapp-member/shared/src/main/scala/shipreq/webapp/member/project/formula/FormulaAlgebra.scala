@@ -4,7 +4,7 @@ import cats.instances.list._
 import cats.syntax.traverse._
 import japgolly.microlibs.recursion._
 import java.math.{BigDecimal, RoundingMode}
-import shipreq.base.util.ErrorMsg
+import shipreq.base.util.{ErrorMsg, Util}
 import shipreq.webapp.member.project.data.DataImplicits._
 import shipreq.webapp.member.project.data.{FieldSet, Req, ReqData}
 import shipreq.webapp.member.project.filter.FilterAlgebra
@@ -53,7 +53,7 @@ object FormulaAlgebra {
     {
       case Value(Empty)      => ""
       case Value(b: Bool)    => b.show
-      case Value(d: Dbl)     => d.show
+      case Value(Dbl(d))     => Util.doubleToString(d)
       case Value(Str(s))     => '"' ~ s.replace("\"", "\"\"") ~ '"'
       case Add(l, r)         => composite("(", l.atom ~ " + " ~ r.atom, ")")
       case Subtract(l, r)    => composite("(", l.atom ~ " - " ~ r.atom, ")")
@@ -149,7 +149,7 @@ object FormulaAlgebra {
         (lhs, rhs) match {
           case (Dbl(x), Dbl(y))  => \/-(Dbl(x + y))
           case (Str(x), Str(y))  => \/-(Str(x + y))
-          case (Str(x), y: Dbl)  => \/-(Str(x + y.show))
+          case (Str(x), Dbl(y))  => \/-(Str(x + Util.doubleToString(y)))
           case (Str(x), y: Bool) => \/-(Str(x + y.show))
           case (x: Str, Empty)   => \/-(x)
           case _                 => typeMismatch
