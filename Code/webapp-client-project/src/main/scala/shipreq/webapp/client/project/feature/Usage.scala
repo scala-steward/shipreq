@@ -13,7 +13,7 @@ import shipreq.webapp.member.project.filter._
 import shipreq.webapp.member.project.formula.FormulaEvalCache
 import shipreq.webapp.member.project.text.{PlainText, TextSearch}
 
-final class Usage(p: Project, router: SpecialRouterCtl) {
+final class Usage(p: Project, router: SpecialRouterCtl, formulaEvalCache: FormulaEvalCache) {
 
   lazy val tags: LiveDeadStatMap[ApplicableTagId, Int] = {
     val tags = p.virtualTags
@@ -43,7 +43,7 @@ final class Usage(p: Project, router: SpecialRouterCtl) {
         p,
         PlainText.ForProject.noCtx.empty,
         TextSearch.empty,
-        FormulaEvalCache.empty,
+        formulaEvalCache,
         fd,
         applyFilterDeadToReqs = true
       ))
@@ -90,9 +90,6 @@ final class Usage(p: Project, router: SpecialRouterCtl) {
 // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
 object Usage {
-
-  def apply(p: Project, router: SpecialRouterCtl): Usage =
-    new Usage(p, router)
 
   implicit def reusability: Reusability[Usage] =
     Reusability.byRef

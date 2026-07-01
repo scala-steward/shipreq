@@ -445,7 +445,10 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitDataWithoutE
     }
 
     private val pxUsage: Px[Usage] =
-      pxProject.map(new Usage(_, specialRouterCtl))
+      for {
+        p <- pxProject
+        fec <- pxFormulaEvalCache
+      } yield new Usage(p, specialRouterCtl, fec)
 
     private val pxPreviewState =
       pxState.map(_.preview).withReuse
