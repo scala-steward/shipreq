@@ -25,12 +25,33 @@ import shipreq.webapp.client.project.util.DataReusability._
 import shipreq.webapp.member.feature.AutoCompleteFeature._
 import shipreq.webapp.member.project.data.FieldReqTypeRules.Resolution
 import shipreq.webapp.member.project.data.{Colour => _, _}
+import shipreq.webapp.member.project.formula.ValidFormula
 
 object ReqTypeRulesEditor {
 
-  val NoDefault            = new ReqTypeRulesEditor[Impossible](allowDefaults = false, keyFor = _.impossible)
-  val ApplicableTagDefault = new ReqTypeRulesEditor[ApplicableTagId](allowDefaults = true, keyFor = _.value.toString)
-  val DoubleDefault        = new ReqTypeRulesEditor[Double](allowDefaults = true, keyFor = _.toString)
+  val NoDefault = new ReqTypeRulesEditor[Impossible](
+    allowOptional = true,
+    allowMandatory = true,
+    allowDefaults = false,
+    keyFor = _.impossible)
+
+  val ApplicableTagDefault = new ReqTypeRulesEditor[ApplicableTagId](
+    allowOptional = true,
+    allowMandatory = true,
+    allowDefaults = true,
+    keyFor = _.value.toString)
+
+  val DoubleDefault = new ReqTypeRulesEditor[Double](
+    allowOptional = true,
+    allowMandatory = true,
+    allowDefaults = true,
+    keyFor = _.toString)
+
+  val ForFormulaFields = new ReqTypeRulesEditor[ValidFormula](
+    allowOptional = false,
+    allowMandatory = false,
+    allowDefaults = true,
+    keyFor = _ => "") // unused
 
   // -------------------------------------------------------------------------------------------------------------------
 
@@ -127,7 +148,7 @@ object ReqTypeRulesEditor {
                                          enabled      : Enabled): Props[D] = {
 
       val defaultWidget: DefaultWidgetFn[D] =
-        Reusable.ap(Reusable.implicitly(defaults), renderDefault) { (defaults , renderDefault) =>
+        Reusable.ap(Reusable.implicitly(defaults), renderDefault) { (defaults, renderDefault) =>
           lazy val defaultSet = defaults.toSet
 
           (ss, enabled, keyFor) => {
@@ -297,7 +318,10 @@ object ReqTypeRulesEditor {
 
 // =====================================================================================================================
 
-final class ReqTypeRulesEditor[D: Reusability: UnivEq](allowDefaults: Boolean, keyFor: D => String) {
+final class ReqTypeRulesEditor[D: Reusability: UnivEq](allowOptional: Boolean,
+                                                       allowMandatory: Boolean,
+                                                       allowDefaults: Boolean,
+                                                       keyFor: D => String) {
 
   type Props           = ReqTypeRulesEditor.Props[D]
   type State           = ReqTypeRulesEditor.State[D]
@@ -360,15 +384,15 @@ final class ReqTypeRulesEditor[D: Reusability: UnivEq](allowDefaults: Boolean, k
       def option(title: String, res: Resolution[Unit]): Dropdown.Item[Resolution[Unit]] =
         Dropdown.Item(resOptionKey(res), title, res)
 
-      def defaultTo     = option("Default to…", Resolution.DefaultTo(()))
-      val mandatory     = option("Mandatory", Resolution.Mandatory)
-      val notApplicable = option("Not applicable", Resolution.NotApplicable)
-      val optional      = option("Optional", Resolution.Optional)
-
+      val items = ArraySeq.newBuilder[Dropdown.Item[Resolution[Unit]]]
       if (allowDefaults)
-        ArraySeq(defaultTo, mandatory, notApplicable, optional)
-      else
-        ArraySeq(mandatory, notApplicable, optional)
+        items += option("Default to…", Resolution.DefaultTo(()))
+      if (allowMandatory)
+        items += option("Mandatory", Resolution.Mandatory)
+      items += option("Not applicable", Resolution.NotApplicable)
+      if (allowOptional)
+        items += option("Optional", Resolution.Optional)
+      items.result()
     }
 
     private val perReqTypeLens: Int => Lens[State, StatePerReqType] =

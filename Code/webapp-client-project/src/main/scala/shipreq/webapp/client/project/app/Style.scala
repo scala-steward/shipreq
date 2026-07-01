@@ -2106,6 +2106,19 @@ object Style extends StyleSheet.Inline {
 
   // ===================================================================================================================
 
+  object formulaFieldEditor {
+
+    val reqTypeRuleDefaultEditor = style(
+      marginTop(1 em),
+      display.flex,
+      flexDirection.column,
+    )
+
+    def applicableReqTypesErrMsg = widgets.applicableReqTypesErrMsg
+  }
+
+  // ===================================================================================================================
+
   initInnerObjects(
     accessPage.existingUserSegment.segment,
     accessPage.leaveProjectSegment.segment,
@@ -2114,6 +2127,7 @@ object Style extends StyleSheet.Inline {
     deletionForm.bottomSections,
     deletionRestorationForms.main,
     fieldConfig.fieldListTable,
+    formulaFieldEditor.applicableReqTypesErrMsg,
     generic.table,
     help.table,
     home.cardHeader,

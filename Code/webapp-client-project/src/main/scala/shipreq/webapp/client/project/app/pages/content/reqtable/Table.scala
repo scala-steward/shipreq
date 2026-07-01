@@ -486,8 +486,11 @@ object Table {
 
   def align(c: Column): Align =
     c match {
-      case Column.CustomField(_: CustomField.Number.Id) => Right
-      case _                                            => Left
+      case Column.CustomField(
+        _: CustomField.Number.Id |
+        _: CustomField.Formula.Id
+      ) => Right
+      case _ => Left
     }
 
   sealed abstract class Mode

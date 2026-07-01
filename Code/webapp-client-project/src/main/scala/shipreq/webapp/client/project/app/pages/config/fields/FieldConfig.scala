@@ -30,11 +30,12 @@ object FieldConfig {
 
   sealed trait EditorState
   object EditorState {
-    final case class ImpEditor (state: ImpFieldEditor   .State) extends EditorState
-    final case class NumEditor (state: NumberFieldEditor.State) extends EditorState
-    final case class TagEditor (state: TagFieldEditor   .State) extends EditorState
-    final case class TextEditor(state: TextFieldEditor  .State) extends EditorState
-    case object Static                                          extends EditorState
+    final case class ImpEditor    (state: ImpFieldEditor    .State) extends EditorState
+    final case class NumEditor    (state: NumberFieldEditor .State) extends EditorState
+    final case class FormulaEditor(state: FormulaFieldEditor.State) extends EditorState
+    final case class TagEditor    (state: TagFieldEditor    .State) extends EditorState
+    final case class TextEditor   (state: TextFieldEditor   .State) extends EditorState
+    case object Static                                              extends EditorState
   }
 
   val splitScreenCrud = new SplitScreenCrud[NewState, FieldId, EditorState]
@@ -67,12 +68,13 @@ object FieldConfig {
 
     val potentialSaveCmd: PotentialChange[Unit, UpdateConfigCmd.ToModifyFields] =
       state.value.right.editorOption match {
-        case Some(EditorState.ImpEditor (s)) => s.updateCmd(project.config)
-        case Some(EditorState.NumEditor (s)) => s.updateCmd(project.config)
-        case Some(EditorState.TagEditor (s)) => s.updateCmd(project.config)
-        case Some(EditorState.TextEditor(s)) => s.updateCmd(project.config)
+        case Some(EditorState.ImpEditor    (s)) => s.updateCmd(project.config)
+        case Some(EditorState.NumEditor    (s)) => s.updateCmd(project.config)
+        case Some(EditorState.TagEditor    (s)) => s.updateCmd(project.config)
+        case Some(EditorState.TextEditor   (s)) => s.updateCmd(project.config)
+        case Some(EditorState.FormulaEditor(s)) => s.updateCmd(project.config)
         case Some(EditorState.Static)
-           | None                            => PotentialChange.Unchanged
+           | None                               => PotentialChange.Unchanged
       }
 
     @inline def render: VdomElement = Component(this)
@@ -87,10 +89,11 @@ object FieldConfig {
     final case class Static(field: StaticField.Optional) extends NewFieldType(field.name)
 
     sealed abstract class Custom(label: String) extends NewFieldType(label)
-    case object Num  extends Custom("Numeric field")
-    case object Tag  extends Custom("Tag field")
-    case object Text extends Custom("Text field")
-    case object Imp  extends Custom("Implication field")
+    case object Formula extends Custom("Formula field")
+    case object Num     extends Custom("Numeric field")
+    case object Tag     extends Custom("Tag field")
+    case object Text    extends Custom("Text field")
+    case object Imp     extends Custom("Implication field")
 
     implicit def univEqC: UnivEq[Custom] = UnivEq.derive
     implicit def univEq: UnivEq[NewFieldType] = UnivEq.derive
@@ -114,16 +117,20 @@ object FieldConfig {
 
   sealed trait EditorType
   object EditorType {
-    final case class Dead    (id: CustomFieldId)                      extends EditorType
-    final case class LiveImp (id: Option[CustomField.Implication.Id]) extends EditorType
-    final case class LiveNum (id: Option[CustomField.Number     .Id]) extends EditorType
-    final case class LiveTag (id: Option[CustomField.Tag        .Id]) extends EditorType
-    final case class LiveText(id: Option[CustomField.Text       .Id]) extends EditorType
-    final case class Static  (field: StaticField)                     extends EditorType
+    final case class Dead       (id: CustomFieldId)                      extends EditorType
+    final case class LiveImp    (id: Option[CustomField.Implication.Id]) extends EditorType
+    final case class LiveNum    (id: Option[CustomField.Number     .Id]) extends EditorType
+    final case class LiveFormula(id: Option[CustomField.Formula    .Id]) extends EditorType
+    final case class LiveTag    (id: Option[CustomField.Tag        .Id]) extends EditorType
+    final case class LiveText   (id: Option[CustomField.Text       .Id]) extends EditorType
+    final case class Static     (field: StaticField)                     extends EditorType
   }
 
   private def editorStateLensForImp(default: => ImpFieldEditor.State): Lens[EditorState, ImpFieldEditor.State] =
     Optics.coproductLens[EditorState, ImpFieldEditor.State]({ case EditorState.ImpEditor(s) => s }, s => EditorState.ImpEditor(s), default)
+
+  private def editorStateLensForFormula(default: => FormulaFieldEditor.State): Lens[EditorState, FormulaFieldEditor.State] =
+    Optics.coproductLens[EditorState, FormulaFieldEditor.State]({ case EditorState.FormulaEditor(s) => s }, s => EditorState.FormulaEditor(s), default)
 
   private def editorStateLensForNum(default: => NumberFieldEditor.State): Lens[EditorState, NumberFieldEditor.State] =
     Optics.coproductLens[EditorState, NumberFieldEditor.State]({ case EditorState.NumEditor(s) => s }, s => EditorState.NumEditor(s), default)
@@ -158,14 +165,16 @@ object FieldConfig {
 
     private def initEditor(project: Project, arg: NewFieldType \/ FieldId): EditorState =
       arg match {
-        case \/-(id: CustomField.Implication.Id) => EditorState.ImpEditor (ImpFieldEditor.State.initUpdate(id, project.config))
-        case \/-(id: CustomField.Number     .Id) => EditorState.NumEditor (NumberFieldEditor.State.init(id, project.config))
-        case \/-(id: CustomField.Tag        .Id) => EditorState.TagEditor (TagFieldEditor.State.initUpdate(id, project.config))
-        case \/-(id: CustomField.Text       .Id) => EditorState.TextEditor(TextFieldEditor.State.init(id, project.config))
-        case -\/(NewFieldType.Imp              ) => EditorState.ImpEditor (ImpFieldEditor.State.initCreate)
-        case -\/(NewFieldType.Num              ) => EditorState.NumEditor (NumberFieldEditor.State.empty)
-        case -\/(NewFieldType.Tag              ) => EditorState.TagEditor (TagFieldEditor.State.initCreate)
-        case -\/(NewFieldType.Text             ) => EditorState.TextEditor(TextFieldEditor.State.empty)
+        case \/-(id: CustomField.Implication.Id) => EditorState.ImpEditor    (ImpFieldEditor.State.initUpdate(id, project.config))
+        case \/-(id: CustomField.Formula    .Id) => EditorState.FormulaEditor(FormulaFieldEditor.State.init(id, project.config))
+        case \/-(id: CustomField.Number     .Id) => EditorState.NumEditor    (NumberFieldEditor.State.init(id, project.config))
+        case \/-(id: CustomField.Tag        .Id) => EditorState.TagEditor    (TagFieldEditor.State.initUpdate(id, project.config))
+        case \/-(id: CustomField.Text       .Id) => EditorState.TextEditor   (TextFieldEditor.State.init(id, project.config))
+        case -\/(NewFieldType.Imp              ) => EditorState.ImpEditor    (ImpFieldEditor.State.initCreate)
+        case -\/(NewFieldType.Formula          ) => EditorState.FormulaEditor(FormulaFieldEditor.State.empty)
+        case -\/(NewFieldType.Num              ) => EditorState.NumEditor    (NumberFieldEditor.State.empty)
+        case -\/(NewFieldType.Tag              ) => EditorState.TagEditor    (TagFieldEditor.State.initCreate)
+        case -\/(NewFieldType.Text             ) => EditorState.TextEditor   (TextFieldEditor.State.empty)
         case -\/(NewFieldType.Static(_)        ) => EditorState.Static
         case \/-(_: StaticField                ) => EditorState.Static
       }
@@ -274,11 +283,13 @@ object FieldConfig {
               EditorType.Dead(fid)
             else fid match {
               case id: CustomField.Implication.Id => EditorType.LiveImp(Some(id))
+              case id: CustomField.Formula.Id     => EditorType.LiveFormula(Some(id))
               case id: CustomField.Number.Id      => EditorType.LiveNum(Some(id))
               case id: CustomField.Tag.Id         => EditorType.LiveTag(Some(id))
               case id: CustomField.Text.Id        => EditorType.LiveText(Some(id))
             }
           case -\/(NewFieldType.Imp)       => EditorType.LiveImp(None)
+          case -\/(NewFieldType.Formula)   => EditorType.LiveFormula(None)
           case -\/(NewFieldType.Num)       => EditorType.LiveNum(None)
           case -\/(NewFieldType.Tag)       => EditorType.LiveTag(None)
           case -\/(NewFieldType.Text)      => EditorType.LiveText(None)
@@ -334,6 +345,16 @@ object FieldConfig {
         )
       }
 
+      def formulaFieldEditor(idOption: Option[CustomField.Formula.Id], enabled: Enabled) = {
+        val lens = editorStateLensForFormula(FormulaFieldEditor.State.init(idOption, p.project.config))
+        FormulaFieldEditor.Props(
+          state      = args.state.zoomStateL(lens),
+          cfg        = p.project.config,
+          filterDead = p.effectiveFilterDead,
+          enabled    = enabled,
+        )
+      }
+
       editorType match {
 
         case EditorType.LiveImp(idOption) =>
@@ -356,13 +377,19 @@ object FieldConfig {
           val buttons = createOrUpdateButtons(idOption).render
           <.div(header, editor, buttons)
 
+        case EditorType.LiveFormula(idOption) =>
+          val editor = formulaFieldEditor(idOption, enabled).render
+          val buttons = createOrUpdateButtons(idOption).render
+          <.div(header, editor, buttons)
+
         case EditorType.Dead(id) =>
           val editor =
             id match {
-              case i: CustomField.Tag        .Id => tagFieldEditor   (Some(i), Disabled).render
-              case i: CustomField.Text       .Id => textFieldEditor  (Some(i), Disabled).render
-              case i: CustomField.Number     .Id => numberFieldEditor(Some(i), Disabled).render
-              case i: CustomField.Implication.Id => impFieldEditor   (Some(i), Disabled).render
+              case i: CustomField.Tag        .Id => tagFieldEditor    (Some(i), Disabled).render
+              case i: CustomField.Text       .Id => textFieldEditor   (Some(i), Disabled).render
+              case i: CustomField.Number     .Id => numberFieldEditor (Some(i), Disabled).render
+              case i: CustomField.Formula    .Id => formulaFieldEditor(Some(i), Disabled).render
+              case i: CustomField.Implication.Id => impFieldEditor    (Some(i), Disabled).render
             }
           val buttons =
             EditorButtons.restore(args)(submitCmd(p, UpdateConfigCmd.CustomFieldRestore(id), _, _), enabled).render
