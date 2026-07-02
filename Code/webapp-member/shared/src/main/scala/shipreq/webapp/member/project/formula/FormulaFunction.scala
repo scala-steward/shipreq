@@ -8,6 +8,7 @@ object FormulaFunction {
   case object And      extends FormulaFunction("AND")
   case object Average  extends FormulaFunction("AVERAGE")
   case object Ceiling  extends FormulaFunction("CEILING")
+  case object Err      extends FormulaFunction("ERR")
   case object Floor    extends FormulaFunction("FLOOR")
   case object If       extends FormulaFunction("IF")
   case object IsBlank  extends FormulaFunction("ISBLANK")

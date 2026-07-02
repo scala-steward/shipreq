@@ -7,7 +7,6 @@
   * Allow empty into arithmetic rather than `#ERR: Type mismatch`
   * Add auto-complete to formula editor
   * Add a help dialog to the formula editor
-  * Add `ERR()` function
 
 * Manually test UI
   * Issues screen

@@ -206,6 +206,8 @@ object FormulaEvalTest extends TestSuite {
       "floor3" - assertEval("FLOOR(-1.2)", Dbl(-2))
       "floorError" - assertEvalError("FLOOR(\"a\")", "Type mismatch.")
 
+      "errStr" - assertEvalError("ERR(\"abc\")", "abc")
+
       "isBlankTrue" - assertEval("ISBLANK(field:score)", Bool(true), fieldSet, req = req)
       "isBlankFalseDbl" - assertEval("ISBLANK(1)", Bool(false))
       "isBlankFalseStr" - assertEval("ISBLANK(\"hello\")", Bool(false))

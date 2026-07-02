@@ -82,6 +82,7 @@ object FormulaAlgebra {
             case FormulaFunction.And      => validWhen(true)
             case FormulaFunction.Average  => validWhen(a > 0)
             case FormulaFunction.Ceiling  => validWhen(a == 1)
+            case FormulaFunction.Err      => validWhen(a == 1)
             case FormulaFunction.Floor    => validWhen(a == 1)
             case FormulaFunction.If       => validWhen(a == 2 || a == 3)
             case FormulaFunction.IsBlank  => validWhen(a == 1)
@@ -267,6 +268,17 @@ object FormulaAlgebra {
               case arg :: Nil => arg match {
                 case Dbl(d) => \/-(Dbl(Math.ceil(d)))
                 case _       => typeMismatch
+              }
+              case _ => invalidNumberOfFnArgs
+            }
+
+          case FormulaFunction.Err =>
+            args match {
+              case arg :: Nil => arg match {
+                case Str(s)  => -\/(ErrorMsg(s))
+                case Dbl(d)  => -\/(ErrorMsg(Util.doubleToString(d)))
+                case b: Bool => -\/(ErrorMsg(b.show))
+                case Empty   => -\/(ErrorMsg("Empty value."))
               }
               case _ => invalidNumberOfFnArgs
             }

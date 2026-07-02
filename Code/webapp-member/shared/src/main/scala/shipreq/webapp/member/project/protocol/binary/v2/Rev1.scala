@@ -1148,11 +1148,13 @@ object Rev1 {
         private[this] final val KeyNot      = 11
         private[this] final val KeyOr       = 12
         private[this] final val KeyRound    = 13
+        private[this] final val KeyErr      = 14
         override def pickle(a: FormulaFunction)(implicit state: PickleState): Unit =
           a match {
             case FormulaFunction.And      => state.enc.writeByte(KeyAnd     )
             case FormulaFunction.Average  => state.enc.writeByte(KeyAverage )
             case FormulaFunction.Ceiling  => state.enc.writeByte(KeyCeiling )
+            case FormulaFunction.Err      => state.enc.writeByte(KeyErr     )
             case FormulaFunction.Floor    => state.enc.writeByte(KeyFloor   )
             case FormulaFunction.If       => state.enc.writeByte(KeyIf      )
             case FormulaFunction.IsBlank  => state.enc.writeByte(KeyIsBlank )
@@ -1170,6 +1172,7 @@ object Rev1 {
             case KeyAnd      => FormulaFunction.And
             case KeyAverage  => FormulaFunction.Average
             case KeyCeiling  => FormulaFunction.Ceiling
+            case KeyErr      => FormulaFunction.Err
             case KeyFloor    => FormulaFunction.Floor
             case KeyIf       => FormulaFunction.If
             case KeyIsBlank  => FormulaFunction.IsBlank
