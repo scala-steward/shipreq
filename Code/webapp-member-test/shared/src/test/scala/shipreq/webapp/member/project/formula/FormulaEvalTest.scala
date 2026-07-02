@@ -122,6 +122,17 @@ object FormulaEvalTest extends TestSuite {
       "subError" - assertEvalError("\"a\" - \"b\"", "Type mismatch.")
       "mulError" - assertEvalError("3 * \"a\"", "Type mismatch.")
       "divError" - assertEvalError("12 / \"a\"", "Type mismatch.")
+      "addEmptyL" - assertEval("field:score + 1", Empty, fieldSet, req = req)
+      "addEmptyR" - assertEval("1 + field:score", Empty, fieldSet, req = req)
+      "addStrEmptyL" - assertEval("field:score + \"a\"", Str("a"), fieldSet, req = req)
+      "addStrEmptyR" - assertEval("\"a\" + field:score", Str("a"), fieldSet, req = req)
+      "subEmptyL" - assertEval("field:score - 1", Empty, fieldSet, req = req)
+      "subEmptyR" - assertEval("1 - field:score", Empty, fieldSet, req = req)
+      "mulEmptyL" - assertEval("field:score * 3", Empty, fieldSet, req = req)
+      "mulEmptyR" - assertEval("3 * field:score", Empty, fieldSet, req = req)
+      "divEmptyL" - assertEval("field:score / 2", Empty, fieldSet, req = req)
+      "divEmptyR" - assertEval("12 / field:score", Empty, fieldSet, req = req)
+      "divEmptyZeroL" - assertEval("field:score / 0", Empty, fieldSet, req = req)
     }
 
     "comparisons" - {
@@ -182,6 +193,8 @@ object FormulaEvalTest extends TestSuite {
       "round4" - assertEval("ROUND(1.236, 2)", Dbl(1.24))
       "roundError" - assertEvalError("ROUND(\"a\")", "Type mismatch.")
       "roundScaleError" - assertEvalError("ROUND(1.2, \"a\")", "Type mismatch.")
+      "roundEmpty1" - assertEval("ROUND(field:score)", Empty, fieldSet, req = req)
+      "roundEmpty2" - assertEval("ROUND(field:score, 2)", Empty, fieldSet, req = req)
 
       "average1" - assertEval("AVERAGE(2)", Dbl(2))
       "average2" - assertEval("AVERAGE(1, 2, 6)", Dbl(3))
@@ -200,11 +213,13 @@ object FormulaEvalTest extends TestSuite {
       "ceiling2" - assertEval("CEILING(2.0)", Dbl(2))
       "ceiling3" - assertEval("CEILING(-1.2)", Dbl(-1))
       "ceilingError" - assertEvalError("CEILING(\"a\")", "Type mismatch.")
+      "ceilingEmpty" - assertEval("CEILING(field:score)", Empty, fieldSet, req = req)
 
       "floor1" - assertEval("FLOOR(1.8)", Dbl(1))
       "floor2" - assertEval("FLOOR(2.0)", Dbl(2))
       "floor3" - assertEval("FLOOR(-1.2)", Dbl(-2))
       "floorError" - assertEvalError("FLOOR(\"a\")", "Type mismatch.")
+      "floorEmpty" - assertEval("FLOOR(field:score)", Empty, fieldSet, req = req)
 
       "errStr" - assertEvalError("ERR(\"abc\")", "abc")
 

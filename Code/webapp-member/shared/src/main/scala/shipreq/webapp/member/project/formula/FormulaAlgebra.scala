@@ -152,12 +152,17 @@ object FormulaAlgebra {
           case (Str(x), Dbl(y))  => \/-(Str(x + Util.doubleToString(y)))
           case (Str(x), y: Bool) => \/-(Str(x + y.show))
           case (x: Str, Empty)   => \/-(x)
+          case (Empty, y: Str)   => \/-(y)
+          case (_, Empty)        => \/-(Empty)
+          case (Empty, _)        => \/-(Empty)
           case _                 => typeMismatch
         }
 
       case Subtract(lhs, rhs) =>
         (lhs, rhs) match {
           case (Dbl(x), Dbl(y)) => \/-(Dbl(x - y))
+          case (_, Empty)       => \/-(Empty)
+          case (Empty, _)       => \/-(Empty)
           case _                => typeMismatch
         }
 
@@ -165,6 +170,8 @@ object FormulaAlgebra {
         (lhs, rhs) match {
           case (Dbl(x), Dbl(y)) => \/-(Dbl(x * y))
           case (Str(x), Dbl(y)) => \/-(Str(x * (y + 0.5).toInt))
+          case (_, Empty)       => \/-(Empty)
+          case (Empty, _)       => \/-(Empty)
           case _                => typeMismatch
         }
 
@@ -172,6 +179,8 @@ object FormulaAlgebra {
         (lhs, rhs) match {
           case (Dbl(_), Dbl(0)) => fail("Division by zero.")
           case (Dbl(x), Dbl(y)) => \/-(Dbl(x / y))
+          case (_, Empty)       => \/-(Empty)
+          case (Empty, _)       => \/-(Empty)
           case _                => typeMismatch
         }
 
@@ -267,7 +276,8 @@ object FormulaAlgebra {
             args match {
               case arg :: Nil => arg match {
                 case Dbl(d) => \/-(Dbl(Math.ceil(d)))
-                case _       => typeMismatch
+                case Empty  => \/-(Empty)
+                case _      => typeMismatch
               }
               case _ => invalidNumberOfFnArgs
             }
@@ -287,7 +297,8 @@ object FormulaAlgebra {
             args match {
               case arg :: Nil => arg match {
                 case Dbl(d) => \/-(Dbl(Math.floor(d)))
-                case _       => typeMismatch
+                case Empty  => \/-(Empty)
+                case _      => typeMismatch
               }
               case _ => invalidNumberOfFnArgs
             }
@@ -343,10 +354,12 @@ object FormulaAlgebra {
             args match {
               case arg :: Nil => arg match {
                 case Dbl(d) => \/-(Dbl(round(d, 0)))
+                case Empty  => \/-(Empty)
                 case _      => typeMismatch
               }
               case arg1 :: arg2 :: Nil => (arg1, arg2) match {
                 case (Dbl(d), Dbl(s)) => \/-(Dbl(round(d, s)))
+                case (Empty, _: Dbl)  => \/-(Empty)
                 case _                => typeMismatch
               }
               case _ => invalidNumberOfFnArgs
