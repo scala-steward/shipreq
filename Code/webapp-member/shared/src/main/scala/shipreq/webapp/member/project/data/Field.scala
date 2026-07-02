@@ -425,6 +425,9 @@ object CustomField {
     def min = range._1
     def max = range._2
 
+    def isWithinRange(d: Double): Boolean =
+      d >= min && d <= max
+
     def scale(d: Double): Double =
       Util.setScale(d, decimalPlaces)
   }

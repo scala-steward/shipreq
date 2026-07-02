@@ -427,7 +427,7 @@ object IssueDetectors {
               field <- fields
               num   <- content.reqNums(field.id).get(req.id)
             } {
-              if (num < field.min || num > field.max)
+              if (!field.isWithinRange(num))
                 ctx.add(Issue.NumberOutOfRange(req, field))
             }
           }

@@ -216,7 +216,7 @@ abstract class ProjectText[+Ctx <: Context, Out](project: Project, final val ctx
           .orElse(default)
           .map { n =>
             val live     = liveField & req.live(cfg.reqTypes)
-            val validity = Valid.when(n >= field.min && n <= field.max)
+            val validity = Valid.when(field.isWithinRange(n))
             number(n, field.decimalPlaces, live, validity)
           }
       }
