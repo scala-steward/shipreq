@@ -170,7 +170,7 @@ object TagFieldEditor {
     def initCreate: ForCreate =
       ForCreate(
         None,
-        ReqTypeRulesEditor.State.empty,
+        ReqTypeRulesEditor.ApplicableTagDefault.emptyState,
         DerivativeTagsEditor.State.empty,
       )
 

@@ -33,24 +33,28 @@ object ReqTypeRulesEditor {
     allowOptional = true,
     allowMandatory = true,
     allowDefaults = false,
+    newRowDefault = Resolution.default,
     keyFor = _.impossible)
 
   val ApplicableTagDefault = new ReqTypeRulesEditor[ApplicableTagId](
     allowOptional = true,
     allowMandatory = true,
     allowDefaults = true,
+    newRowDefault = Resolution.default,
     keyFor = _.value.toString)
 
   val DoubleDefault = new ReqTypeRulesEditor[Double](
     allowOptional = true,
     allowMandatory = true,
     allowDefaults = true,
+    newRowDefault = Resolution.default,
     keyFor = _.toString)
 
   val ForFormulaFields = new ReqTypeRulesEditor[ValidFormula](
     allowOptional = false,
     allowMandatory = false,
     allowDefaults = true,
+    newRowDefault = Resolution.DefaultTo(()),
     keyFor = _ => "") // unused
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -209,16 +213,16 @@ object ReqTypeRulesEditor {
     val allDead: Set[ReqTypeId] =
       dead.foldLeft(Set.empty[ReqTypeId])((q, p) => Util.mergeSets(q, p.ids.whole))
 
-    def addRow: State[D] =
-      copy(perReqType = perReqType :+ State.PerReqType.empty[D])
+    def addRow(res: Resolution[Unit]): State[D] =
+      copy(perReqType = perReqType :+ State.PerReqType.empty[D](res))
 
     def delRow(idx: Int): State[D] =
       copy(perReqType = perReqType.delete(idx).getOrElse(perReqType))
   }
 
   object State {
-    def empty[D]: State[D] =
-      apply(Nil, Vector.empty, State.ResValue.empty)
+    def empty[D](res: Resolution[Unit]): State[D] =
+      apply(Nil, Vector.empty, State.ResValue.empty(res))
 
     def init[D](cfg: ProjectConfig, rules: FieldReqTypeRules.ByResolution[D])(toText: D => String): State[D] = {
       val dead: List[DeadRow[D]] =
@@ -260,8 +264,8 @@ object ReqTypeRulesEditor {
     final case class PerReqType[D](text: String, res: ResValue[D], key: Key)
 
     object PerReqType {
-      def empty[D]: PerReqType[D] =
-        apply("", ResValue.empty, keyGen.next())
+      def empty[D](res: Resolution[Unit]): PerReqType[D] =
+        apply("", ResValue.empty(res), keyGen.next())
 
       def from[D](cfg: ProjectConfig, ids: NonEmptySet[ReqTypeId], res: Resolution[D])(toText: D => String): PerReqType[D] = {
         def reqTypes(live: Live) = ids.iterator.flatMap(cfg.reqTypes.get).filter(_.live is live)
@@ -276,8 +280,8 @@ object ReqTypeRulesEditor {
     }
 
     object ResValue {
-      def empty[D]: ResValue[D] =
-        apply(Resolution.default, "", None)
+      def empty[D](res: Resolution[Unit]): ResValue[D] =
+        apply(res, "", None)
 
       def from[D](res: Resolution[D])(toText: D => String): ResValue[D] =
         res match {
@@ -321,6 +325,7 @@ object ReqTypeRulesEditor {
 final class ReqTypeRulesEditor[D: Reusability: UnivEq](allowOptional: Boolean,
                                                        allowMandatory: Boolean,
                                                        allowDefaults: Boolean,
+                                                       newRowDefault: Resolution[Unit],
                                                        keyFor: D => String) {
 
   type Props           = ReqTypeRulesEditor.Props[D]
@@ -329,6 +334,9 @@ final class ReqTypeRulesEditor[D: Reusability: UnivEq](allowOptional: Boolean,
   type StatePerReqType = ReqTypeRulesEditor.State.PerReqType[D]
   type StateResValue   = ReqTypeRulesEditor.State.ResValue[D]
   type Validation      = ReqTypeRulesEditor.Validation[D]
+
+  def emptyState: State =
+    ReqTypeRulesEditor.State.empty(newRowDefault)
 
   final class Backend($: BackendScope[Props, Unit]) {
     import ReqTypeRulesEditor.Internals._
@@ -375,7 +383,7 @@ final class ReqTypeRulesEditor[D: Reusability: UnivEq](allowOptional: Boolean,
       Enabled.memo(e =>
         Button(tipe = Button.Type.BasicIconOnly(Icon.Plus), colour = Colour.Green)
           .disableMaybe(e)
-          .onClick($.props.flatMap(_.state.modState(_.addRow))))
+          .onClick($.props.flatMap(_.state.modState(_.addRow(newRowDefault)))))
 
     private val delRowButton =
       Button(tipe = Button.Type.BasicIconOnly(Icon.Trash), colour = ColourPlus.Negative)

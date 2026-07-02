@@ -102,7 +102,7 @@ object NumberFieldEditor {
         min           = "0",
         max           = "10",
         decimalPlaces = "0",
-        rules         = ReqTypeRulesEditor.State.empty,
+        rules         = ReqTypeRulesEditor.DoubleDefault.emptyState,
       )
 
     def init(id: CustomField.Number.Id, cfg: ProjectConfig): State = {

@@ -91,7 +91,7 @@ object FormulaFieldEditor {
         name          = "",
         desc          = "",
         decimalPlaces = "0",
-        rules         = ReqTypeRulesEditor.State.empty,
+        rules         = ReqTypeRulesEditor.ForFormulaFields.emptyState,
       )
 
     def init(id: CustomField.Formula.Id, cfg: ProjectConfig): State = {

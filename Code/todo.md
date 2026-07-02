@@ -5,7 +5,6 @@
 * To fix:
   * Add auto-complete to formula editor
   * Add a help dialog to the formula editor
-  * In formula field editor, create new req rule row, resolution is empty but "Update" button allows click
 
 * Manually test UI
   * Issues screen

@@ -67,7 +67,7 @@ object TextFieldEditor {
 
   object State {
     def empty: State =
-      apply(None, "", ReqTypeRulesEditor.State.empty)
+      apply(None, "", ReqTypeRulesEditor.NoDefault.emptyState)
 
     def init(id: CustomField.Text.Id, cfg: ProjectConfig): State = {
       val f = cfg.fields.custom(id)
