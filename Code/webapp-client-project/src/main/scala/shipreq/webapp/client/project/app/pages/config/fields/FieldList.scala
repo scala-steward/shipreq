@@ -117,7 +117,8 @@ object FieldList {
     private val impossible: Impossible => VdomNode =
       _.impossible
 
-    private def renderDetailRules[A](p: Props, rules0: FieldReqTypeRules.ByResolution[A])(renderDefault: A => VdomNode): VdomNode = {
+    private def renderDetailRules[A](p: Props, rules0: FieldReqTypeRules.ByResolution[A], defaultTo: VdomNode = "Default to ")
+                                    (renderDefault: A => VdomNode): VdomNode = {
 
       val rules: FieldReqTypeRules.ByResolution[A] =
         p.filterDead match {
@@ -129,7 +130,7 @@ object FieldList {
         case FieldReqTypeRules.Resolution.NotApplicable => "Not applicable"
         case FieldReqTypeRules.Resolution.Mandatory     => "Mandatory"
         case FieldReqTypeRules.Resolution.Optional      => "Optional"
-        case FieldReqTypeRules.Resolution.DefaultTo(a)  => <.span("Default to ", renderDefault(a))
+        case FieldReqTypeRules.Resolution.DefaultTo(a)  => <.span(defaultTo, renderDefault(a))
       }
 
       val validity =
@@ -230,8 +231,8 @@ object FieldList {
               renderDetailRules(p, f.fieldReqTypeRulesByResolution)(p.pw.number(_, f.decimalPlaces, Live, Valid))
 
             case f: CustomField.Formula =>
-              renderDetailRules(p, f.fieldReqTypeRulesByResolution)(v =>
-                Formula.Valid.toText(v.formula, p.config.fields)
+              renderDetailRules(p, f.fieldReqTypeRulesByResolution, defaultTo = EmptyVdom)(v =>
+                "\"" + Formula.Valid.toText(v.formula, p.config.fields) + "\""
               )
 
             case StaticField.OtherTags =>
