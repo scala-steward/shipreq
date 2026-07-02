@@ -23,7 +23,6 @@
   * Live formulas that reference dead fields
     * Numeric fields
     * Formula fields (and test transitivity)
-    * `FormulaEvalCache.Eval.validity` should be `Invalid` - test renders as an issue in UI
   * Live formula cells that contain errors
   * Formula field reqType rules are all dead or N/A (rule already in-place, confirm works)
 

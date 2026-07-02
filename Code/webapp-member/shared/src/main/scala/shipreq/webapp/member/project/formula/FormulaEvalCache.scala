@@ -57,44 +57,32 @@ final class FormulaEvalCache(cfg          : ProjectConfig,
 
   private final def memoByReqId = Memo.by[Req, ReqId](_.id)
 
-  private val validityCache: CustomField.Formula.Id => ReqTypeId => Validity =
+  private val evalCache: CustomField.Formula.Id => Req => Result =
     Memo { fid =>
       val field     = cfg.fields.custom(fid)
       val liveField = field.live(cfg)
-      Memo { reqTypeId =>
-        field.fieldReqTypeRules(reqTypeId) match {
-
-          case FieldReqTypeRules.Resolution.DefaultTo(formula) =>
-            liveField match {
-              case Live =>
-                Valid when formula.fieldRefs.forall {
-                  case FormulaFieldRef.NumberField(id) => cfg.fields.custom(id).live(cfg) is Live
-                }
-              case Dead => Valid
-            }
-
-          case FieldReqTypeRules.Resolution.Optional
-             | FieldReqTypeRules.Resolution.Mandatory
-             | FieldReqTypeRules.Resolution.NotApplicable =>
-              Valid
-        }
-      }
-    }
-
-  private val evalCache: CustomField.Formula.Id => Req => Result =
-    Memo { fid =>
-      val field          = cfg.fields.custom(fid)
-      val liveField      = field.live(cfg)
-      val validityLookup = validityCache(fid)
 
       memoByReqId { req =>
         field.fieldReqTypeRules(req.reqTypeId) match {
 
           case FieldReqTypeRules.Resolution.DefaultTo(formula) =>
+            def validityExcludingEval: Validity =
+              liveField match {
+                case Live =>
+                  Valid when formula.fieldRefs.forall {
+                    case FormulaFieldRef.NumberField(id) =>
+                      val f          = cfg.fields.custom(id)
+                      val isLive     = f.live(cfg) is Live
+                      def isValidNum = reqNums.getVirtual(f, req).forall(f.isWithinRange)
+                      isLive && isValidNum
+                  }
+                case Dead => Valid // We don't want red marks on a dead field
+              }
+
             val algebra  = FormulaAlgebra.eval(cfg.fields, reqNums, req)
             val value    = Recursion.cataM(algebra)(formula.formula)
             val live     = liveField & req.live(cfg.reqTypes)
-            val validity = Invalid.when(value.isLeft) & validityLookup(req.reqTypeId)
+            val validity = Invalid.when(value.isLeft) & validityExcludingEval
             val result   = Eval(value, live, validity)
             \/-(result)
 
