@@ -253,6 +253,14 @@ object FormulaEvalTest extends TestSuite {
       "fieldEmpty" - {
         assertEval("field:score", Empty, fieldSet, ReqData.Numbers.empty, req)
       }
+      "ifIsBlank" - {
+        val f = "IF(ISBLANK(field:score), ERR(\"Score is blank\"), field:score * 2)"
+        "blank" - assertEvalError(f, "Score is blank", fieldSet, ReqData.Numbers.empty, req)
+        "populated" - {
+          val reqNums = ReqData.Numbers(Map(scoreFieldId -> Map(reqId -> 123)))
+          assertEval(f, Dbl(246), fieldSet, reqNums, req)
+        }
+      }
     }
   }
 }
