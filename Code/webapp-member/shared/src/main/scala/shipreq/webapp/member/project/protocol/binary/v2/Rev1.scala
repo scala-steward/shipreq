@@ -1073,6 +1073,9 @@ object Rev1 {
     implicit val picklerFormulaValueStr: Pickler[FormulaValue.Str] =
       transformPickler(FormulaValue.Str.apply)(_.value)
 
+    implicit val picklerFormulaValueErr: Pickler[FormulaValue.Err] =
+      transformPickler(FormulaValue.Err.apply)(_.value)
+
     implicit val picklerFormulaValueBool: Pickler[FormulaValue.Bool] =
       transformPickler(FormulaValue.Bool.apply)(_.value)
 
@@ -1082,12 +1085,14 @@ object Rev1 {
         private[this] final val KeyDbl   = 'd'
         private[this] final val KeyEmpty = '0'
         private[this] final val KeyStr   = 's'
+        private[this] final val KeyErr   = 'e'
         override def pickle(a: FormulaValue)(implicit state: PickleState): Unit =
           a match {
             case b: FormulaValue.Bool  => state.enc.writeByte(KeyBool ); state.pickle(b)
             case b: FormulaValue.Dbl   => state.enc.writeByte(KeyDbl  ); state.pickle(b)
             case FormulaValue.Empty    => state.enc.writeByte(KeyEmpty)
             case b: FormulaValue.Str   => state.enc.writeByte(KeyStr  ); state.pickle(b)
+            case b: FormulaValue.Err   => state.enc.writeByte(KeyErr  ); state.pickle(b)
           }
         override def unpickle(implicit state: UnpickleState): FormulaValue =
           state.dec.readByte match {
@@ -1095,6 +1100,7 @@ object Rev1 {
             case KeyDbl   => state.unpickle[FormulaValue.Dbl]
             case KeyEmpty => FormulaValue.Empty
             case KeyStr   => state.unpickle[FormulaValue.Str]
+            case KeyErr   => state.unpickle[FormulaValue.Err]
           }
       }
 

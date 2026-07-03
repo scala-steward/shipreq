@@ -8,24 +8,9 @@ import shipreq.webapp.member.project.data.DataImplicits._
 
 object FormulaEvalCache {
 
-  type Value = ErrorMsg \/ FormulaValue
-
   /** @param validity Invalid when the formula relies on dead fields.
     */
-  final case class Eval(value: Value, live: Live, validity: Validity) {
-
-    def isBlank: Boolean =
-      value match {
-        case \/-(FormulaValue.Empty) => true
-        case _                       => false
-      }
-
-    def doubleOption: Option[Double] =
-      value match {
-        case \/-(FormulaValue.Dbl(d)) => Some(d)
-        case _                        => None
-      }
-  }
+  final case class Eval(value: FormulaValue, live: Live, validity: Validity)
 
   type Result = IfApplicable[Eval]
 
@@ -80,9 +65,9 @@ final class FormulaEvalCache(cfg          : ProjectConfig,
               }
 
             val algebra  = FormulaAlgebra.eval(cfg.fields, reqNums, req)
-            val value    = Recursion.cataM(algebra)(formula.formula)
+            val value    = Recursion.cata(algebra)(formula.formula)
             val live     = liveField & req.live(cfg.reqTypes)
-            val validity = Invalid.when(value.isLeft) & validityExcludingEval
+            val validity = Invalid.when(value.isErr) & validityExcludingEval
             val result   = Eval(value, live, validity)
             \/-(result)
 

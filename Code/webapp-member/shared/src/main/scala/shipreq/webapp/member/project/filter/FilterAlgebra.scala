@@ -633,7 +633,7 @@ object FilterAlgebra {
         case (FieldCriteria.CompareNumber(op, targetNum), \/-(fid: CustomField.Formula.Id)) =>
           val fe = formulaEval(fid)
           reqOnly { req =>
-            val numOption = fe(req).toOption.flatMap(_.doubleOption)
+            val numOption = fe(req).toOption.flatMap(_.value.doubleOption)
             op match {
               case None    => numOption.contains(targetNum)
               case Some(o) => numOption.exists(o.cmpDoubles(_, targetNum))
@@ -670,7 +670,7 @@ object FilterAlgebra {
 
         case (FieldCriteria.Attr(Blank), \/-(fid: CustomField.Formula.Id)) =>
           val fe = formulaEval(fid)
-          reqOnly(req => fe(req).exists(_.isBlank))
+          reqOnly(req => fe(req).exists(_.value.isEmpty))
 
         case (FieldCriteria.Attr(Blank), \/-(fid: CustomField.Number.Id)) =>
           val reqNums = p.content.reqNums(fid)

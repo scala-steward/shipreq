@@ -646,6 +646,12 @@ object Rev1 {
     implicit val encoderFormulaValueStr: Encoder[FormulaValue.Str] =
       Encoder[String].contramap(_.value)
 
+    implicit val decoderFormulaValueErr: Decoder[FormulaValue.Err] =
+      Decoder[String].map(FormulaValue.Err.apply)
+
+    implicit val encoderFormulaValueErr: Encoder[FormulaValue.Err] =
+      Encoder[String].contramap(_.value)
+
     implicit val decoderFormulaValueBool: Decoder[FormulaValue.Bool] =
       Decoder[Boolean].map(FormulaValue.Bool.apply)
 
@@ -656,6 +662,7 @@ object Rev1 {
       case ("bool", c) => c.as[FormulaValue.Bool]
       case ("dbl" , c) => c.as[FormulaValue.Dbl]
       case ("str" , c) => c.as[FormulaValue.Str]
+      case ("err" , c) => c.as[FormulaValue.Err]
       case ("-"   , _) => Right(FormulaValue.Empty)
     }
 
@@ -663,6 +670,7 @@ object Rev1 {
       case a: FormulaValue.Bool => Json.obj("bool" -> a.asJson)
       case a: FormulaValue.Dbl  => Json.obj("dbl"  -> a.asJson)
       case a: FormulaValue.Str  => Json.obj("str"  -> a.asJson)
+      case a: FormulaValue.Err  => Json.obj("err"  -> a.asJson)
       case FormulaValue.Empty   => Json.obj("-"    -> ().asJson)
     }
 

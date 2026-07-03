@@ -526,19 +526,14 @@ object PlainText {
 
     override def formulaEval(eval: FormulaEvalCache.Eval, fid: CustomField.Formula.Id): String =
       eval.value match {
-        case \/-(v) => v match {
-          case FormulaValue.Dbl(d) =>
-            val f = p.config.fields.custom(fid)
-            number(d, f.decimalPlaces, eval.live, eval.validity)
+        case FormulaValue.Dbl(d) =>
+          val f = p.config.fields.custom(fid)
+          number(d, f.decimalPlaces, eval.live, eval.validity)
 
-          case FormulaValue.Str(s)  => s
-          case b: FormulaValue.Bool => b.show
-          case FormulaValue.Empty   => ""
-        }
-        case -\/(e) => formulaErrFmt(e)
+        case b: FormulaValue.Bool => b.show
+        case FormulaValue.Str(s)  => s
+        case FormulaValue.Err(e)  => "#ERR: " + e
+        case FormulaValue.Empty   => ""
       }
   }
-
-  def formulaErrFmt(e: ErrorMsg): String =
-    "#ERR: " + e.value
 }

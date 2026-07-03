@@ -150,13 +150,8 @@ object Sorter {
           {
             case row: Row.ForReq =>
               evalCache(row.req) match {
-                case \/-(eval) =>
-                  eval.value match {
-                    case \/-(v) => v
-                    case -\/(e) => FormulaValue.Str(PlainText.formulaErrFmt(e))
-                  }
-                case -\/(_) =>
-                  FormulaValue.Empty
+                case \/-(eval) => eval.value
+                case -\/(_)    => FormulaValue.Empty
               }
             case _: Row.ForCodeGroup =>
               FormulaValue.Empty

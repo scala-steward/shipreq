@@ -14,7 +14,7 @@ import shipreq.webapp.member.project.filter.FilterAlgebra
   *   unparse   : FAlgebra [               PotentialF, AtomOrComposite[String]]
   *   validate  : FAlgebraM[ErrorMsg \/ *, PotentialF, Valid]
   *   unvalidate: FAlgebra [               ValidF,     Potential]
-  *   eval      : FAlgebraM[ErrorMsg \/ *, ValidF,     FormulaValue]
+  *   eval      : FAlgebra [               ValidF,     FormulaValue]
   *   fieldRefs : FAlgebra [               ValidF,     Set[FormulaFieldRef]]
   * }}}
   */
@@ -48,12 +48,14 @@ object FormulaAlgebra {
         case AtomOrComposite.Composite(c, _) => c
       }
     }
+    def quotedStr(s: String) = '"' ~ s.replace("\"", "\"\"") ~ '"'
 
     {
       case Value(Empty)      => ""
       case Value(b: Bool)    => b.show
       case Value(Dbl(d))     => Util.doubleToString(d)
-      case Value(Str(s))     => '"' ~ s.replace("\"", "\"\"") ~ '"'
+      case Value(Str(s))     => quotedStr(s)
+      case Value(Err(s))     => "ERR(" ~ quotedStr(s) ~ ')'
       case Add(l, r)         => composite("(", l.atom ~ " + " ~ r.atom, ")")
       case Subtract(l, r)    => composite("(", l.atom ~ " - " ~ r.atom, ")")
       case Multiply(l, r)    => composite("(", l.atom ~ " * " ~ r.atom, ")")
@@ -135,94 +137,113 @@ object FormulaAlgebra {
 
   // ===================================================================================================================
 
-  private val typeMismatch = fail("Type mismatch.")
-  private val invalidNumberOfFnArgs = fail("Arg count mismatch.") // this should be caught at the validation stage
+  private val typeMismatch = FormulaValue.Err("Type mismatch.")
+  private val invalidNumberOfFnArgs = FormulaValue.Err("Arg count mismatch.") // this should be caught at the validation stage
 
-  def eval(fieldSet: FieldSet, reqNums: ReqData.Numbers, req: Req): FAlgebraM[ErrorMsg \/ *, ValidF, FormulaValue] = {
+  def eval(fieldSet: FieldSet, reqNums: ReqData.Numbers, req: Req): FAlgebra[ValidF, FormulaValue] = {
     import FormulaValue._
-    type Res = ErrorMsg \/ FormulaValue
 
     {
-      case Value(v) => \/-(v)
+      case Value(v) => v
 
       case Add(lhs, rhs) =>
         (lhs, rhs) match {
-          case (Dbl(x), Dbl(y))  => \/-(Dbl(x + y))
-          case (Str(x), Str(y))  => \/-(Str(x + y))
-          case (Str(x), Dbl(y))  => \/-(Str(x + Util.doubleToString(y)))
-          case (Str(x), y: Bool) => \/-(Str(x + y.show))
-          case (x: Str, Empty)   => \/-(x)
-          case (Empty, y: Str)   => \/-(y)
-          case (_, Empty)        => \/-(Empty)
-          case (Empty, _)        => \/-(Empty)
+          case (Dbl(x), Dbl(y))  => Dbl(x + y)
+          case (Str(x), Str(y))  => Str(x + y)
+          case (Str(x), Dbl(y))  => Str(x + Util.doubleToString(y))
+          case (Str(x), y: Bool) => Str(x + y.show)
+          case (x: Str, Empty)   => x
+          case (Empty, y: Str)   => y
+          case (_, Empty)        => Empty
+          case (Empty, _)        => Empty
+          case (e: Err, _)       => e
+          case (_, e: Err)       => e
           case _                 => typeMismatch
         }
 
       case Subtract(lhs, rhs) =>
         (lhs, rhs) match {
-          case (Dbl(x), Dbl(y)) => \/-(Dbl(x - y))
-          case (_, Empty)       => \/-(Empty)
-          case (Empty, _)       => \/-(Empty)
+          case (Dbl(x), Dbl(y)) => Dbl(x - y)
+          case (_, Empty)       => Empty
+          case (Empty, _)       => Empty
+          case (e: Err, _)      => e
+          case (_, e: Err)      => e
           case _                => typeMismatch
         }
 
       case Multiply(lhs, rhs) =>
         (lhs, rhs) match {
-          case (Dbl(x), Dbl(y)) => \/-(Dbl(x * y))
-          case (Str(x), Dbl(y)) => \/-(Str(x * (y + 0.5).toInt))
-          case (_, Empty)       => \/-(Empty)
-          case (Empty, _)       => \/-(Empty)
+          case (Dbl(x), Dbl(y)) => Dbl(x * y)
+          case (Str(x), Dbl(y)) => Str(x * (y + 0.5).toInt)
+          case (_, Empty)       => Empty
+          case (Empty, _)       => Empty
+          case (e: Err, _)      => e
+          case (_, e: Err)      => e
           case _                => typeMismatch
         }
 
       case Divide(lhs, rhs) =>
         (lhs, rhs) match {
-          case (Dbl(_), Dbl(0)) => fail("Division by zero.")
-          case (Dbl(x), Dbl(y)) => \/-(Dbl(x / y))
-          case (_, Empty)       => \/-(Empty)
-          case (Empty, _)       => \/-(Empty)
+          case (Dbl(_), Dbl(0)) => Err("Division by zero.")
+          case (Dbl(x), Dbl(y)) => Dbl(x / y)
+          case (_, Empty)       => Empty
+          case (Empty, _)       => Empty
+          case (e: Err, _)      => e
+          case (_, e: Err)      => e
           case _                => typeMismatch
         }
 
       case Compare(lhs, FormulaCmpOp.`=`, rhs) =>
         (lhs, rhs) match {
-          case (Dbl(x), Dbl(y))   => \/-(Bool(x ==* y))
-          case (Str(x), Str(y))   => \/-(Bool(x ==* y))
-          case (Bool(x), Bool(y)) => \/-(Bool(x ==* y))
-          case (Empty, Empty)     => \/-(Bool(true))
-          case _                  => \/-(Bool(false))
+          case (e: Err, _)        => e
+          case (_, e: Err)        => e
+          case (Dbl(x), Dbl(y))   => Bool(x ==* y)
+          case (Str(x), Str(y))   => Bool(x ==* y)
+          case (Bool(x), Bool(y)) => Bool(x ==* y)
+          case (Empty, Empty)     => Bool(true)
+          case _                  => Bool(false)
         }
 
       case Compare(lhs, FormulaCmpOp.!=, rhs) =>
         (lhs, rhs) match {
-          case (Dbl(x), Dbl(y))   => \/-(Bool(x !=* y))
-          case (Str(x), Str(y))   => \/-(Bool(x !=* y))
-          case (Bool(x), Bool(y)) => \/-(Bool(x !=* y))
-          case (Empty, Empty)     => \/-(Bool(false))
-          case _                  => \/-(Bool(true))
+          case (e: Err, _)        => e
+          case (_, e: Err)        => e
+          case (Dbl(x), Dbl(y))   => Bool(x !=* y)
+          case (Str(x), Str(y))   => Bool(x !=* y)
+          case (Bool(x), Bool(y)) => Bool(x !=* y)
+          case (Empty, Empty)     => Bool(false)
+          case _                  => Bool(true)
         }
 
       case Compare(lhs, FormulaCmpOp.<, rhs) =>
         (lhs, rhs) match {
-          case (Dbl(x), Dbl(y)) => \/-(Bool(x < y))
+          case (Dbl(x), Dbl(y)) => Bool(x < y)
+          case (e: Err, _)      => e
+          case (_, e: Err)      => e
           case _                => typeMismatch
         }
 
       case Compare(lhs, FormulaCmpOp.>, rhs) =>
         (lhs, rhs) match {
-          case (Dbl(x), Dbl(y)) => \/-(Bool(x > y))
+          case (Dbl(x), Dbl(y)) => Bool(x > y)
+          case (e: Err, _)      => e
+          case (_, e: Err)      => e
           case _                => typeMismatch
         }
 
       case Compare(lhs, FormulaCmpOp.<=, rhs) =>
         (lhs, rhs) match {
-          case (Dbl(x), Dbl(y)) => \/-(Bool(x <= y))
+          case (Dbl(x), Dbl(y)) => Bool(x <= y)
+          case (e: Err, _)      => e
+          case (_, e: Err)      => e
           case _                => typeMismatch
         }
 
       case Compare(lhs, FormulaCmpOp.>=, rhs) =>
         (lhs, rhs) match {
-          case (Dbl(x), Dbl(y)) => \/-(Bool(x >= y))
+          case (Dbl(x), Dbl(y)) => Bool(x >= y)
+          case (e: Err, _)      => e
+          case (_, e: Err)      => e
           case _                => typeMismatch
         }
 
@@ -231,35 +252,38 @@ object FormulaAlgebra {
         case FormulaFieldRef.NumberField(fid) =>
           val f = fieldSet.custom(fid)
           reqNums.getVirtual(f, req) match {
-            case Some(d) => \/-(Dbl(d))
-            case None    => \/-(Empty)
+            case Some(d) => Dbl(d)
+            case None    => Empty
           }
       }
 
       case Function(fn, args) =>
-        def foldBoolArgs(start: Boolean)(f: (Boolean, Boolean) => Boolean): Res =
-          args.foldLeft[Res](\/-(Bool(start)))((r, bv) =>
-            r.flatMap(av =>
-              (av, bv) match {
-                case (Bool(a), Bool(b)) => \/-(Bool(f(a, b)))
-                case _                  => typeMismatch
-              }
-            )
+        def foldBoolArgs(start: Boolean)(f: (Boolean, Boolean) => Boolean): FormulaValue =
+          args.foldLeft[FormulaValue](Bool(start))((av, bv) =>
+            (av, bv) match {
+              case (Bool(a), Bool(b)) => Bool(f(a, b))
+              case (e: Err, _)        => e
+              case (_, e: Err)        => e
+              case _                  => typeMismatch
+            }
           )
 
-        def reduceDbls(f: (Double, Double) => Double): Res =
+        def reduceDbls(f: (Double, Double) => Double): FormulaValue =
           if (args.isEmpty)
             invalidNumberOfFnArgs
           else
             args.traverse {
               case Dbl(d) => \/-(d)
-              case _      => typeMismatch
-            }.map(doubles => Dbl(doubles.reduce(f)))
+              case _      => -\/(typeMismatch)
+            } match {
+              case \/-(ds) => Dbl(ds.reduce(f))
+              case -\/(e)  => e
+            }
 
-        def isType(f: PartialFunction[FormulaValue, Unit]): Res =
+        def isType(f: PartialFunction[FormulaValue, Unit]): FormulaValue =
           args match {
-            case arg :: Nil => \/-(Bool(f.isDefinedAt(arg)))
-            case _ => invalidNumberOfFnArgs
+            case arg :: Nil => Bool(f.isDefinedAt(arg))
+            case _          => invalidNumberOfFnArgs
           }
 
         fn match {
@@ -267,16 +291,18 @@ object FormulaAlgebra {
             foldBoolArgs(true)(_ && _)
 
           case FormulaFunction.Average =>
-            reduceDbls(_ + _).flatMap {
-              case Dbl(d) => \/-(Dbl(d / args.size))
+            reduceDbls(_ + _) match {
+              case Dbl(d) => Dbl(d / args.size)
+              case e: Err => e
               case _      => typeMismatch
             }
 
           case FormulaFunction.Ceiling =>
             args match {
               case arg :: Nil => arg match {
-                case Dbl(d) => \/-(Dbl(Math.ceil(d)))
-                case Empty  => \/-(Empty)
+                case Dbl(d) => Dbl(Math.ceil(d))
+                case Empty  => Empty
+                case e: Err => e
                 case _      => typeMismatch
               }
               case _ => invalidNumberOfFnArgs
@@ -285,10 +311,11 @@ object FormulaAlgebra {
           case FormulaFunction.Err =>
             args match {
               case arg :: Nil => arg match {
-                case Str(s)  => -\/(ErrorMsg(s))
-                case Dbl(d)  => -\/(ErrorMsg(Util.doubleToString(d)))
-                case b: Bool => -\/(ErrorMsg(b.show))
-                case Empty   => -\/(ErrorMsg("Empty value."))
+                case Str(s)  => Err(s)
+                case Dbl(d)  => Err(Util.doubleToString(d))
+                case b: Bool => Err(b.show)
+                case Empty   => Err("Empty value.")
+                case e: Err  => e
               }
               case _ => invalidNumberOfFnArgs
             }
@@ -296,8 +323,9 @@ object FormulaAlgebra {
           case FormulaFunction.Floor =>
             args match {
               case arg :: Nil => arg match {
-                case Dbl(d) => \/-(Dbl(Math.floor(d)))
-                case Empty  => \/-(Empty)
+                case Dbl(d) => Dbl(Math.floor(d))
+                case Empty  => Empty
+                case e: Err => e
                 case _      => typeMismatch
               }
               case _ => invalidNumberOfFnArgs
@@ -308,11 +336,13 @@ object FormulaAlgebra {
               if (b) x else y
             args match {
               case arg1 :: arg2 :: Nil => (arg1, arg2) match {
-                case (Bool(b), x) => \/-(ifThen(b, x, Empty))
+                case (Bool(b), x) => ifThen(b, x, Empty)
+                case (e: Err, _)  => e
                 case _            => typeMismatch
               }
               case arg1 :: arg2 :: arg3 :: Nil => (arg1, arg2, arg3) match {
-                case (Bool(b), x, y) => \/-(ifThen(b, x, y))
+                case (Bool(b), x, y) => ifThen(b, x, y)
+                case (e: Err, _, _)  => e
                 case _               => typeMismatch
               }
               case _ => invalidNumberOfFnArgs
@@ -339,7 +369,8 @@ object FormulaAlgebra {
           case FormulaFunction.Not =>
             args match {
               case arg :: Nil => arg match {
-                case Bool(b) => \/-(Bool(!b))
+                case Bool(b) => Bool(!b)
+                case e: Err  => e
                 case _       => typeMismatch
               }
               case _ => invalidNumberOfFnArgs
@@ -353,13 +384,16 @@ object FormulaAlgebra {
               Util.setScale(d, scale.toInt)
             args match {
               case arg :: Nil => arg match {
-                case Dbl(d) => \/-(Dbl(round(d, 0)))
-                case Empty  => \/-(Empty)
+                case Dbl(d) => Dbl(round(d, 0))
+                case Empty  => Empty
+                case e: Err => e
                 case _      => typeMismatch
               }
               case arg1 :: arg2 :: Nil => (arg1, arg2) match {
-                case (Dbl(d), Dbl(s)) => \/-(Dbl(round(d, s)))
-                case (Empty, _: Dbl)  => \/-(Empty)
+                case (Dbl(d), Dbl(s)) => Dbl(round(d, s))
+                case (Empty, _: Dbl)  => Empty
+                case (e: Err, _)      => e
+                case (_, e: Err)      => e
                 case _                => typeMismatch
               }
               case _ => invalidNumberOfFnArgs

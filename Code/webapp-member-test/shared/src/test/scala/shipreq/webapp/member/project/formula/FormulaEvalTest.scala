@@ -71,7 +71,10 @@ object FormulaEvalTest extends TestSuite {
     val cache = new FormulaEvalCache(cfg, reqNums, Map(r.id -> r.reqTypeId))
 
     cache(formulaFieldId)(r) match {
-      case \/-(eval) => eval.value
+      case \/-(eval) => eval.value match {
+        case e: FormulaValue.Err => -\/(ErrorMsg(e.value))
+        case v                   => \/-(v)
+      }
       case -\/(NotApplicable) => -\/(ErrorMsg("Not applicable"))
     }
   }
