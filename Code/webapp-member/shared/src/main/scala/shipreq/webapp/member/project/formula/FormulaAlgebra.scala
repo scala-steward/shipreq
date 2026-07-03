@@ -89,6 +89,7 @@ object FormulaAlgebra {
             case FormulaFunction.If       => validWhen(a == 2 || a == 3)
             case FormulaFunction.IsBlank  => validWhen(a == 1)
             case FormulaFunction.IsBool   => validWhen(a == 1)
+            case FormulaFunction.IsErr    => validWhen(a == 1)
             case FormulaFunction.IsNumber => validWhen(a == 1)
             case FormulaFunction.IsText   => validWhen(a == 1)
             case FormulaFunction.Max      => validWhen(a > 0)
@@ -353,6 +354,9 @@ object FormulaAlgebra {
 
           case FormulaFunction.IsBool =>
             isType { case _: Bool => }
+
+          case FormulaFunction.IsErr =>
+            isType { case _: Err => }
 
           case FormulaFunction.IsNumber =>
             isType { case _: Dbl => }

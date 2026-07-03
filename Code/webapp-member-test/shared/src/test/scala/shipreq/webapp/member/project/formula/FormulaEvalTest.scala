@@ -236,6 +236,9 @@ object FormulaEvalTest extends TestSuite {
       "isBool3" - assertEval("ISBOOL(1.2)", Bool(false))
       "isBool4" - assertEval("ISBOOL(\"hello\")", Bool(false))
 
+      "isErr1" - assertEval("ISERR(ERR(\"abc\"))", Bool(true))
+      "isErr2" - assertEval("ISERR(1)", Bool(false))
+
       "isNumber1" - assertEval("ISNUMBER(1.2)", Bool(true))
       "isNumber2" - assertEval("ISNUMBER(true)", Bool(false))
       "isNumber3" - assertEval("ISNUMBER(\"hello\")", Bool(false))

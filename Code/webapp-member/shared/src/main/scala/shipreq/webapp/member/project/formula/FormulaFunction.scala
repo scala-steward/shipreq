@@ -13,6 +13,7 @@ object FormulaFunction {
   case object If       extends FormulaFunction("IF")
   case object IsBlank  extends FormulaFunction("ISBLANK")
   case object IsBool   extends FormulaFunction("ISBOOL")
+  case object IsErr    extends FormulaFunction("ISERR")
   case object IsNumber extends FormulaFunction("ISNUMBER")
   case object IsText   extends FormulaFunction("ISTEXT")
   case object Max      extends FormulaFunction("MAX")

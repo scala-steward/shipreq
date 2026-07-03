@@ -2536,6 +2536,7 @@ object RandomData {
                 case f@ FormulaFunction.If       => gNext.list(2 to 3).map(args => FormulaAst.Function(f, args))
                 case f@ FormulaFunction.IsBlank  => gNext.map(a => FormulaAst.Function(f, a :: Nil))
                 case f@ FormulaFunction.IsBool   => gNext.map(a => FormulaAst.Function(f, a :: Nil))
+                case f@ FormulaFunction.IsErr    => gNext.map(a => FormulaAst.Function(f, a :: Nil))
                 case f@ FormulaFunction.IsNumber => gNext.map(a => FormulaAst.Function(f, a :: Nil))
                 case f@ FormulaFunction.IsText   => gNext.map(a => FormulaAst.Function(f, a :: Nil))
                 case f@ FormulaFunction.Max      => gNext.list(1 to 3).map(args => FormulaAst.Function(f, args))
