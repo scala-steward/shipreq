@@ -990,6 +990,14 @@ object Style extends StyleSheet.Inline {
       generic.tableCellBase((l, Off)),
     ))
 
+    val fieldListDetailFormula = style(
+      backgroundColor(c"#eee"),
+      padding(2 px, 4 px),
+      borderRadius(4 px),
+      fontFamily :=! "monospace",
+      fontSize(80 %%),
+    )
+
     val fieldListTableUsage = styleF(D.live)(l => styleS(
       generic.tableCellBase((l, Off)),
       textAlign.right.important,

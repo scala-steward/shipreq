@@ -231,9 +231,10 @@ object FieldList {
               renderDetailRules(p, f.fieldReqTypeRulesByResolution)(p.pw.number(_, f.decimalPlaces, Live, Valid))
 
             case f: CustomField.Formula =>
-              renderDetailRules(p, f.fieldReqTypeRulesByResolution, defaultTo = EmptyVdom)(v =>
-                "\"" + Formula.Valid.toText(v.formula, p.config.fields) + "\""
-              )
+              renderDetailRules(p, f.fieldReqTypeRulesByResolution, defaultTo = EmptyVdom) { v =>
+                val text = Formula.Valid.toText(v.formula, p.config.fields)
+                <.span(*.fieldListDetailFormula, text)
+              }
 
             case StaticField.OtherTags =>
               val desc = <.div("Displays tags not assigned to a field.")
