@@ -55,7 +55,7 @@ object FormulaAlgebra {
       case Value(b: Bool)    => b.show
       case Value(Dbl(d))     => Util.doubleToString(d)
       case Value(Str(s))     => quotedStr(s)
-      case Value(Err(s))     => "ERR(" ~ quotedStr(s) ~ ')'
+      case Value(Err(s))     => FormulaFunction.Err.name ~ '(' ~ quotedStr(s) ~ ')'
       case Add(l, r)         => composite("(", l.atom ~ " + " ~ r.atom, ")")
       case Subtract(l, r)    => composite("(", l.atom ~ " - " ~ r.atom, ")")
       case Multiply(l, r)    => composite("(", l.atom ~ " * " ~ r.atom, ")")
