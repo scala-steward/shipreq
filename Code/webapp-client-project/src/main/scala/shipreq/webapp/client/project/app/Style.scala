@@ -1046,7 +1046,7 @@ object Style extends StyleSheet.Inline {
     )
 
     private val rulesEditorReqTypeColumn = styleS(
-      width(44 ex)
+      width(42 ex)
     )
 
     val rulesEditorReqTypes = style(
