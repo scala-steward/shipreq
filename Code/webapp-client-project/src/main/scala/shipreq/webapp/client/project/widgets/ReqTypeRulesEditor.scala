@@ -55,7 +55,8 @@ object ReqTypeRulesEditor {
     allowMandatory = false,
     allowDefaults = true,
     newRowDefault = Resolution.DefaultTo(()),
-    keyFor = _ => "") // unused
+    keyFor = _ => "", // unused
+    defaultToItemText = "Apply formula…")
 
   // -------------------------------------------------------------------------------------------------------------------
 
@@ -326,7 +327,8 @@ final class ReqTypeRulesEditor[D: Reusability: UnivEq](allowOptional: Boolean,
                                                        allowMandatory: Boolean,
                                                        allowDefaults: Boolean,
                                                        newRowDefault: Resolution[Unit],
-                                                       keyFor: D => String) {
+                                                       keyFor: D => String,
+                                                       defaultToItemText: String = "Default to…") {
 
   type Props           = ReqTypeRulesEditor.Props[D]
   type State           = ReqTypeRulesEditor.State[D]
@@ -394,7 +396,7 @@ final class ReqTypeRulesEditor[D: Reusability: UnivEq](allowOptional: Boolean,
 
       val items = ArraySeq.newBuilder[Dropdown.Item[Resolution[Unit]]]
       if (allowDefaults)
-        items += option("Default to…", Resolution.DefaultTo(()))
+        items += option(defaultToItemText, Resolution.DefaultTo(()))
       if (allowMandatory)
         items += option("Mandatory", Resolution.Mandatory)
       items += option("Not applicable", Resolution.NotApplicable)
