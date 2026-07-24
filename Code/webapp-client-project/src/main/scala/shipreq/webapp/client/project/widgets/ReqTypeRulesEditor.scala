@@ -12,7 +12,6 @@ import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.html_<^._
 import monocle.Lens
 import monocle.macros.Lenses
-import org.scalajs.dom.html
 import scalacss.ScalaCssReact._
 import shipreq.base.util._
 import shipreq.webapp.base.ui.GeneralTheme
@@ -56,7 +55,8 @@ object ReqTypeRulesEditor {
     allowDefaults = true,
     newRowDefault = Resolution.DefaultTo(()),
     keyFor = _ => "", // unused
-    defaultToItemText = "Apply formula…")
+    defaultToItemText = "Apply formula…",
+    horizontalDefaultWidget = true)
 
   // -------------------------------------------------------------------------------------------------------------------
 
@@ -328,7 +328,8 @@ final class ReqTypeRulesEditor[D: Reusability: UnivEq](allowOptional: Boolean,
                                                        allowDefaults: Boolean,
                                                        newRowDefault: Resolution[Unit],
                                                        keyFor: D => String,
-                                                       defaultToItemText: String = "Default to…") {
+                                                       defaultToItemText: String = "Default to…",
+                                                       horizontalDefaultWidget: Boolean = false) {
 
   type Props           = ReqTypeRulesEditor.Props[D]
   type State           = ReqTypeRulesEditor.State[D]
@@ -417,8 +418,12 @@ final class ReqTypeRulesEditor[D: Reusability: UnivEq](allowOptional: Boolean,
           .disableMaybe(p.enabled)
           .onClick(p.state.modState(_.delRow(idx)))
 
-      @UsesSemanticUiManually
-      def renderRes(ss: StateSnapshot[StateResValue], enabled: Enabled): TagMod = {
+      def renderRow(rowKey  : Key,
+                    tdTypes : TagMod,
+                    tdButton: TagMod,
+                    ss      : StateSnapshot[StateResValue],
+                    enabled : Enabled,
+                   ): VdomNode = {
 
         val resSelect =
           Dropdown.Props.Optional(
@@ -428,28 +433,47 @@ final class ReqTypeRulesEditor[D: Reusability: UnivEq](allowOptional: Boolean,
             onChange = o => ss.modState(_.copy(res = o.value))
           ).render
 
-        def defaultWidget = p.defaultWidget(ss, enabled, keyFor)
+        val showDefault = ss.value.res.isDefault
 
-        if (ss.value.res.isDefault)
-          TagMod(resSelect, defaultWidget)
+        val defaultWidget = p.defaultWidget(ss, enabled, keyFor)
+
+        if (horizontalDefaultWidget)
+          React.Fragment(
+            <.tr(
+              ^.key := rowKey,
+              <.td(tdTypes),
+              <.td(*.rulesEditorRule, resSelect),
+              <.td(*.rulesEditorButton, tdButton)),
+            Option.when(showDefault)(
+              <.tr(
+                ^.key := "D:" + rowKey,
+                <.td(*.rulesEditorHorizDefault, ^.colSpan := 2, defaultWidget),
+                <.td(*.rulesEditorHorizNoButton))),
+          )
         else
-          resSelect
+          <.tr(
+            ^.key := rowKey,
+            <.td(tdTypes),
+            <.td(*.rulesEditorRule, resSelect, Option.when(showDefault)(defaultWidget)),
+            <.td(*.rulesEditorButton, tdButton))
       }
 
-      def renderDeadRow(row: StateDeadRow): VdomTagOf[html.TableRow] = {
+      def renderDeadRow(row: StateDeadRow): VdomNode = {
         val reqTypes =
           p.reqTypes.sortIdsByMnemonic(row.ids.whole)
             .map(rt => <.span(*.rulesDeadReqTypesInner, rt.mnemonic.value))
             .mkTagMod(", ")
 
-        <.tr(
-          ^.key := row.key,
-          <.td(*.rulesDeadReqTypes, "Dead req types:", reqTypes),
-          <.td(*.rulesEditorRule, renderRes(StateSnapshot(row.res).readOnly, Disabled)),
-          <.td(*.rulesEditorButton))
+        renderRow(
+          rowKey   = row.key,
+          tdTypes  = TagMod(*.rulesDeadReqTypes, "Dead req types:", reqTypes),
+          tdButton = EmptyVdom,
+          ss       = StateSnapshot(row.res).readOnly,
+          enabled  = Disabled,
+        )
       }
 
-      def renderPerReqType(idx: Int): VdomTagOf[html.TableRow] = {
+      def renderPerReqType(idx: Int): VdomNode = {
         val row          = s.perReqType(idx)
         val lens         = perReqTypeLens(idx)
         val ss           = p.state.zoomStateL(lens)
@@ -475,14 +499,16 @@ final class ReqTypeRulesEditor[D: Reusability: UnivEq](allowOptional: Boolean,
                 error = GeneralTheme.renderSimpleInvalidity(reqTypesValidated),
                 enabled = p.enabled)))
 
-        <.tr(
-          ^.key := row.key,
-          <.td(reqTypes),
-          <.td(*.rulesEditorRule, renderRes(ss.zoomStateL(ReqTypeRulesEditor.State.PerReqType.res), p.enabled)),
-          <.td(*.rulesEditorButton, delRowButton(idx)))
+        renderRow(
+          rowKey   = row.key,
+          tdTypes  = reqTypes,
+          tdButton = delRowButton(idx),
+          ss       = ss.zoomStateL(ReqTypeRulesEditor.State.PerReqType.res),
+          enabled  = p.enabled,
+        )
       }
 
-      def renderOtherwise(ss: StateSnapshot[StateResValue]): VdomTagOf[html.TableRow] = {
+      def renderOtherwise(ss: StateSnapshot[StateResValue]): VdomNode = {
 
         def fullReqTypeDesc =
           MutableArray(
@@ -509,11 +535,13 @@ final class ReqTypeRulesEditor[D: Reusability: UnivEq](allowOptional: Boolean,
           else
             fullReqTypeDesc
 
-        <.tr(
-          ^.key := "o",
-          <.td(*.rulesEditorOtherwise, desc),
-          <.td(*.rulesEditorRule, renderRes(ss, p.enabled)),
-          <.td(*.rulesEditorButton, newRowButton(p.enabled)))
+        renderRow(
+          rowKey   = "o",
+          tdTypes  = TagMod(*.rulesEditorOtherwise, desc),
+          tdButton = newRowButton(p.enabled),
+          ss       = ss,
+          enabled  = p.enabled,
+        )
       }
 
       <.table(

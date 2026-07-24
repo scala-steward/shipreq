@@ -1063,6 +1063,14 @@ object Style extends StyleSheet.Inline {
       marginTop(0.65 em),
     )
 
+    val rulesEditorHorizDefault = style(
+      borderTop.none.important,
+    )
+
+    val rulesEditorHorizNoButton = style(
+      borderTop.none.important,
+    )
+
     val rulesEditorOtherwise = style(
       rulesEditorReqTypeColumn,
       paddingLeft(2 ex).important,
@@ -2117,7 +2125,7 @@ object Style extends StyleSheet.Inline {
   object formulaFieldEditor {
 
     val reqTypeRuleDefaultEditor = style(
-      marginTop(1 em),
+      width(100 %%),
       display.flex,
       flexDirection.column,
     )
