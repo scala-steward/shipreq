@@ -7,7 +7,7 @@ import japgolly.scalajs.react.vdom.html_<^._
 import monocle.macros.Lenses
 import scalacss.ScalaCssReact._
 import shipreq.base.util._
-import shipreq.webapp.base.ui.semantic.UsesSemanticUiManually
+import shipreq.webapp.base.ui.semantic.{Button, Icon, UsesSemanticUiManually}
 import shipreq.webapp.base.ui.widgets.Form
 import shipreq.webapp.base.validation.ValidationUX
 import shipreq.webapp.client.project.app.Style.{formulaFieldEditor => *}
@@ -17,6 +17,7 @@ import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.formula.{Formula, FormulaParser, ValidFormula}
 import shipreq.webapp.member.project.event.CustomFormulaFieldGD
 import shipreq.webapp.member.project.protocol.websocket.UpdateConfigCmd
+import shipreq.webapp.client.project.widgets.FormulaHelp
 import shipreq.webapp.member.ui.AutosizeTextarea
 
 object FormulaFieldEditor {
@@ -112,6 +113,10 @@ object FormulaFieldEditor {
 
   // ===================================================================================================================
 
+  private val helpButton: VdomTag =
+    Button(tipe = Button.Type.IconOnly(Icon.HelpCircle))
+      .tag(^.onClick --> FormulaHelp.modal.show)
+
   private def render(p: Props): VdomNode = {
 
     val nameField =
@@ -154,15 +159,18 @@ object FormulaFieldEditor {
 
           val validated = parseAndValidateFormula(ss.value.textValue)
 
-          <.div(^.cls := "ui input",
+          <.div(
             *.reqTypeRuleDefaultEditor,
-            (^.cls := "error").when(validated.isLeft),
 
-            <.input.text(
-              ^.value := ss.value.textValue,
-              ^.onChange ==> onChange,
-              ^.placeholder := "Formula…",
-              ^.disabled := enabled.is(Disabled),
+            <.div(^.cls := "ui input right action",
+              (^.cls := "error").when(validated.isLeft),
+              <.input.text(
+                ^.value := ss.value.textValue,
+                ^.onChange ==> onChange,
+                ^.placeholder := "Formula…",
+                ^.disabled := enabled.is(Disabled),
+              ),
+              helpButton,
             ),
 
             validated.swap.toOption.map(err =>

@@ -35,6 +35,9 @@ object HelpModal {
   object Group {
     def apply(title: VdomNode)(r1: Row, rn: Row*): Group =
       new Group(title, (r1 +: rn.toVector).map(_.row), Enabled)
+
+    def nev(title: VdomNode)(rows: NonEmptyVector[Row]): Group =
+      apply(title)(rows.head, rows.tail: _*)
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -54,6 +57,9 @@ object HelpModal {
           rowExamples((sample1 +: sampleN).iterator.toTagMod(example(_)))
         )
       )
+
+    def nev(text: TagMod*)(samples: NonEmptyVector[VdomNode]): Row =
+      apply(text: _*)(samples.head, samples.tail: _*)
   }
 
   // ===================================================================================================================

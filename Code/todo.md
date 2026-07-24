@@ -4,7 +4,6 @@
 
 * To fix:
   * Add auto-complete to formula editor
-  * Add a help dialog to the formula editor
 
 * Manually test UI
   * Issues screen
