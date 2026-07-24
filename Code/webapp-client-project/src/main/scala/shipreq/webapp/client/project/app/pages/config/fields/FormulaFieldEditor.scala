@@ -161,6 +161,7 @@ object FormulaFieldEditor {
             <.input.text(
               ^.value := ss.value.textValue,
               ^.onChange ==> onChange,
+              ^.placeholder := "Formula…",
               ^.disabled := enabled.is(Disabled),
             ),
 
