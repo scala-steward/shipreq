@@ -1,7 +1,3 @@
-* Add `FormulaFieldRef.FormulaField`
-  * Prevent cycles in formula fields (add to `DataProp`?)
-  * Prevent referencing self in formula fields (add to `DataProp`?)
-
 * Manually test UI
   * Issues screen
     * Formula cells
@@ -15,11 +11,23 @@
 
 * Issue detection
   * Live formulas that reference out-of-bounds numbers
-  * Live formulas that reference dead fields
-    * Numeric fields
-    * Formula fields (and test transitivity)
+  * Live formulas that reference dead numeric fields
   * Live formula cells that contain errors
-  * Formula field reqType rules are all dead or N/A (rule already in-place, confirm works)
+  * Formula field reqType rules are all dead or N/A *(rule already in-place, confirm works)*
+
+* scalafix
+* changelog
+
+# Formulas referencing formulas
+
+* Add `FormulaFieldRef.FormulaField`
+  * Prevent cycles in formula fields (add to `DataProp`?)
+  * Prevent referencing self in formula fields (add to `DataProp`?)
+
+* Update formula auto-complete to include formula fields
+
+* Issue detection
+  * Live formulas that reference dead formula fields (and test transitivity)
 
 * scalafix
 * changelog
