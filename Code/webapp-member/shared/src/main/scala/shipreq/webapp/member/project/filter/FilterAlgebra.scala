@@ -264,6 +264,12 @@ object FilterAlgebra {
             val n = FieldCriteria.CompareNumber(None, s.value.head.value)
             \/-(Valid.fieldProp(\/-(f.id), n))
 
+          // For formula fields, re-interpret ReqTypePosSet as a CompareNumber
+          // eg. "field:Rating=5"
+          case \/-(f: CustomField.Formula) if s.value.size == 1 =>
+            val n = FieldCriteria.CompareNumber(None, s.value.head.value)
+            \/-(Valid.fieldProp(\/-(f.id), n))
+
           case _ =>
             valuesNotAllowed
         }
@@ -276,8 +282,9 @@ object FilterAlgebra {
 
       def parseAsCompareNumber(field: ParsedField, n: FieldCriteria.CompareNumber): R =
         field match {
-          case \/-(f: CustomField.Number) => \/-(Valid.fieldProp(\/-(f.id), n))
-          case _                          => valuesNotAllowed
+          case \/-(f: CustomField.Number)  => \/-(Valid.fieldProp(\/-(f.id), n))
+          case \/-(f: CustomField.Formula) => \/-(Valid.fieldProp(\/-(f.id), n))
+          case _                           => valuesNotAllowed
         }
 
       parseFieldName(fieldName).flatMap { field =>

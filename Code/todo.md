@@ -4,11 +4,6 @@
       * Display okay?
       * KBNav
 
-* Filters
-  * Allow filtering based on formula field values (just like with number fields)
-  * Validate `field:Score=default` works as expected
-  * Validate `field:Score<op>123` works as expected for all comparison ops
-
 * Issue detection
   * Live formulas that reference out-of-bounds numbers
   * Live formulas that reference dead numeric fields
