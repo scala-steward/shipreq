@@ -14,7 +14,7 @@ import shipreq.webapp.member.project.event.{CustomImpFieldGD, Event => E, Generi
 import shipreq.webapp.member.project.filter.FilterAst.OrderOp
 import shipreq.webapp.member.project.filter.{Filter, FilterAst, IntensionalReqSet}
 import shipreq.webapp.member.project.formula.FormulaEvalCache
-import shipreq.webapp.member.project.issue.IssueCategory
+import shipreq.webapp.member.project.issue.{IssueCategory, IssueTracker}
 import shipreq.webapp.member.project.sort.SortMethod._
 import shipreq.webapp.member.project.text.{PlainText, Text, TextSearch}
 import shipreq.webapp.member.project.util._
@@ -108,7 +108,8 @@ object LogicTest extends TestSuite {
 
   private def gatherSortConsolidate(p: Project, v: View, pt: PlainText.ForProject.NoCtx, ts: TextSearch): Vector[Row] = {
     val fec                   = FormulaEvalCache.fromProject(p)
-    val fc                    = Filter.Valid.compiler(p, pt, ts, fec, v.filterDead, applyFilterDeadToReqs = false)
+    val issues                = IssueTracker(p, fec).issues
+    val fc                    = Filter.Valid.compiler(p, pt, ts, issues, fec, v.filterDead, applyFilterDeadToReqs = false)
     def r1: Array       [Row] = Logic.gather(p, v, fc)
     def r2: MutableArray[Row] = Logic.sorter(p, v, pt, fec)(r1)
     val r3: Vector      [Row] = Logic.consolidateAdjacentDups(r2.iterator())

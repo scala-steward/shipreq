@@ -29,6 +29,7 @@ import shipreq.webapp.member.feature.PreviewFeature
 import shipreq.webapp.member.project.data.{FilterDead, HideDead, Project, ProjectConfig, ReqData, ReqId, ReqTypeId}
 import shipreq.webapp.member.project.filter.Filter
 import shipreq.webapp.member.project.formula.FormulaEvalCache
+import shipreq.webapp.member.project.issue.{Issues, IssueTracker}
 import shipreq.webapp.member.project.library.ProjectLibrary
 import shipreq.webapp.member.project.protocol.websocket._
 import shipreq.webapp.member.project.text.{PlainText, ProjectText, TextSearch}
@@ -204,13 +205,20 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitDataWithoutE
     private val pxCreateEditability =
       Px.apply2(pxProjectConfig, pxGlobalEditability)(CreateFeature.Editability.apply)
 
+    private val pxIssues: Px[Issues] =
+      for {
+        p <- pxProject
+        fec <- pxFormulaEvalCache
+      } yield IssueTracker(p, fec).issues
+
     private val pxFilterCompilerFromFilterDead: Px[FilterDead => Filter.Valid.Compiler] =
       for {
         p  <- pxProject
         pt <- pxPlainText
         ts <- pxTextSearch
+        is <- pxIssues
         fc <- pxFormulaEvalCache
-      } yield FilterDead.memoLazy(Filter.Valid.compiler(p, pt, ts, fc, _, applyFilterDeadToReqs = false))
+      } yield FilterDead.memoLazy(Filter.Valid.compiler(p, pt, ts, is, fc, _, applyFilterDeadToReqs = false))
 
     private val pxFilterCompilerHideDead: Px[Filter.Valid.Compiler] =
       pxFilterCompilerFromFilterDead.map(_(HideDead))
@@ -349,6 +357,7 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitDataWithoutE
 
     private val issuesPage = content.issues.IssuesPage.StaticProps(
       pxProject,
+      pxIssues,
       pxRenderFeature,
       pxPlainText,
       pxProjectWidgets,
@@ -517,6 +526,7 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitDataWithoutE
       def onlyWhenProjectIsLive = Allow.when(project.live is Live)
       def globalEditability     = pxGlobalEditability.value()
       def rolodex               = unsafeSupp().rolodex
+      def issues                = pxIssues.value()
 
       val body: VdomElement = p.page match {
 
@@ -526,7 +536,7 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitDataWithoutE
             Allow when _.lookup(project).isRight,
             e => routerCtl.set(Page.ReqDetail(e)))
 
-          val index = ProjectIndex.Props(project.issues.count, lookup, routerCtl)
+          val index = ProjectIndex.Props(issues.count, lookup, routerCtl)
 
           val pname = ProjectItem.WithEditableName.Props(
             cbProjectMetaData.runNow(),

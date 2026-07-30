@@ -7,6 +7,7 @@ import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.data.derivation._
 import shipreq.webapp.member.project.event.RetiredGenericData._
 import shipreq.webapp.member.project.event._
+import shipreq.webapp.member.project.formula.FormulaEvalCache
 import shipreq.webapp.member.project.text.Atom.DisplayReqRef
 import shipreq.webapp.member.project.text.{Text => T}
 import shipreq.webapp.member.test.WebappTestUtil._
@@ -57,7 +58,8 @@ object IssueDetectorTest extends TestSuite {
     assertIssuesWithFilter(project, f.ok)(expected: _*)
 
   private def assertIssuesWithFilter(project: Project, filter: Issue => Boolean)(expected: IssueLite*)(implicit l: Line): Unit = {
-    val it = IssueTracker(project)
+    val fec = FormulaEvalCache.fromProject(project)
+    val it = IssueTracker(project, fec)
     def actual = it.issues.vector.iterator.filter(filter).map(IssueLite.fromIssue)
     assertSeqIgnoreOrder("assertIssues", actual, expect = expected)
   }

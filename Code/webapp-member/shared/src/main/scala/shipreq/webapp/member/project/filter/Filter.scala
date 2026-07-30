@@ -7,7 +7,7 @@ import shipreq.webapp.member.project.data
 import shipreq.webapp.member.project.data.{FilterDead, HideDead, Req}
 import shipreq.webapp.member.project.filter.FilterAst.ImpCriteria
 import shipreq.webapp.member.project.formula.FormulaEvalCache
-import shipreq.webapp.member.project.issue.IssueCategory
+import shipreq.webapp.member.project.issue.{IssueCategory, Issues}
 import shipreq.webapp.member.project.text.{PlainText, TextSearch}
 
 object Filter {
@@ -136,6 +136,7 @@ object Filter {
     def compiler(p                    : data.Project,
                  projectText          : PlainText.ForProject.NoCtx,
                  textSearch           : TextSearch,
+                 issues               : Issues,
                  formulaEvalCache     : FormulaEvalCache,
                  filterDead           : FilterDead,
                  applyFilterDeadToReqs: Boolean): Compiler = {
@@ -145,6 +146,7 @@ object Filter {
         filterDead,
         projectText,
         textSearch,
+        issues,
         formulaEvalCache,
         p.dataLogic.issueLookup(filterDead),
         p.virtualTags)

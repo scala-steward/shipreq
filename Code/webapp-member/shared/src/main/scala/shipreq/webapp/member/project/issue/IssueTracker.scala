@@ -1,28 +1,31 @@
 package shipreq.webapp.member.project.issue
 
 import shipreq.webapp.member.project.data._
+import shipreq.webapp.member.project.formula.FormulaEvalCache
 
 final class IssueTracker(val issues : Issues,
-                         val project: Project) {
+                         val project: Project,
+                         val formulaEvalCache: FormulaEvalCache) {
 
   /** This used to be incremental */
-  def update(newProject: Project): IssueTracker =
-    IssueTracker(newProject)
+  def update(newProject: Project, newFormulaEvalCache: FormulaEvalCache): IssueTracker =
+    IssueTracker(newProject, newFormulaEvalCache)
 }
 
 object IssueTracker {
 
-  def apply(project: Project): IssueTracker = {
+  def apply(project: Project, formulaEvalCache: FormulaEvalCache): IssueTracker = {
     val tstateM = new MutableTrackerState
 
     tstateM.issues ++= project.manualIssues.imap.valuesIterator.map(Issue.ManualIssue)
 
     val ctx = IssueDetector.Ctx(
-      project        = project,
-      add            = i => tstateM.issues += i,
-      foreachLiveReq = tstateM.dirtyFns.liveReq.add,
-      foreachLiveRcg = tstateM.dirtyFns.liveRcg.add,
-      foreachLiveUcs = tstateM.dirtyFns.liveUcs.add)
+      project          = project,
+      formulaEvalCache = formulaEvalCache,
+      add              = i => tstateM.issues += i,
+      foreachLiveReq   = tstateM.dirtyFns.liveReq.add,
+      foreachLiveRcg   = tstateM.dirtyFns.liveRcg.add,
+      foreachLiveUcs   = tstateM.dirtyFns.liveUcs.add)
 
     // Run and prepare detectors
     for (d <- IssueDetectors.all)
@@ -33,14 +36,14 @@ object IssueTracker {
     tstateM.dirtyFns.liveRcg.foreach(project.content.reqCodes.liveGroups)
     tstateM.dirtyFns.liveUcs.foreach(project.content.reqs.useCases.liveStepIterator())
 
-    buildTracker(project, tstateM)
+    buildTracker(project, formulaEvalCache, tstateM)
   }
 
   // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
-  private def buildTracker(newProject: Project, tstateM: MutableTrackerState): IssueTracker = {
+  private def buildTracker(newProject: Project, formulaEvalCache: FormulaEvalCache, tstateM: MutableTrackerState): IssueTracker = {
     val issues = Issues(tstateM.issues.result())
-    new IssueTracker(issues, newProject)
+    new IssueTracker(issues, newProject, formulaEvalCache)
   }
 
   private def fuseReduce[A](fs: IterableOnce[() => A => Unit]): A => Unit =

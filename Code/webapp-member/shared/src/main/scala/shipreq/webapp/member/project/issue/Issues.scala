@@ -84,6 +84,9 @@ final case class Issues(vector: Vector[Issue]) {
 
 object Issues {
 
+  def empty: Issues =
+    Issues(Vector.empty)
+
   final case class BySource(byReq : Map[ReqId, ForSource],
                             byRcg : Map[ReqCodeGroupId, ForSource],
                             config: ForSource) {

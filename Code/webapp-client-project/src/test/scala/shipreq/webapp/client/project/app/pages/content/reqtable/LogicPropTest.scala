@@ -12,6 +12,7 @@ import shipreq.webapp.member.project.data.savedview._
 import shipreq.webapp.member.project.data.savedview.{Column => C, SortCriterion => SC}
 import shipreq.webapp.member.project.filter.Filter
 import shipreq.webapp.member.project.formula.FormulaEvalCache
+import shipreq.webapp.member.project.issue.IssueTracker
 import shipreq.webapp.member.project.sort.SortMethod._
 import shipreq.webapp.member.project.sort.Sorter.{BlankPlacement, BlanksFirst, BlanksLast, Dir, FlipDir, KeepDir}
 import shipreq.webapp.member.project.text.{Atom, PlainText, TextSearch}
@@ -34,8 +35,9 @@ object LogicPropTest extends TestSuite {
 
     val plainText        = PlainText.ForProject.noCtx(p)
     val formulaEvalCache = FormulaEvalCache.fromProject(p)
+    val issues           = IssueTracker(p, formulaEvalCache).issues
     val textSearch       = TextSearch(p, plainText)
-    val filterCompiler   = Filter.Valid.compiler(p, plainText, textSearch, formulaEvalCache, fd, applyFilterDeadToReqs = false)
+    val filterCompiler   = Filter.Valid.compiler(p, plainText, textSearch, issues, formulaEvalCache, fd, applyFilterDeadToReqs = false)
     val gathered         = Logic.gather[Vector](p, v, filterCompiler)
     val gatheredG        = gathered.iterator.filterSubType[Row.ForReq].toList
     val rowReqCodes      = gathered.flatMap(codesInRow)

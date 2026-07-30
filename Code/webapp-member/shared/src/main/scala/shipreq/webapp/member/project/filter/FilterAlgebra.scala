@@ -483,6 +483,7 @@ object FilterAlgebra {
               filterDead : FilterDead,
               projectText: PlainText.ForProject.NoCtx,
               textSearch : TextSearch,
+              issues     : Issues,
               formulaEval: FormulaEvalCache,
               issueLookup: IssueLookup,
               tags       : VirtualProjectTags): FAlgebra[ExtensionalF, CompiledFilter] = {
@@ -501,7 +502,7 @@ object FilterAlgebra {
     // - Squash Not(Not(x)) => x
 
     import shipreq.webapp.member.project.data.{ReqType => _, _}
-    lazy val issuesBySource = p.issues.bySource
+    lazy val issuesBySource = issues.bySource
 
     def ignore: Any => Boolean = null
     def fail: Any => Boolean = _ => false

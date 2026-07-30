@@ -11,7 +11,6 @@ import shipreq.base.util._
 import shipreq.webapp.base.data.{ProjectCreator, UserId}
 import shipreq.webapp.member.project.data.derivation._
 import shipreq.webapp.member.project.event.{ApplyEvent, Event, EventOrd, ProjectEvents, VerifiedEvent}
-import shipreq.webapp.member.project.issue.IssueTracker
 import shipreq.webapp.member.project.text.PlainText
 import shipreq.webapp.member.project.text.Text.DeletionReason
 import shipreq.webapp.member.project.text.Text.Equality._
@@ -192,8 +191,6 @@ final case class Project(name          : Project.Name,
   lazy val atomScan = AtomScan(this)
 
   lazy val dataLogic = new DataLogic(this)
-
-  lazy val issues = IssueTracker(this).issues
 
   lazy val virtualTags = VirtualProjectTags(this)
 
