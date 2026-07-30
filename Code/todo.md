@@ -2,9 +2,6 @@
   * Prevent cycles in formula fields (add to `DataProp`?)
   * Prevent referencing self in formula fields (add to `DataProp`?)
 
-* To fix:
-  * Add auto-complete to formula editor
-
 * Manually test UI
   * Issues screen
     * Formula cells

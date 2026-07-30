@@ -156,10 +156,11 @@ object FormulaFieldEditor {
             *.reqTypeRuleDefaultEditor,
 
             FormulaEditor.Props(
-              state    = ss.value.textValue,
-              onChange = onChange,
-              error    = validated.swap.toOption,
-              enabled  = enabled,
+              state         = ss.value.textValue,
+              onChange      = onChange,
+              error         = validated.swap.toOption,
+              enabled       = enabled,
+              projectConfig = p.cfg,
             ).render
           )
         }
