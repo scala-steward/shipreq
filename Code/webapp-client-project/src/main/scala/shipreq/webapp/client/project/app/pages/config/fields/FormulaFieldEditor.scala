@@ -7,17 +7,15 @@ import japgolly.scalajs.react.vdom.html_<^._
 import monocle.macros.Lenses
 import scalacss.ScalaCssReact._
 import shipreq.base.util._
-import shipreq.webapp.base.ui.semantic.{Button, Icon, UsesSemanticUiManually}
 import shipreq.webapp.base.ui.widgets.Form
 import shipreq.webapp.base.validation.ValidationUX
 import shipreq.webapp.client.project.app.Style.{formulaFieldEditor => *}
 import shipreq.webapp.client.project.util.DataReusability._
 import shipreq.webapp.client.project.widgets.ReqTypeRulesEditor
 import shipreq.webapp.member.project.data._
-import shipreq.webapp.member.project.formula.{Formula, FormulaParser, ValidFormula}
 import shipreq.webapp.member.project.event.CustomFormulaFieldGD
+import shipreq.webapp.member.project.formula.{Formula, FormulaParser, ValidFormula}
 import shipreq.webapp.member.project.protocol.websocket.UpdateConfigCmd
-import shipreq.webapp.client.project.widgets.FormulaHelp
 import shipreq.webapp.member.ui.AutosizeTextarea
 
 object FormulaFieldEditor {
@@ -113,10 +111,6 @@ object FormulaFieldEditor {
 
   // ===================================================================================================================
 
-  private val helpButton: VdomTag =
-    Button(tipe = Button.Type.IconOnly(Icon.HelpCircle))
-      .tag(^.onClick --> FormulaHelp.modal.show)
-
   private def render(p: Props): VdomNode = {
 
     val nameField =
@@ -146,12 +140,11 @@ object FormulaFieldEditor {
         .withValidator(DataValidators.formulaField.decimalPlaces.unnamed)
         .withEnabled(p.enabled)
 
-    @UsesSemanticUiManually
     val reqTypeRulesEditorDefaultWidget: ReqTypeRulesEditor.DefaultWidgetFn[ValidFormula] =
       Reusable.byRef {
         (ss, enabled, _) => {
-          def onChange(e: ReactEventFromInput): Callback = {
-            val newTxt   = e.target.value
+
+          def onChange(newTxt: String): Callback = {
             val newFml   = parseAndValidateFormula(newTxt).toOption
             val newState = ss.value.copy(textValue = newTxt, default = newFml)
             ss.setState(newState)
@@ -162,19 +155,12 @@ object FormulaFieldEditor {
           <.div(
             *.reqTypeRuleDefaultEditor,
 
-            <.div(^.cls := "ui input right action",
-              (^.cls := "error").when(validated.isLeft),
-              <.input.text(
-                ^.value := ss.value.textValue,
-                ^.onChange ==> onChange,
-                ^.placeholder := "Formula…",
-                ^.disabled := enabled.is(Disabled),
-              ),
-              helpButton,
-            ),
-
-            validated.swap.toOption.map(err =>
-              <.div(*.applicableReqTypesErrMsg, err.value))
+            FormulaEditor.Props(
+              state    = ss.value.textValue,
+              onChange = onChange,
+              error    = validated.swap.toOption,
+              enabled  = enabled,
+            ).render
           )
         }
       }
