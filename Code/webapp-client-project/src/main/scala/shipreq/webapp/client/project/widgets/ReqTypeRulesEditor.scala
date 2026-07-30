@@ -438,7 +438,7 @@ final class ReqTypeRulesEditor[D: Reusability: UnivEq](allowOptional: Boolean,
         val defaultWidget = p.defaultWidget(ss, enabled, keyFor)
 
         if (horizontalDefaultWidget)
-          React.Fragment(
+          React.Fragment.withKey(rowKey)(
             <.tr(
               ^.key := rowKey,
               <.td(tdTypes),
