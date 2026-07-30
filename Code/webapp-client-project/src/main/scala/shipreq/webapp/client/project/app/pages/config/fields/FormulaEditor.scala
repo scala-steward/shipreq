@@ -27,6 +27,33 @@ object FormulaEditor {
   implicit val reusabilityProps: Reusability[Props] =
     Reusability.caseClassExcept("onChange") // used via $.props.flatMap in event handler which is reuse-safe
 
+  def autoCompleteStrategies(cfg: ProjectConfig): AutoComplete.Strategies = {
+    val fieldSuggestions =
+      cfg.liveCustomNumberFields.map(f => "field:" + FormulaAlgebra.quoteFieldName(f.name))
+
+    val functionSuggestions =
+      FormulaFunction.all.map(_.name + "(")
+
+    val suggestions = (fieldSuggestions ++ functionSuggestions.whole).sorted
+
+    val main =
+      AutoComplete.Strategy.builder
+        .regex("""\b([a-zA-Z0-9":]+)$""", index = 1)
+        .search { s0 =>
+          val s = s0.toLowerCase
+          val r = suggestions.filter(t => t.length > s.length && t.toLowerCase.startsWith(s)).take(MaxResults)
+          // println(s"[$s0] -> $r")
+          r
+        }
+        .replace2 { t =>
+          val e = if (t.endsWith("(")) ")" else ""
+          (t, e)
+        }
+        .result()
+
+    Vector(main)
+  }
+
   private val helpButton: VdomTag =
     Button(tipe = Button.Type.IconOnly(Icon.HelpCircle))
       .tag(^.onClick --> FormulaHelp.modal.show)
@@ -40,35 +67,7 @@ object FormulaEditor {
       Px.props($).map(_.projectConfig).withReuse.autoRefresh
 
     private val pxAutoComplete: Px[AutoComplete.Strategies] =
-      for {
-        cfg <- pxProjectConfig
-      } yield {
-
-        val fieldSuggestions =
-          cfg.liveCustomNumberFields.map(f => "field:" + FormulaAlgebra.quoteFieldName(f.name))
-
-        val functionSuggestions =
-          FormulaFunction.all.map(_.name + "(")
-
-        val suggestions = (fieldSuggestions ++ functionSuggestions.whole).sorted
-
-        val main =
-          AutoComplete.Strategy.builder
-            .regex("""\b([a-zA-Z0-9":]+)$""", index = 1)
-            .search { s0 =>
-              val s = s0.toLowerCase
-              val r = suggestions.filter(t => t.length > s.length && t.toLowerCase.startsWith(s)).take(MaxResults)
-              // println(s"[$s0] -> $r")
-              r
-            }
-            .replace2 { t =>
-              val e = if (t.endsWith("(")) ")" else ""
-              (t, e)
-            }
-            .result()
-
-        Vector(main)
-      }
+      pxProjectConfig.map(autoCompleteStrategies)
 
     private val inputDomRef = Ref[html.Input]
 
