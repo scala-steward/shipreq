@@ -6,7 +6,7 @@ import japgolly.microlibs.recursion._
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.microlibs.utils.ConciseIntSetFormat
 import java.util.regex.Pattern
-import shipreq.base.util.{Applicable, ErrorMsg, OptionalBoolFn, TransitiveClosure}
+import shipreq.base.util.{Applicable, ErrorMsg, OptionalBoolFn, TransitiveClosure, Util}
 import shipreq.webapp.base.util._
 import shipreq.webapp.member.project.data
 import shipreq.webapp.member.project.data.DataImplicits._
@@ -76,8 +76,8 @@ object FilterAlgebra {
       case FieldCriteria.Attr(a)                    =>  "=" ~ a
       case FieldCriteria.ReqTypePosSet(s)           =>  "=" ~ ConciseIntSetFormat(s.whole.map(_.value))
       case FieldCriteria.Query(q)                   =>  "=" ~ subquery(q)
-      case FieldCriteria.CompareNumber(None, d)     =>  "=" ~ d.toString
-      case FieldCriteria.CompareNumber(Some(op), d) =>  op.symbol ~ d.toString
+      case FieldCriteria.CompareNumber(None, d)     =>  "=" ~ Util.doubleToString(d)
+      case FieldCriteria.CompareNumber(Some(op), d) =>  op.symbol ~ Util.doubleToString(d)
     }
 
     val impCriteria: Potential.ImpCriteriaF[AtomOrComposite[String]] => String = {
