@@ -3,8 +3,8 @@ package shipreq.webapp.member.project.formula
 import japgolly.microlibs.recursion._
 import japgolly.microlibs.utils.Memo
 import shipreq.base.util._
-import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.data.DataImplicits._
+import shipreq.webapp.member.project.data._
 
 object FormulaEvalCache {
 

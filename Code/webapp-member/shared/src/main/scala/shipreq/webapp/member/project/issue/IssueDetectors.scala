@@ -3,8 +3,10 @@ package shipreq.webapp.member.project.issue
 import japgolly.microlibs.adt_macros.AdtMacros
 import scala.collection.mutable
 import shipreq.base.util._
+import shipreq.webapp.member.project.data.DataImplicits._
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.data.derivation._
+import shipreq.webapp.member.project.formula.FormulaFieldRef
 import shipreq.webapp.member.project.text.{Atom, Text}
 
 object IssueDetectors {
@@ -320,6 +322,36 @@ object IssueDetectors {
             val tag = cfg.tags.needApplicableTag(tagId)
             ctx.add(Issue.FieldDefaultTagUnrelated(f, tag))
           }
+        }
+    }
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  case object FieldFormulaRefsDeadField extends Instance {
+    override val detect = ctx => {
+
+      val cfg = ctx.project.config
+      for (src <- cfg.fields.customFormulaFields)
+        if (src.live(cfg) is Live) {
+          var issues = Set.empty[Issue]
+
+          src.fieldReqTypeRules.liveResolutionIterator(cfg.reqTypes).foreach {
+            case FieldReqTypeRules.Resolution.DefaultTo(formula) =>
+              formula.fieldRefs.foreach {
+
+                case FormulaFieldRef.NumberField(tgtId) =>
+                  val tgt = cfg.fields.custom(tgtId)
+                  if (tgt.live(cfg) is Dead)
+                    issues += Issue.FieldFormulaRefsDeadNumberField(src, tgt)
+              }
+
+            case FieldReqTypeRules.Resolution.Optional
+               | FieldReqTypeRules.Resolution.Mandatory
+               | FieldReqTypeRules.Resolution.NotApplicable =>
+          }
+
+          issues.foreach(ctx.add)
         }
     }
   }

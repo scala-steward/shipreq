@@ -472,6 +472,62 @@ object IssueDetectorTest extends TestSuite {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+  private object FieldFormulaRefsDeadNumberFieldTests {
+    private implicit val filter = IssueFilter[Issue.FieldFormulaRefsDeadNumberField]
+
+    import P7._
+    import shipreq.webapp.member.project.formula.{Formula, FormulaParser, ValidFormula}
+
+    private val numFieldId = CustomField.Number.Id(200)
+    private val formulaFieldId = CustomField.Formula.Id(201)
+
+    private val projectWithNum = applyEventsSuccessfully(
+      p7,
+      Event.FieldCustomNumberCreate(numFieldId, CustomNumberFieldGD(
+        name = "NumField",
+        desc = None,
+        range = (0.0, 100.0),
+        decimalPlaces = 0,
+        fieldReqTypeRules = FieldReqTypeRules.optional
+      ))
+    )
+
+    private val potentialFormula = FormulaParser.parse("field:NumField * 2").toOption.get
+    private val validFormula = Formula.Potential.validate(potentialFormula, projectWithNum.config.fields).toOption.get
+    private val formulaWrapper = ValidFormula(validFormula)
+
+    private val baseProject = applyEventsSuccessfully(
+      projectWithNum,
+      Event.FieldCustomFormulaCreate(formulaFieldId, CustomFormulaFieldGD(
+        name = "FormulaField",
+        desc = None,
+        decimalPlaces = 2,
+        fieldReqTypeRules = FieldReqTypeRules.notApplicable.defaultTo(formulaWrapper)(br, mf)
+      ))
+    )
+
+    def ok() = test(baseProject)()()
+
+    def deadNumberField() = test(baseProject)(
+      Event.FieldCustomDelete(numFieldId),
+    )(
+      IssueLite.FieldFormulaRefsDeadNumberField(formulaFieldId, numFieldId),
+    )
+
+    def deadFormulaField() = test(baseProject)(
+      Event.FieldCustomDelete(numFieldId),
+      Event.FieldCustomDelete(formulaFieldId),
+    )()
+
+    def deadReqTypes() = test(baseProject)(
+      Event.FieldCustomDelete(numFieldId),
+      Event.CustomReqTypeDeleteSoft(br),
+      Event.CustomReqTypeDeleteSoft(mf),
+    )()
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
   private object ImplicationRequiredTests {
     private implicit val filter = IssueFilter[Issue.ImplicationRequired]
 
@@ -760,6 +816,14 @@ object IssueDetectorTest extends TestSuite {
       "deadTag"         - deadTag()
       "liveFieldOnly"   - liveFieldOnly()
       "liveReqTypeOnly" - liveReqTypeOnly()
+    }
+
+    "FieldFormulaRefsDeadNumberField" - {
+      import FieldFormulaRefsDeadNumberFieldTests._
+      "ok"               - ok()
+      "deadNumberField"  - deadNumberField()
+      "deadFormulaField" - deadFormulaField()
+      "deadReqTypes"     - deadReqTypes()
     }
 
     "ImplicationRequired" - {

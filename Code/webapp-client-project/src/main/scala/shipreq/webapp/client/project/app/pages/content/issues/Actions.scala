@@ -163,6 +163,7 @@ object Actions {
       case _: Issue.FieldDefaultTagDead
          | _: Issue.FieldDefaultTagNotApplicable
          | _: Issue.FieldDefaultTagUnrelated
+         | _: Issue.FieldFormulaRefsDeadNumberField
          | _: Issue.NonApplicableField
          | _: Issue.NumberOutOfRange
             => linkTo(Routes.Page.CfgFields)

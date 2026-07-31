@@ -1,8 +1,8 @@
 package shipreq.webapp.member.project.formula
 
-import cats.{Applicative, Traverse}
 import cats.instances.list._
 import cats.syntax.all._
+import cats.{Applicative, Traverse}
 import japgolly.microlibs.recursion.Fix
 import shipreq.base.util.TraverseWithDefaults
 

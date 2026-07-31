@@ -6,7 +6,6 @@
 
 * Issue detection
   * Live formulas that reference out-of-bounds numbers
-  * Live formulas that reference dead numeric fields
   * Live formula cells that contain errors
   * Formula field reqType rules are all dead or N/A *(rule already in-place, confirm works)*
 

@@ -20,27 +20,28 @@ sealed abstract class IssueClass(final val category: IssueCategory)
 object IssueClass {
   import shipreq.webapp.member.project.issue.{IssueCategory => C}
 
-  case object BlankCustomField             extends IssueClass(C.MissingData)
-  case object BlankTitle                   extends IssueClass(C.MissingData)
-  case object BlankUseCaseStep             extends IssueClass(C.MissingData)
-  case object ConflictingTags              extends IssueClass(C.BadData)
-  case object DeadIssueTag                 extends IssueClass(C.BadData)
-  case object DeadReference                extends IssueClass(C.BadData)
-  case object DeadTag                      extends IssueClass(C.BadData)
-  case object DerivativeTagDead            extends IssueClass(C.BadData)
-  case object DerivativeTagUnrelated       extends IssueClass(C.BadData)
-  case object DuplicateTitle               extends IssueClass(C.BadData)
-  case object EmptyCodeGroup               extends IssueClass(C.Futility)
-  case object FieldDefaultTagDead          extends IssueClass(C.BadData)
-  case object FieldDefaultTagNotApplicable extends IssueClass(C.BadData)
-  case object FieldDefaultTagUnrelated     extends IssueClass(C.BadData)
-  case object ImplicationRequired          extends IssueClass(C.MissingData)
-  case object IssueTag                     extends IssueClass(C.UserDefined)
-  case object ManualIssue                  extends IssueClass(C.UserDefined)
-  case object NonApplicableField           extends IssueClass(C.Futility)
-  case object NonApplicableTag             extends IssueClass(C.BadData)
-  case object NumberOutOfRange             extends IssueClass(C.BadData)
-  case object UninhabitableTagField        extends IssueClass(C.Futility)
+  case object BlankCustomField                extends IssueClass(C.MissingData)
+  case object BlankTitle                      extends IssueClass(C.MissingData)
+  case object BlankUseCaseStep                extends IssueClass(C.MissingData)
+  case object ConflictingTags                 extends IssueClass(C.BadData)
+  case object DeadIssueTag                    extends IssueClass(C.BadData)
+  case object DeadReference                   extends IssueClass(C.BadData)
+  case object DeadTag                         extends IssueClass(C.BadData)
+  case object DerivativeTagDead               extends IssueClass(C.BadData)
+  case object DerivativeTagUnrelated          extends IssueClass(C.BadData)
+  case object DuplicateTitle                  extends IssueClass(C.BadData)
+  case object EmptyCodeGroup                  extends IssueClass(C.Futility)
+  case object FieldDefaultTagDead             extends IssueClass(C.BadData)
+  case object FieldDefaultTagNotApplicable    extends IssueClass(C.BadData)
+  case object FieldDefaultTagUnrelated        extends IssueClass(C.BadData)
+  case object FieldFormulaRefsDeadNumberField extends IssueClass(C.BadData)
+  case object ImplicationRequired             extends IssueClass(C.MissingData)
+  case object IssueTag                        extends IssueClass(C.UserDefined)
+  case object ManualIssue                     extends IssueClass(C.UserDefined)
+  case object NonApplicableField              extends IssueClass(C.Futility)
+  case object NonApplicableTag                extends IssueClass(C.BadData)
+  case object NumberOutOfRange                extends IssueClass(C.BadData)
+  case object UninhabitableTagField           extends IssueClass(C.Futility)
 
   implicit def univEq: UnivEq[IssueClass] = UnivEq.derive
   val values = AdtMacros.adtValues[IssueClass]
@@ -106,6 +107,9 @@ object Issue {
 
   final case class FieldDefaultTagUnrelated(field: CustomField.Tag,
                                             tag  : ApplicableTag) extends Issue(C.FieldDefaultTagUnrelated)
+
+  final case class FieldFormulaRefsDeadNumberField(src: CustomField.Formula,
+                                                   tgt: CustomField.Number) extends Issue(C.FieldFormulaRefsDeadNumberField)
 
   final case class ImplicationRequired(req: Req) extends Issue(C.ImplicationRequired)
 
