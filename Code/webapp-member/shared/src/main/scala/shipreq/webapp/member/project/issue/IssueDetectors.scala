@@ -332,27 +332,26 @@ object IssueDetectors {
     override val detect = ctx => {
 
       val cfg = ctx.project.config
-      for (src <- cfg.fields.customFormulaFields)
-        if (src.live(cfg) is Live) {
-          var issues = Set.empty[Issue]
+      for (src <- cfg.liveCustomFormulaFields) {
+        var issues = Set.empty[Issue]
 
-          src.fieldReqTypeRules.liveResolutionIterator(cfg.reqTypes).foreach {
-            case FieldReqTypeRules.Resolution.DefaultTo(formula) =>
-              formula.fieldRefs.foreach {
+        src.fieldReqTypeRules.liveResolutionIterator(cfg.reqTypes).foreach {
+          case FieldReqTypeRules.Resolution.DefaultTo(formula) =>
+            formula.fieldRefs.foreach {
 
-                case FormulaFieldRef.NumberField(tgtId) =>
-                  val tgt = cfg.fields.custom(tgtId)
-                  if (tgt.live(cfg) is Dead)
-                    issues += Issue.FieldFormulaRefsDeadNumberField(src, tgt)
-              }
+              case FormulaFieldRef.NumberField(tgtId) =>
+                val tgt = cfg.fields.custom(tgtId)
+                if (tgt.live(cfg) is Dead)
+                  issues += Issue.FieldFormulaRefsDeadNumberField(src, tgt)
+            }
 
-            case FieldReqTypeRules.Resolution.Optional
-               | FieldReqTypeRules.Resolution.Mandatory
-               | FieldReqTypeRules.Resolution.NotApplicable =>
-          }
-
-          issues.foreach(ctx.add)
+          case FieldReqTypeRules.Resolution.Optional
+             | FieldReqTypeRules.Resolution.Mandatory
+             | FieldReqTypeRules.Resolution.NotApplicable =>
         }
+
+        issues.foreach(ctx.add)
+      }
     }
   }
 
