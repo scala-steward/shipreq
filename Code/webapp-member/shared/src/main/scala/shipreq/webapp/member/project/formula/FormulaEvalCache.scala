@@ -8,9 +8,19 @@ import shipreq.webapp.member.project.data.DataImplicits._
 
 object FormulaEvalCache {
 
-  /** @param validity Invalid when the formula relies on dead fields.
-    */
-  final case class Eval(value: FormulaValue, live: Live, validity: Validity)
+  sealed trait Issue
+  object Issue {
+    case object ReliesOnDeadNumberField  extends Issue
+    case object ReliesOnOutOfRangeNumber extends Issue
+    case object EvalError                extends Issue
+  }
+
+  final case class Eval(value: FormulaValue, live: Live, issues: Set[Issue]) {
+    assert(live.is(Live) || issues.isEmpty, "Dead fields should not have issues.")
+
+    val validity: Validity =
+      Valid when issues.isEmpty
+  }
 
   type Result = IfApplicable[Eval]
 
@@ -51,24 +61,29 @@ final class FormulaEvalCache(cfg          : ProjectConfig,
         field.fieldReqTypeRules(req.reqTypeId) match {
 
           case FieldReqTypeRules.Resolution.DefaultTo(formula) =>
-            def validityExcludingEval: Validity =
-              liveField match {
-                case Live =>
-                  Valid when formula.fieldRefs.forall {
-                    case FormulaFieldRef.NumberField(id) =>
-                      val f          = cfg.fields.custom(id)
-                      val isLive     = f.live(cfg) is Live
-                      def isValidNum = reqNums.getVirtual(f, req).forall(f.isWithinRange)
-                      isLive && isValidNum
-                  }
-                case Dead => Valid // We don't want red marks on a dead field
-              }
 
-            val algebra  = FormulaAlgebra.eval(cfg.fields, reqNums, req)
-            val value    = Recursion.cata(algebra)(formula.formula)
-            val live     = liveField & req.live(cfg.reqTypes)
-            val validity = Invalid.when(value.isErr) & validityExcludingEval
-            val result   = Eval(value, live, validity)
+            // Eval
+            val algebra = FormulaAlgebra.eval(cfg.fields, reqNums, req)
+            val value   = Recursion.cata(algebra)(formula.formula)
+
+            // Issue detection
+            var issues = Set.empty[Issue]
+            val live = liveField & req.live(cfg.reqTypes)
+            if (live is Live) {
+              formula.fieldRefs.foreach {
+                case FormulaFieldRef.NumberField(id) =>
+                  val f = cfg.fields.custom(id)
+                  if (f.live(cfg) is Dead)
+                    issues += Issue.ReliesOnDeadNumberField
+                  if (!reqNums.getVirtual(f, req).forall(f.isWithinRange))
+                    issues += Issue.ReliesOnOutOfRangeNumber
+              }
+              if (value.isErr)
+                issues += Issue.EvalError
+            }
+
+            // Done
+            val result = Eval(value, live, issues)
             \/-(result)
 
           case FieldReqTypeRules.Resolution.Optional
