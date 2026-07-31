@@ -34,6 +34,8 @@ final case class Issues(vector: Vector[Issue]) {
       case _: Issue.FieldDefaultTagNotApplicable    => false
       case _: Issue.FieldDefaultTagUnrelated        => false
       case _: Issue.FieldFormulaRefsDeadNumberField => false
+      case i: Issue.FormulaEvalErrBadData           => f.req(i.req)
+      case i: Issue.FormulaEvalErrUserDefined       => f.req(i.req)
       case i: Issue.ImplicationRequired             => f.req(i.req)
       case i: Issue.IssueTagInRcg                   => f.codeGroup(i.rcg)
       case i: Issue.IssueTagInReq                   => f.req(i.req)
@@ -70,6 +72,8 @@ final case class Issues(vector: Vector[Issue]) {
       case i: Issue.FieldDefaultTagUnrelated        => config = config.add(i)
       case i: Issue.FieldDefaultTagDead             => config = config.add(i)
       case i: Issue.FieldFormulaRefsDeadNumberField => config = config.add(i)
+      case i: Issue.FormulaEvalErrBadData           => addReq(i, i.req.id)
+      case i: Issue.FormulaEvalErrUserDefined       => addReq(i, i.req.id)
       case i: Issue.ImplicationRequired             => addReq(i, i.req.id)
       case i: Issue.IssueTagInRcg                   => addRcg(i, i.rcg.id)
       case i: Issue.IssueTagInReq                   => addReq(i, i.req.id)

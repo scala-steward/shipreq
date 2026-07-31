@@ -528,6 +528,64 @@ object IssueDetectorTest extends TestSuite {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+  private object FormulaEvalErrTests {
+    private implicit val filter = IssueFilter.collect {
+      case _: Issue.FormulaEvalErrBadData     => ()
+      case _: Issue.FormulaEvalErrUserDefined => ()
+    }
+
+    import P7._
+    import shipreq.webapp.member.project.formula.{Formula, FormulaParser, FormulaValue, ValidFormula}
+
+    private val badDataFormulaFieldId = CustomField.Formula.Id(202)
+    private val userDefFormulaFieldId = CustomField.Formula.Id(203)
+
+    private def createProjectWithFormula(formulaFieldId: CustomField.Formula.Id, name: String, formulaStr: String): Project = {
+      val potentialFormula = FormulaParser.parse(formulaStr).toOption.get
+      val validFormula = Formula.Potential.validate(potentialFormula, p7.config.fields).toOption.get
+      val formulaWrapper = ValidFormula(validFormula)
+
+      applyEventsSuccessfully(
+        p7,
+        Event.FieldCustomFormulaCreate(formulaFieldId, CustomFormulaFieldGD(
+          name = name,
+          desc = None,
+          decimalPlaces = 2,
+          fieldReqTypeRules = FieldReqTypeRules.notApplicable.defaultTo(formulaWrapper)(br, mf)
+        ))
+      )
+    }
+
+    def badData() = {
+      val project = createProjectWithFormula(badDataFormulaFieldId, "BadDataFormula", "1 / 0")
+      val reqIds = project.content.reqs.reqIterator()
+        .filter(r => (r.reqTypeId ==* br || r.reqTypeId ==* mf) && (r live project.config.reqTypes).is(Live))
+        .map(_.id).toVector
+      val expectedIssues = reqIds.map(reqId => IssueLite.FormulaEvalErrBadData(reqId, badDataFormulaFieldId, FormulaValue.Err("Division by zero.")))
+      assertIssues(project)(expectedIssues: _*)
+    }
+
+    def userDefined() = {
+      val project = createProjectWithFormula(userDefFormulaFieldId, "UserDefFormula", """ERR("custom error")""")
+      val reqIds = project.content.reqs.reqIterator()
+        .filter(r => (r.reqTypeId ==* br || r.reqTypeId ==* mf) && (r live project.config.reqTypes).is(Live))
+        .map(_.id).toVector
+      val expectedIssues = reqIds.map(reqId => IssueLite.FormulaEvalErrUserDefined(reqId, userDefFormulaFieldId, FormulaValue.Err("custom error")))
+      assertIssues(project)(expectedIssues: _*)
+    }
+
+    def deadFormulaField() = {
+      val baseProject = createProjectWithFormula(badDataFormulaFieldId, "BadDataFormula", "1 / 0")
+      val project = applyEventsSuccessfully(
+        baseProject,
+        Event.FieldCustomDelete(badDataFormulaFieldId)
+      )
+      assertIssues(project)()
+    }
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
   private object ImplicationRequiredTests {
     private implicit val filter = IssueFilter[Issue.ImplicationRequired]
 
@@ -824,6 +882,13 @@ object IssueDetectorTest extends TestSuite {
       "deadNumberField"  - deadNumberField()
       "deadFormulaField" - deadFormulaField()
       "deadReqTypes"     - deadReqTypes()
+    }
+
+    "FormulaEvalErr" - {
+      import FormulaEvalErrTests._
+      "badData"          - badData()
+      "userDefined"      - userDefined()
+      "deadFormulaField" - deadFormulaField()
     }
 
     "ImplicationRequired" - {

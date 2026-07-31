@@ -24,6 +24,9 @@ object FormulaValue {
 
   case object Empty extends FormulaValue
 
+  implicit def univEqErr: UnivEq[Err] =
+    UnivEq.derive
+
   implicit def univEq: UnivEq[FormulaValue] =
     UnivEq.derive
 

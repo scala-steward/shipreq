@@ -57,6 +57,8 @@ object IssueStats {
       case _: Issue.FieldDefaultTagNotApplicable    => addInConfig()
       case _: Issue.FieldDefaultTagUnrelated        => addInConfig()
       case _: Issue.FieldFormulaRefsDeadNumberField => addInConfig()
+      case i: Issue.FormulaEvalErrBadData           => addInReq(i.req.id)
+      case i: Issue.FormulaEvalErrUserDefined       => addInReq(i.req.id)
       case i: Issue.ImplicationRequired             => addInReq(i.req.id)
       case i: Issue.IssueTagInRcg                   => addInRcg(i.rcg)
       case i: Issue.IssueTagInReq                   => addInReq(i.req.id)

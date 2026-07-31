@@ -113,6 +113,9 @@ object PlainText {
   def reqTypeFull(rt: ReqType): String =
     s"${rt.mnemonic.value}: ${rt.name}"
 
+  def formulaError(err: FormulaValue.Err): String =
+    "#ERR: " + err.value
+
   // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
   private implicit def surroundDisplay(s: Surrounds) = s.display
@@ -531,8 +534,8 @@ object PlainText {
           number(d, f.decimalPlaces, eval.live, eval.validity)
 
         case b: FormulaValue.Bool => b.show
+        case e: FormulaValue.Err  => formulaError(e)
         case FormulaValue.Str(s)  => s
-        case FormulaValue.Err(e)  => "#ERR: " + e
         case FormulaValue.Empty   => ""
       }
   }

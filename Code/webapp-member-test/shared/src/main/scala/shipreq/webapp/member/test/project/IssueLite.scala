@@ -2,6 +2,7 @@ package shipreq.webapp.member.test.project
 
 import shipreq.webapp.member.project.data.derivation._
 import shipreq.webapp.member.project.data.{ManualIssue => ManualIssueInstance, _}
+import shipreq.webapp.member.project.formula.FormulaValue
 import shipreq.webapp.member.project.issue._
 import shipreq.webapp.member.project.text.Text.Equality._
 import shipreq.webapp.member.project.text.{Atom, Text}
@@ -67,6 +68,14 @@ object IssueLite {
   final case class FieldFormulaRefsDeadNumberField(srcId: CustomField.Formula.Id,
                                                    tgtId: CustomField.Number.Id) extends IssueLite(C.FieldFormulaRefsDeadNumberField)
 
+  final case class FormulaEvalErrBadData(reqId  : ReqId,
+                                         fieldId: CustomField.Formula.Id,
+                                         err    : FormulaValue.Err) extends IssueLite(C.FormulaEvalErrBadData)
+
+  final case class FormulaEvalErrUserDefined(reqId  : ReqId,
+                                             fieldId: CustomField.Formula.Id,
+                                             err    : FormulaValue.Err) extends IssueLite(C.FormulaEvalErrUserDefined)
+
   final case class ImplicationRequired(reqId: ReqId) extends IssueLite(C.ImplicationRequired)
 
   final case class IssueTagInRcg(rcgId: ReqCodeGroupId,
@@ -108,6 +117,8 @@ object IssueLite {
     case Issue.FieldDefaultTagNotApplicable   (field, tag, reqType  ) => FieldDefaultTagNotApplicable   (field.id, tag.id, reqType.reqTypeId)
     case Issue.FieldDefaultTagUnrelated       (field, tag           ) => FieldDefaultTagUnrelated       (field.id, tag.id)
     case Issue.FieldFormulaRefsDeadNumberField(src, tgt             ) => FieldFormulaRefsDeadNumberField(src.id, tgt.id)
+    case Issue.FormulaEvalErrBadData          (req, field, err      ) => FormulaEvalErrBadData          (req.id, field.id, err)
+    case Issue.FormulaEvalErrUserDefined      (req, field, err      ) => FormulaEvalErrUserDefined      (req.id, field.id, err)
     case Issue.ImplicationRequired            (req                  ) => ImplicationRequired            (req.id)
     case Issue.IssueTagInRcg                  (rcg, issue           ) => IssueTagInRcg                  (rcg.id, issue)
     case Issue.IssueTagInReq                  (req, loc, issue      ) => IssueTagInReq                  (req.id, loc, issue)

@@ -12,7 +12,9 @@ object FormulaEvalCache {
   object Issue {
     case object ReliesOnDeadNumberField  extends Issue
     case object ReliesOnOutOfRangeNumber extends Issue
-    case object EvalError                extends Issue
+
+    final case class BadDataEvalError    (err: FormulaValue.Err) extends Issue
+    final case class UserDefinedEvalError(err: FormulaValue.Err) extends Issue
   }
 
   final case class Eval(value: FormulaValue, live: Live, issues: Set[Issue]) {
@@ -78,8 +80,15 @@ final class FormulaEvalCache(cfg          : ProjectConfig,
                   if (!reqNums.getVirtual(f, req).forall(f.isWithinRange))
                     issues += Issue.ReliesOnOutOfRangeNumber
               }
-              if (value.isErr)
-                issues += Issue.EvalError
+              value match {
+                case e: FormulaValue.Err =>
+                  val i = if (FormulaAlgebra.isErrorUserDefined(e))
+                      Issue.UserDefinedEvalError(e)
+                    else
+                      Issue.BadDataEvalError(e)
+                  issues += i
+                case _ =>
+              }
             }
 
             // Done

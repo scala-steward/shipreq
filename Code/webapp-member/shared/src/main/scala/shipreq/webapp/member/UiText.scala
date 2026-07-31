@@ -205,11 +205,14 @@ object UiText {
     def descFieldDefaultTagNotApplicable(field: String, tag: String, reqType: String): String =
       s"$field field defaults to $tag for $reqType, but $tag isn't applicable to $reqType"
 
+    def descFieldDefaultTagUnrelated(field: String, tag: String): String =
+      s"$field field using unrelated tag $tag as a default"
+
     def descFieldFormulaRefsDeadNumberField(src: String, tgt: String): String =
       s"$src field references $tgt field which is deleted"
 
-    def descFieldDefaultTagUnrelated(field: String, tag: String): String =
-      s"$field field using unrelated tag $tag as a default"
+    def descFormulaEvalErrBadData(field: String, err: String): String =
+      s"${err.replaceFirst("\\.$", "")}: $field"
 
     def descImplicationRequired(reqType: Mnemonic): String =
       "Implication required for req type: " + reqType.value

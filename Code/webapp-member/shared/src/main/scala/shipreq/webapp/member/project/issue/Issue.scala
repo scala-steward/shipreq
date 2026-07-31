@@ -3,6 +3,7 @@ package shipreq.webapp.member.project.issue
 import japgolly.microlibs.adt_macros.AdtMacros
 import shipreq.webapp.member.project.data.derivation._
 import shipreq.webapp.member.project.data.{ManualIssue => ManualIssueInstance, _}
+import shipreq.webapp.member.project.formula.FormulaValue
 import shipreq.webapp.member.project.text.{Atom, Text}
 
 sealed trait IssueCategory
@@ -35,6 +36,8 @@ object IssueClass {
   case object FieldDefaultTagNotApplicable    extends IssueClass(C.BadData)
   case object FieldDefaultTagUnrelated        extends IssueClass(C.BadData)
   case object FieldFormulaRefsDeadNumberField extends IssueClass(C.BadData)
+  case object FormulaEvalErrBadData           extends IssueClass(C.BadData)
+  case object FormulaEvalErrUserDefined       extends IssueClass(C.UserDefined)
   case object ImplicationRequired             extends IssueClass(C.MissingData)
   case object IssueTag                        extends IssueClass(C.UserDefined)
   case object ManualIssue                     extends IssueClass(C.UserDefined)
@@ -110,6 +113,14 @@ object Issue {
 
   final case class FieldFormulaRefsDeadNumberField(src: CustomField.Formula,
                                                    tgt: CustomField.Number) extends Issue(C.FieldFormulaRefsDeadNumberField)
+
+  final case class FormulaEvalErrBadData(req  : Req,
+                                         field: CustomField.Formula,
+                                         err  : FormulaValue.Err) extends Issue(C.FormulaEvalErrBadData)
+
+  final case class FormulaEvalErrUserDefined(req  : Req,
+                                             field: CustomField.Formula,
+                                             err  : FormulaValue.Err) extends Issue(C.FormulaEvalErrUserDefined)
 
   final case class ImplicationRequired(req: Req) extends Issue(C.ImplicationRequired)
 

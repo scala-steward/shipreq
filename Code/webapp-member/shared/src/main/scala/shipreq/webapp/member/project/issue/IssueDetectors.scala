@@ -6,7 +6,7 @@ import shipreq.base.util._
 import shipreq.webapp.member.project.data.DataImplicits._
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.data.derivation._
-import shipreq.webapp.member.project.formula.FormulaFieldRef
+import shipreq.webapp.member.project.formula.{FormulaEvalCache, FormulaFieldRef}
 import shipreq.webapp.member.project.text.{Atom, Text}
 
 object IssueDetectors {
@@ -351,6 +351,39 @@ object IssueDetectors {
         }
 
         issues.foreach(ctx.add)
+      }
+    }
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  case object FormulaEvalErr extends Instance {
+    override val detect = ctx =>
+      ctx.foreachLiveReq(() => detectInReqs(ctx))
+
+    private def detectInReqs(ctx: Ctx): Req => Unit = {
+      val fields           = ctx.project.config.liveCustomFormulaFields
+      val formulaEvalCache = ctx.formulaEvalCache
+
+      req => {
+        for {
+          field <- fields
+          eval <- formulaEvalCache(field.id)(req)
+        } {
+          eval.issues.foreach {
+            case FormulaEvalCache.Issue.BadDataEvalError(err) =>
+              ctx.add(Issue.FormulaEvalErrBadData(req, field, err))
+
+            case FormulaEvalCache.Issue.UserDefinedEvalError(err) =>
+              ctx.add(Issue.FormulaEvalErrUserDefined(req, field, err))
+
+            case FormulaEvalCache.Issue.ReliesOnDeadNumberField =>
+              // Do nothing — this is covered by FieldFormulaRefsDeadField
+
+            case FormulaEvalCache.Issue.ReliesOnOutOfRangeNumber =>
+              // Do nothing — NumberOutOfRange is enough
+          }
+        }
       }
     }
   }

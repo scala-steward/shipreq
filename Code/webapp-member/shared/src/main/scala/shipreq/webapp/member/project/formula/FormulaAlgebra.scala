@@ -140,6 +140,17 @@ object FormulaAlgebra {
 
   private val typeMismatch = FormulaValue.Err("Type mismatch.")
   private val invalidNumberOfFnArgs = FormulaValue.Err("Arg count mismatch.") // this should be caught at the validation stage
+  private val divisionByZero = FormulaValue.Err("Division by zero.")
+
+  private val nonUserDefinedErrors: Set[FormulaValue.Err] =
+    Set(
+      typeMismatch,
+      invalidNumberOfFnArgs,
+      divisionByZero,
+    )
+
+  def isErrorUserDefined(err: FormulaValue.Err): Boolean =
+    !nonUserDefinedErrors.contains(err)
 
   def eval(fieldSet: FieldSet, reqNums: ReqData.Numbers, req: Req): FAlgebra[ValidF, FormulaValue] = {
     import FormulaValue._
@@ -185,7 +196,7 @@ object FormulaAlgebra {
 
       case Divide(lhs, rhs) =>
         (lhs, rhs) match {
-          case (Dbl(_), Dbl(0)) => Err("Division by zero.")
+          case (Dbl(_), Dbl(0)) => divisionByZero
           case (Dbl(x), Dbl(y)) => Dbl(x / y)
           case (_, Empty)       => Empty
           case (Empty, _)       => Empty

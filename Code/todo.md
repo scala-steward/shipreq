@@ -1,11 +1,4 @@
-* Manually test UI
-  * Issues screen
-    * Formula cells
-      * Display okay?
-      * KBNav
-
 * Issue detection
-  * Live formula cells that contain errors
   * Formula field reqType rules are all dead or N/A *(rule already in-place, confirm works)*
 
 * scalafix

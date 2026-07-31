@@ -14,6 +14,7 @@ import shipreq.webapp.member.feature.EditControlsFeature
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.data.derivation._
 import shipreq.webapp.member.project.issue._
+import shipreq.webapp.member.project.text.PlainText
 
 sealed trait Row {
   val issue: Issue
@@ -359,6 +360,15 @@ object Row {
         val tgt = cfg.fieldName(i.tgt.id)
         val desc = UI.descFieldFormulaRefsDeadNumberField(src = src, tgt = tgt)
         forConfig(i, desc)
+
+      case i: Issue.FormulaEvalErrBadData =>
+        val fieldName = cfg.fieldName(i.field.id)
+        val desc = UI.descFormulaEvalErrBadData(field = fieldName, err = i.err.value)
+        forReqA(i, desc, i.req, IssueField.customField(i.field.id))
+
+      case i: Issue.FormulaEvalErrUserDefined =>
+        val desc = PlainText.formulaError(i.err)
+        forReqA(i, desc, i.req, IssueField.customField(i.field.id))
 
       case i: Issue.ImplicationRequired =>
         val reqType = cfg.reqTypes.need(i.req.reqTypeId)
