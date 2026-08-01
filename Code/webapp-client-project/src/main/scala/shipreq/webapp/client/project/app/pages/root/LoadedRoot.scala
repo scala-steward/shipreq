@@ -29,7 +29,7 @@ import shipreq.webapp.member.feature.PreviewFeature
 import shipreq.webapp.member.project.data.{FilterDead, HideDead, Project, ProjectConfig, ReqData, ReqId, ReqTypeId}
 import shipreq.webapp.member.project.filter.Filter
 import shipreq.webapp.member.project.formula.FormulaEvalCache
-import shipreq.webapp.member.project.issue.{Issues, IssueTracker}
+import shipreq.webapp.member.project.issue.{IssueTracker, Issues}
 import shipreq.webapp.member.project.library.ProjectLibrary
 import shipreq.webapp.member.project.protocol.websocket._
 import shipreq.webapp.member.project.text.{PlainText, ProjectText, TextSearch}

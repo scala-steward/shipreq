@@ -1,7 +1,6 @@
 * Issue detection
   * Formula field reqType rules are all dead or N/A *(rule already in-place, confirm works)*
 
-* scalafix
 * changelog
 
 # Formulas referencing formulas

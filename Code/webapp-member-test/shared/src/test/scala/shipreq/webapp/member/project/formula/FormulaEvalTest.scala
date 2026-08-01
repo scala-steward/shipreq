@@ -2,8 +2,8 @@ package shipreq.webapp.member.project.formula
 
 import japgolly.microlibs.testutil.TestUtil._
 import shipreq.base.util._
-import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.data.DataImplicits._
+import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.formula.FormulaValue._
 import sourcecode.Line
 import utest._
