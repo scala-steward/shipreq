@@ -45,7 +45,13 @@ object FieldSetRules {
   val optional: FieldSetRules = {
     val o = (_: Any) => Resolution.Optional
     val na = (_: Any) => Resolution.NotApplicable
-    apply(o, na, o, o, o, o)
+    apply(
+      imp     = o,
+      formula = na,
+      num     = o,
+      tag     = o,
+      text    = o,
+      static  = o)
   }
 
   implicit def univEq: UnivEq[FieldSetRules] = UnivEq.force

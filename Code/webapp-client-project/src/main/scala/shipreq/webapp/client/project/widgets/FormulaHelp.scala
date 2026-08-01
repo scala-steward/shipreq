@@ -18,6 +18,14 @@ object FormulaHelp {
         "Basic arithmetic operators are supported, including addition, subtraction, multiplication, division and parentheses for grouping."
       )("(1 + 2) * 3 / 4"),
 
+      Row(
+        "Boolean values are supported."
+      )(FormulaValue.Bool(true).show, FormulaValue.Bool(false).show),
+
+      Row(
+        "Text values are supported."
+      )("\"Hello World\""),
+
       Row.nev(
         "Values can be compared using typical comparison operators."
       )(FormulaCmpOp.all.map(op => s"A ${op.symbol} B": VdomNode)),
@@ -43,11 +51,11 @@ object FormulaHelp {
             s"${f.name}(ISBLANK($score), ISBLANK($urgency))")
 
         case f@ FormulaFunction.Average =>
-          Row(s"${f.name}(values): returns the average of the values")(
+          Row(s"${f.name}(numbers): returns the average of the numbers")(
             s"${f.name}($score, $urgency)")
 
         case f@ FormulaFunction.Ceiling =>
-          Row(s"${f.name}(value): returns the smallest integer greater than or equal to the value")(
+          Row(s"${f.name}(number): returns the smallest integer greater than or equal to the specified number")(
             s"${f.name}($score)")
 
         case f@ FormulaFunction.Err =>
@@ -55,7 +63,7 @@ object FormulaHelp {
             s"${f.name}(\"Invalid priority\")")
 
         case f@ FormulaFunction.Floor =>
-          Row(s"${f.name}(value): returns the largest integer less than or equal to the value")(
+          Row(s"${f.name}(number): returns the largest integer less than or equal to the specified number")(
             s"${f.name}($score)")
 
         case f@ FormulaFunction.If =>
@@ -85,11 +93,11 @@ object FormulaHelp {
             s"${f.name}(\"Hello\")")
 
         case f@ FormulaFunction.Max =>
-          Row(s"${f.name}(values): returns the maximum value from a list of values")(
+          Row(s"${f.name}(numbers): returns the maximum number from a list of numbers")(
             s"${f.name}($score, $urgency)")
 
         case f@ FormulaFunction.Min =>
-          Row(s"${f.name}(values): returns the minimum value from a list of values")(
+          Row(s"${f.name}(numbers): returns the minimum number from a list of numbers")(
             s"${f.name}($score, $urgency)")
 
         case f@ FormulaFunction.Not =>

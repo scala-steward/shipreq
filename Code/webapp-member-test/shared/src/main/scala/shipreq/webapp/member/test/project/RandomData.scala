@@ -2298,7 +2298,7 @@ object RandomData {
             flatGen
           else {
             val next = remainingDepth - 1
-            val gNext = Gen.chooseInt(remainingDepth)
+            val gNext = Gen.pure(next)
             val sgNext = Some(gNext)
             val genNEV = gNext.nev(1 to (5 `JVM|JS` 3))
             var gens: NonEmptyVector[Gen[PotentialF[Int]]] = flatGens
@@ -2425,7 +2425,7 @@ object RandomData {
             flatGen
           else {
             val next = remainingDepth - 1
-            val gNext = Gen.chooseInt(remainingDepth)
+            val gNext = Gen.pure(next)
             val sgNext = Some(gNext)
             val genNEV = gNext.nev(1 to (5 `JVM|JS` 3))
             var gens: NonEmptyVector[Gen[ValidF[Int]]] = flatGens
@@ -2473,12 +2473,13 @@ object RandomData {
   object formula {
     import shipreq.webapp.member.project.formula._
 
-    val genFormulaValue: Gen[FormulaValue] =
+    private val genFormulaValue: Gen[FormulaValue] =
       Gen.chooseGen(
-        // Gen pure FormulaValue.Empty,
+        // Gen pure FormulaValue.Empty, // not included because it doesn't work as an inner value
         Gen.boolean.map(FormulaValue.Bool.apply),
         Gen.double.map(FormulaValue.Dbl.apply),
         Gen.stringOf(Gen.ascii).map(FormulaValue.Str.apply),
+        // FormulaValue.Err is covered by random function generation below
       )
 
     val genFormulaCmpOp: Gen[FormulaCmpOp] =
@@ -2516,7 +2517,8 @@ object RandomData {
             if (remainingDepth <= 0)
               gFlat
             else {
-              val gNext = Gen.chooseInt(remainingDepth)
+              val next = remainingDepth - 1
+              val gNext = Gen.pure(next)
 
               var gens: NonEmptyVector[Gen[ValidF[Int]]] =
                 flatGens

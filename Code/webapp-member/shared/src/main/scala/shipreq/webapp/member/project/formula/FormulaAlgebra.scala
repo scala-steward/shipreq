@@ -421,12 +421,12 @@ object FormulaAlgebra {
 
   val fieldRefs: FAlgebra[ValidF, Set[FormulaFieldRef]] = {
     case _: Value         => Set.empty
-    case Add(x, y)        => x ++ y
-    case Subtract(x, y)   => x ++ y
-    case Multiply(x, y)   => x ++ y
-    case Divide(x, y)     => x ++ y
-    case Compare(x, _, y) => x ++ y
+    case Add(x, y)        => Util.mergeSets(x, y)
+    case Subtract(x, y)   => Util.mergeSets(x, y)
+    case Multiply(x, y)   => Util.mergeSets(x, y)
+    case Divide(x, y)     => Util.mergeSets(x, y)
+    case Compare(x, _, y) => Util.mergeSets(x, y)
     case Field(f)         => Set.empty + f
-    case Function(_, as)  => if (as.isEmpty) Set.empty else as.reduce(_ ++ _)
+    case Function(_, as)  => if (as.isEmpty) Set.empty else as.reduce(Util.mergeSets(_, _))
   }
 }
