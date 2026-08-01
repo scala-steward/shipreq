@@ -990,6 +990,14 @@ object Style extends StyleSheet.Inline {
       generic.tableCellBase((l, Off)),
     ))
 
+    val fieldListDetailFormula = style(
+      backgroundColor(c"#eee"),
+      padding(2 px, 4 px),
+      borderRadius(4 px),
+      fontFamily :=! "monospace",
+      fontSize(80 %%),
+    )
+
     val fieldListTableUsage = styleF(D.live)(l => styleS(
       generic.tableCellBase((l, Off)),
       textAlign.right.important,
@@ -1038,7 +1046,7 @@ object Style extends StyleSheet.Inline {
     )
 
     private val rulesEditorReqTypeColumn = styleS(
-      width(44 ex)
+      width(42 ex)
     )
 
     val rulesEditorReqTypes = style(
@@ -1053,6 +1061,14 @@ object Style extends StyleSheet.Inline {
 
     val rulesEditorDefault = style(
       marginTop(0.65 em),
+    )
+
+    val rulesEditorHorizDefault = style(
+      borderTop.none.important,
+    )
+
+    val rulesEditorHorizNoButton = style(
+      borderTop.none.important,
     )
 
     val rulesEditorOtherwise = style(
@@ -1555,6 +1571,8 @@ object Style extends StyleSheet.Inline {
 
   // ===================================================================================================================
   object widgets {
+
+    def formula = number
 
     val number = styleF(D.`live * validity`) { case (live, validity) => styleS(
       mixinIf(live is Dead)(deadMaybeValid(validity)),
@@ -2104,6 +2122,19 @@ object Style extends StyleSheet.Inline {
 
   // ===================================================================================================================
 
+  object formulaFieldEditor {
+
+    val reqTypeRuleDefaultEditor = style(
+      width(100 %%),
+      display.flex,
+      flexDirection.column,
+    )
+
+    def applicableReqTypesErrMsg = widgets.applicableReqTypesErrMsg
+  }
+
+  // ===================================================================================================================
+
   initInnerObjects(
     accessPage.existingUserSegment.segment,
     accessPage.leaveProjectSegment.segment,
@@ -2112,6 +2143,7 @@ object Style extends StyleSheet.Inline {
     deletionForm.bottomSections,
     deletionRestorationForms.main,
     fieldConfig.fieldListTable,
+    formulaFieldEditor.applicableReqTypesErrMsg,
     generic.table,
     help.table,
     home.cardHeader,

@@ -2,6 +2,7 @@ package shipreq.webapp.member.test.project
 
 import shipreq.webapp.member.project.data.derivation._
 import shipreq.webapp.member.project.data.{ManualIssue => ManualIssueInstance, _}
+import shipreq.webapp.member.project.formula.FormulaValue
 import shipreq.webapp.member.project.issue._
 import shipreq.webapp.member.project.text.Text.Equality._
 import shipreq.webapp.member.project.text.{Atom, Text}
@@ -64,6 +65,17 @@ object IssueLite {
   final case class FieldDefaultTagUnrelated(fieldId: CustomField.Tag.Id,
                                             tagId  : ApplicableTagId) extends IssueLite(C.FieldDefaultTagUnrelated)
 
+  final case class FieldFormulaRefsDeadNumberField(srcId: CustomField.Formula.Id,
+                                                   tgtId: CustomField.Number.Id) extends IssueLite(C.FieldFormulaRefsDeadNumberField)
+
+  final case class FormulaEvalErrBadData(reqId  : ReqId,
+                                         fieldId: CustomField.Formula.Id,
+                                         err    : FormulaValue.Err) extends IssueLite(C.FormulaEvalErrBadData)
+
+  final case class FormulaEvalErrUserDefined(reqId  : ReqId,
+                                             fieldId: CustomField.Formula.Id,
+                                             err    : FormulaValue.Err) extends IssueLite(C.FormulaEvalErrUserDefined)
+
   final case class ImplicationRequired(reqId: ReqId) extends IssueLite(C.ImplicationRequired)
 
   final case class IssueTagInRcg(rcgId: ReqCodeGroupId,
@@ -88,29 +100,32 @@ object IssueLite {
   implicit def univEq: UnivEq[IssueLite] = UnivEq.derive
 
   val fromIssue: Issue => IssueLite = {
-    case Issue.BlankCustomField            (req, field           ) => BlankCustomField            (req.id, field.id)
-    case Issue.BlankTitle                  (req                  ) => BlankTitle                  (req.id)
-    case Issue.BlankUseCaseStep            (step                 ) => BlankUseCaseStep            (step.id)
-    case Issue.ConflictingTags             (req, tagGroupId, locs) => ConflictingTags             (req.id, tagGroupId, locs)
-    case Issue.DeadIssueTagInRcg           (rcg, issue           ) => DeadIssueTagInRcg           (rcg.id, issue)
-    case Issue.DeadIssueTagInReq           (req, loc, issue      ) => DeadIssueTagInReq           (req.id, loc, issue)
-    case Issue.DeadRefInRcg                (rcg, ref             ) => DeadRefInRcg                (rcg.id, ref)
-    case Issue.DeadRefInReq                (req, loc, ref        ) => DeadRefInReq                (req.id, loc, ref)
-    case Issue.DeadTag                     (req, loc, tag        ) => DeadTag                     (req.id, loc, tag.id)
-    case Issue.DerivativeTagResultDead     (field, k1, k2, tag   ) => DerivativeTagResultDead     (field.id, k1.id, k2.id, tag.id)
-    case Issue.DerivativeTagResultUnrelated(field, _, k1, k2, tag) => DerivativeTagResultUnrelated(field.id, k1.id, k2.id, tag.id)
-    case Issue.DuplicateTitle              (req                  ) => DuplicateTitle              (req.id)
-    case Issue.EmptyCodeGroup              (rcg                  ) => EmptyCodeGroup              (rcg.id)
-    case Issue.FieldDefaultTagDead         (field, tag           ) => FieldDefaultTagDead         (field.id, tag.id)
-    case Issue.FieldDefaultTagNotApplicable(field, tag, reqType  ) => FieldDefaultTagNotApplicable(field.id, tag.id, reqType.reqTypeId)
-    case Issue.FieldDefaultTagUnrelated    (field, tag           ) => FieldDefaultTagUnrelated    (field.id, tag.id)
-    case Issue.ImplicationRequired         (req                  ) => ImplicationRequired         (req.id)
-    case Issue.IssueTagInRcg               (rcg, issue           ) => IssueTagInRcg               (rcg.id, issue)
-    case Issue.IssueTagInReq               (req, loc, issue      ) => IssueTagInReq               (req.id, loc, issue)
-    case Issue.ManualIssue                 (issue                ) => ManualIssue                 (issue)
-    case Issue.NonApplicableField          (field                ) => NonApplicableField          (field.id)
-    case Issue.NonApplicableTag            (req, loc, tag        ) => NonApplicableTag            (req.id, loc, tag.id)
-    case Issue.NumberOutOfRange            (req, field           ) => NumberOutOfRange            (req.id, field.id)
-    case Issue.UninhabitableTagField       (field                ) => UninhabitableTagField       (field.id)
+    case Issue.BlankCustomField               (req, field           ) => BlankCustomField               (req.id, field.id)
+    case Issue.BlankTitle                     (req                  ) => BlankTitle                     (req.id)
+    case Issue.BlankUseCaseStep               (step                 ) => BlankUseCaseStep               (step.id)
+    case Issue.ConflictingTags                (req, tagGroupId, locs) => ConflictingTags                (req.id, tagGroupId, locs)
+    case Issue.DeadIssueTagInRcg              (rcg, issue           ) => DeadIssueTagInRcg              (rcg.id, issue)
+    case Issue.DeadIssueTagInReq              (req, loc, issue      ) => DeadIssueTagInReq              (req.id, loc, issue)
+    case Issue.DeadRefInRcg                   (rcg, ref             ) => DeadRefInRcg                   (rcg.id, ref)
+    case Issue.DeadRefInReq                   (req, loc, ref        ) => DeadRefInReq                   (req.id, loc, ref)
+    case Issue.DeadTag                        (req, loc, tag        ) => DeadTag                        (req.id, loc, tag.id)
+    case Issue.DerivativeTagResultDead        (field, k1, k2, tag   ) => DerivativeTagResultDead        (field.id, k1.id, k2.id, tag.id)
+    case Issue.DerivativeTagResultUnrelated   (field, _, k1, k2, tag) => DerivativeTagResultUnrelated   (field.id, k1.id, k2.id, tag.id)
+    case Issue.DuplicateTitle                 (req                  ) => DuplicateTitle                 (req.id)
+    case Issue.EmptyCodeGroup                 (rcg                  ) => EmptyCodeGroup                 (rcg.id)
+    case Issue.FieldDefaultTagDead            (field, tag           ) => FieldDefaultTagDead            (field.id, tag.id)
+    case Issue.FieldDefaultTagNotApplicable   (field, tag, reqType  ) => FieldDefaultTagNotApplicable   (field.id, tag.id, reqType.reqTypeId)
+    case Issue.FieldDefaultTagUnrelated       (field, tag           ) => FieldDefaultTagUnrelated       (field.id, tag.id)
+    case Issue.FieldFormulaRefsDeadNumberField(src, tgt             ) => FieldFormulaRefsDeadNumberField(src.id, tgt.id)
+    case Issue.FormulaEvalErrBadData          (req, field, err      ) => FormulaEvalErrBadData          (req.id, field.id, err)
+    case Issue.FormulaEvalErrUserDefined      (req, field, err      ) => FormulaEvalErrUserDefined      (req.id, field.id, err)
+    case Issue.ImplicationRequired            (req                  ) => ImplicationRequired            (req.id)
+    case Issue.IssueTagInRcg                  (rcg, issue           ) => IssueTagInRcg                  (rcg.id, issue)
+    case Issue.IssueTagInReq                  (req, loc, issue      ) => IssueTagInReq                  (req.id, loc, issue)
+    case Issue.ManualIssue                    (issue                ) => ManualIssue                    (issue)
+    case Issue.NonApplicableField             (field                ) => NonApplicableField             (field.id)
+    case Issue.NonApplicableTag               (req, loc, tag        ) => NonApplicableTag               (req.id, loc, tag.id)
+    case Issue.NumberOutOfRange               (req, field           ) => NumberOutOfRange               (req.id, field.id)
+    case Issue.UninhabitableTagField          (field                ) => UninhabitableTagField          (field.id)
   }
 }

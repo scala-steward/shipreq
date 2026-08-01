@@ -195,9 +195,6 @@ trait ApplyConfigEvent {
     def softDelete(id: CustomReqTypeId): Eval[Unit] =
       deleteOrRestore(id, Dead, ReqCodeLogic.inactivateBelongingToReqs)
 
-    private val fieldReqTypeRules1: Traversal[Project, FieldReqTypeRules[Any]] =
-      Project.customFields andThen FieldSet.customFieldsTraversal andThen CustomField.fieldReqTypeRulesHack
-
     private val reqTypeApplicability1: Traversal[Project, ApplicableReqTypes] =
       Project.applicableTags andThen ApplicableTag.applicableReqTypes
 
@@ -225,9 +222,16 @@ trait ApplyConfigEvent {
       }
 
       def removeFromReqTypeApplicability: Eval[Unit] = {
-        val f: EndoFn[ApplicableReqTypes]     = _.hardDelete(id)
-        val g: EndoFn[FieldReqTypeRules[Any]] = _.hardDelete(id)
-        reqTypeApplicability1.modify(f) compose fieldReqTypeRules1.modify(g)
+        val updateCustomFields: FieldSet.CustomFields => FieldSet.CustomFields =
+          _.modAll {
+            case f: CustomField.Formula     => f.copy(fieldReqTypeRules = f.fieldReqTypeRules.hardDelete(id))
+            case f: CustomField.Number      => f.copy(fieldReqTypeRules = f.fieldReqTypeRules.hardDelete(id))
+            case f: CustomField.Text        => f.copy(fieldReqTypeRules = f.fieldReqTypeRules.hardDelete(id))
+            case f: CustomField.Tag         => f.copy(fieldReqTypeRules = f.fieldReqTypeRules.hardDelete(id))
+            case f: CustomField.Implication => f.copy(fieldReqTypeRules = f.fieldReqTypeRules.hardDelete(id))
+          }
+        reqTypeApplicability1.modify(_.hardDelete(id)) compose
+          Project.customFields.modify(updateCustomFields)
       }
 
       def deleteReqType: Eval[Unit] =
@@ -671,6 +675,44 @@ trait ApplyConfigEvent {
 
     def applyUpdate(e: FieldCustomImpUpdateV1): Eval[Unit] =
       update[CustomField.Implication](e.id, updateValues(_, e.vs))
+  }
+
+  // -----------------------------------------------------------------------------------------------
+  object CustomFormulaFieldEvents {
+    import FieldEvents.{validateName, create, update}
+
+    val ^ = CustomFormulaFieldGD
+    val GD = GenericDataApp[CustomField.Formula](^)
+
+    val validateDesc          = validateO(V.formulaField.desc)
+    val validateDecimalPlaces = validateI(V.formulaField.decimalPlaces)(_.toString)
+
+    def applyCreate(e: FieldCustomFormulaCreate): Eval[Unit] = {
+      implicit val vs = e.vs
+      for {
+        name          <- GD.need(^.Name).flatMap(validateName)
+        desc          <- GD.need(^.Desc).flatMap(validateDesc)
+        decimalPlaces <- GD.need(^.DecimalPlaces).flatMap(validateDecimalPlaces)
+        reqTypeRules  <- GD.need(^.FieldReqTypeRules)
+        f              = CustomField.Formula(e.id, name, desc, decimalPlaces, reqTypeRules, Live)
+        _             <- create(f)
+      } yield ()
+    }
+
+    val updateName              = validateName          >>=@ CustomField.Formula.name
+    val updateDesc              = validateDesc          >>=@ CustomField.Formula.desc
+    val updateDecimalPlaces     = validateDecimalPlaces >>=@ CustomField.Formula.decimalPlaces
+    val updateFieldReqTypeRules = fieldUpdateFn(CustomField.Formula.fieldReqTypeRules)
+
+    val updateValues = GD.updateEachValue {
+      case v: ^.ValueForName              => updateName             (v.value)
+      case v: ^.ValueForDesc              => updateDesc             (v.value)
+      case v: ^.ValueForDecimalPlaces     => updateDecimalPlaces    (v.value)
+      case v: ^.ValueForFieldReqTypeRules => updateFieldReqTypeRules(v.value)
+    }
+
+    def applyUpdate(e: FieldCustomFormulaUpdate): Eval[Unit] =
+      update[CustomField.Formula](e.id, updateValues(e.vs))
   }
 
   // -----------------------------------------------------------------------------------------------

@@ -7,6 +7,7 @@ import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.data.derivation._
 import shipreq.webapp.member.project.event.RetiredGenericData._
 import shipreq.webapp.member.project.event._
+import shipreq.webapp.member.project.formula.FormulaEvalCache
 import shipreq.webapp.member.project.text.Atom.DisplayReqRef
 import shipreq.webapp.member.project.text.{Text => T}
 import shipreq.webapp.member.test.WebappTestUtil._
@@ -57,7 +58,8 @@ object IssueDetectorTest extends TestSuite {
     assertIssuesWithFilter(project, f.ok)(expected: _*)
 
   private def assertIssuesWithFilter(project: Project, filter: Issue => Boolean)(expected: IssueLite*)(implicit l: Line): Unit = {
-    val it = IssueTracker(project)
+    val fec = FormulaEvalCache.fromProject(project)
+    val it = IssueTracker(project, fec)
     def actual = it.issues.vector.iterator.filter(filter).map(IssueLite.fromIssue)
     assertSeqIgnoreOrder("assertIssues", actual, expect = expected)
   }
@@ -470,6 +472,120 @@ object IssueDetectorTest extends TestSuite {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+  private object FieldFormulaRefsDeadNumberFieldTests {
+    private implicit val filter = IssueFilter[Issue.FieldFormulaRefsDeadNumberField]
+
+    import P7._
+    import shipreq.webapp.member.project.formula.{Formula, FormulaParser, ValidFormula}
+
+    private val numFieldId = CustomField.Number.Id(200)
+    private val formulaFieldId = CustomField.Formula.Id(201)
+
+    private val projectWithNum = applyEventsSuccessfully(
+      p7,
+      Event.FieldCustomNumberCreate(numFieldId, CustomNumberFieldGD(
+        name = "NumField",
+        desc = None,
+        range = (0.0, 100.0),
+        decimalPlaces = 0,
+        fieldReqTypeRules = FieldReqTypeRules.optional
+      ))
+    )
+
+    private val potentialFormula = FormulaParser.parse("field:NumField * 2").toOption.get
+    private val validFormula = Formula.Potential.validate(potentialFormula, projectWithNum.config.fields).toOption.get
+    private val formulaWrapper = ValidFormula(validFormula)
+
+    private val baseProject = applyEventsSuccessfully(
+      projectWithNum,
+      Event.FieldCustomFormulaCreate(formulaFieldId, CustomFormulaFieldGD(
+        name = "FormulaField",
+        desc = None,
+        decimalPlaces = 2,
+        fieldReqTypeRules = FieldReqTypeRules.notApplicable.defaultTo(formulaWrapper)(br, mf)
+      ))
+    )
+
+    def ok() = test(baseProject)()()
+
+    def deadNumberField() = test(baseProject)(
+      Event.FieldCustomDelete(numFieldId),
+    )(
+      IssueLite.FieldFormulaRefsDeadNumberField(formulaFieldId, numFieldId),
+    )
+
+    def deadFormulaField() = test(baseProject)(
+      Event.FieldCustomDelete(numFieldId),
+      Event.FieldCustomDelete(formulaFieldId),
+    )()
+
+    def deadReqTypes() = test(baseProject)(
+      Event.FieldCustomDelete(numFieldId),
+      Event.CustomReqTypeDeleteSoft(br),
+      Event.CustomReqTypeDeleteSoft(mf),
+    )()
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  private object FormulaEvalErrTests {
+    private implicit val filter = IssueFilter.collect {
+      case _: Issue.FormulaEvalErrBadData     => ()
+      case _: Issue.FormulaEvalErrUserDefined => ()
+    }
+
+    import P7._
+    import shipreq.webapp.member.project.formula.{Formula, FormulaParser, FormulaValue, ValidFormula}
+
+    private val badDataFormulaFieldId = CustomField.Formula.Id(202)
+    private val userDefFormulaFieldId = CustomField.Formula.Id(203)
+
+    private def createProjectWithFormula(formulaFieldId: CustomField.Formula.Id, name: String, formulaStr: String): Project = {
+      val potentialFormula = FormulaParser.parse(formulaStr).toOption.get
+      val validFormula = Formula.Potential.validate(potentialFormula, p7.config.fields).toOption.get
+      val formulaWrapper = ValidFormula(validFormula)
+
+      applyEventsSuccessfully(
+        p7,
+        Event.FieldCustomFormulaCreate(formulaFieldId, CustomFormulaFieldGD(
+          name = name,
+          desc = None,
+          decimalPlaces = 2,
+          fieldReqTypeRules = FieldReqTypeRules.notApplicable.defaultTo(formulaWrapper)(br, mf)
+        ))
+      )
+    }
+
+    def badData() = {
+      val project = createProjectWithFormula(badDataFormulaFieldId, "BadDataFormula", "1 / 0")
+      val reqIds = project.content.reqs.reqIterator()
+        .filter(r => (r.reqTypeId ==* br || r.reqTypeId ==* mf) && (r live project.config.reqTypes).is(Live))
+        .map(_.id).toVector
+      val expectedIssues = reqIds.map(reqId => IssueLite.FormulaEvalErrBadData(reqId, badDataFormulaFieldId, FormulaValue.Err("Division by zero.")))
+      assertIssues(project)(expectedIssues: _*)
+    }
+
+    def userDefined() = {
+      val project = createProjectWithFormula(userDefFormulaFieldId, "UserDefFormula", """ERR("custom error")""")
+      val reqIds = project.content.reqs.reqIterator()
+        .filter(r => (r.reqTypeId ==* br || r.reqTypeId ==* mf) && (r live project.config.reqTypes).is(Live))
+        .map(_.id).toVector
+      val expectedIssues = reqIds.map(reqId => IssueLite.FormulaEvalErrUserDefined(reqId, userDefFormulaFieldId, FormulaValue.Err("custom error")))
+      assertIssues(project)(expectedIssues: _*)
+    }
+
+    def deadFormulaField() = {
+      val baseProject = createProjectWithFormula(badDataFormulaFieldId, "BadDataFormula", "1 / 0")
+      val project = applyEventsSuccessfully(
+        baseProject,
+        Event.FieldCustomDelete(badDataFormulaFieldId)
+      )
+      assertIssues(project)()
+    }
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
   private object ImplicationRequiredTests {
     private implicit val filter = IssueFilter[Issue.ImplicationRequired]
 
@@ -758,6 +874,21 @@ object IssueDetectorTest extends TestSuite {
       "deadTag"         - deadTag()
       "liveFieldOnly"   - liveFieldOnly()
       "liveReqTypeOnly" - liveReqTypeOnly()
+    }
+
+    "FieldFormulaRefsDeadNumberField" - {
+      import FieldFormulaRefsDeadNumberFieldTests._
+      "ok"               - ok()
+      "deadNumberField"  - deadNumberField()
+      "deadFormulaField" - deadFormulaField()
+      "deadReqTypes"     - deadReqTypes()
+    }
+
+    "FormulaEvalErr" - {
+      import FormulaEvalErrTests._
+      "badData"          - badData()
+      "userDefined"      - userDefined()
+      "deadFormulaField" - deadFormulaField()
     }
 
     "ImplicationRequired" - {

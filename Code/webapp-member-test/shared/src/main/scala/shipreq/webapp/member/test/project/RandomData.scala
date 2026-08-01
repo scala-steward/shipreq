@@ -26,6 +26,7 @@ import shipreq.webapp.base.test._
 import shipreq.webapp.base.util._
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.event.ProjectEvents
+import shipreq.webapp.member.project.formula.ValidFormula
 import shipreq.webapp.member.project.issue.IssueCategory
 import shipreq.webapp.member.project.sort.SortMethod
 import shipreq.webapp.member.project.text
@@ -331,21 +332,22 @@ object RandomData {
   // -------------------------------------------------------------------------------------------------------------------
   // Fields
 
-  def fieldReqTypeRules[D](genReqTypeId: Option[Gen[ReqTypeId]], genDefault: Option[Gen[D]]): Gen[FieldReqTypeRules[D]] = {
+  def fieldReqTypeRules[D](genReqTypeId: Option[Gen[ReqTypeId]], genDefault: Option[Gen[D]],
+                           allowOptional: Boolean = true,
+                           allowMandatory: Boolean = true): Gen[FieldReqTypeRules[D]] = {
     import FieldReqTypeRules._
 
-    val genRes1 = Gen.pure(Resolution.NotApplicable)
-    val genRes2 = Gen.pure(Resolution.Optional)
-    val genRes3 = Gen.pure(Resolution.Mandatory)
+    var resGens = NonEmptyVector.one[Gen[Resolution[D]]](Gen.pure(Resolution.NotApplicable))
+    if (allowOptional)
+      resGens :+= Gen.pure(Resolution.Optional)
+    if (allowMandatory)
+      resGens :+= Gen.pure(Resolution.Mandatory)
+
+    for (gd <- genDefault)
+      resGens :+= gd.map(Resolution.DefaultTo.apply)
 
     val genRes: Gen[Resolution[D]] =
-      genDefault match {
-        case Some(gd) =>
-          val genRes4 = gd.map(Resolution.DefaultTo.apply)
-          Gen.chooseGen(genRes1, genRes2, genRes3, genRes4)
-        case None =>
-          Gen.chooseGen(genRes1, genRes2, genRes3)
-      }
+      Gen.chooseGenNE(resGens)
 
     genReqTypeId match {
       case Some(g) =>
@@ -396,8 +398,11 @@ object RandomData {
   val customFieldImplicationId =
     id map CustomField.Implication.Id
 
+  val customFieldFormulaId =
+    id map CustomField.Formula.Id
+
   val customFieldId: Gen[CustomFieldId] =
-    Gen.chooseGen(customFieldTextId, customFieldTagId, customFieldImplicationId)
+    Gen.chooseGen(customFieldTextId, customFieldTagId, customFieldImplicationId, customFieldFormulaId)
 
   val fieldRefKey =
     Gen.alpha.string(1 to 4)
@@ -467,6 +472,21 @@ object RandomData {
     } yield
       CustomField.Number(id, name, desc, range, decimalPlaces, fieldReqTypeRules, liveExplicitly)
 
+  def customFieldFormula(genReqTypeId: Option[Gen[ReqTypeId]]): Gen[CustomField.Formula] =
+    for {
+      id             <- customFieldFormulaId
+      name           <- fieldName
+      desc           <- Gen.string.option
+      decimalPlaces  <- Gen.chooseInt(DataValidators.numberField.maxDecimalPlaces)
+      rules          <- fieldReqTypeRules[ValidFormula](
+                          genReqTypeId,
+                          Some(formula.valid.gen(None).map(ValidFormula.apply)),
+                          allowOptional  = false,
+                          allowMandatory = false)
+      liveExplicitly <- live
+    } yield
+      CustomField.Formula(id, name, desc, decimalPlaces, rules, liveExplicitly)
+
   def customField(genReqTypeId: Option[Gen[ReqTypeId]],
                   rulesAny: Gen[FieldReqTypeRules[Impossible]],
                   rulesTag: Gen[FieldReqTypeRules.ForTagField],
@@ -475,11 +495,13 @@ object RandomData {
                   tagFields: Boolean): Gen[CustomField] = {
     lazy val txt: Gen[CustomField] = customFieldText(rulesAny)
     lazy val num: Gen[CustomField] = customFieldNumber(genReqTypeId)
+    lazy val fml: Gen[CustomField] = customFieldFormula(genReqTypeId)
     customFieldType.flatMap {
       case CustomFieldType.Text        => txt
       case CustomFieldType.Number      => num
       case CustomFieldType.Tag         => if (tagFields) customFieldTag(tagGroupId, rulesTag, derivTags) else txt
       case CustomFieldType.Implication => if (impFields) customFieldImplication(reqTypeId, rulesAny) else txt
+      case CustomFieldType.Formula     => fml
     }
   }
 
@@ -1741,7 +1763,7 @@ object RandomData {
     val genReqDataNums: Gen[ReqData.Numbers] =
       (numFieldIdG, reqIdG) match {
         case (Some(numFieldIdGen), Some(reqIdGen)) =>
-          numFieldIdGen.mapTo(reqIdGen.mapTo(Gen.double))
+          numFieldIdGen.mapTo(reqIdGen.mapTo(Gen.double)).map(ReqData.Numbers.apply)
         case _ =>
           Gen pure ReqData.Numbers.empty
       }
@@ -2353,6 +2375,7 @@ object RandomData {
         val gl = specialBuiltInFieldFilterOk.map[Valid.Field](-\/(_))
         import SpecialBuiltInField._
         Gen.chooseGen(gr, gr, gr, gl).flatMap {
+          case \/-(id: CustomField.Formula    .Id) => fieldAttr.map(a => FilterAst.FieldProp(\/-(id), a: FieldCriteriaF[A]))
           case \/-(id: CustomField.Number     .Id) => fieldAttr.map(a => FilterAst.FieldProp(\/-(id), a: FieldCriteriaF[A]))
           case \/-(id: CustomField.Tag        .Id) => fieldAttr.map(a => FilterAst.FieldProp(\/-(id), a: FieldCriteriaF[A]))
           case \/-(id: CustomField.Text       .Id) => fieldAttrNoDefault.map(FilterAst.FieldProp(\/-(id), _))
@@ -2442,6 +2465,93 @@ object RandomData {
         val gi: Option[Gen[CustomIssueTypeId]]  = Some(customIssueTypeId)
         val gt: Option[Gen[CustomField.Tag.Id]] = Some(customFieldTagId)
         deepGen(gf, gt, gy, flatGens(gy, ga, gi))
+      }
+    }
+  }
+
+  // ===================================================================================================================
+  object formula {
+    import shipreq.webapp.member.project.formula._
+
+    private val genFormulaValue: Gen[FormulaValue] =
+      Gen.chooseGen(
+        // Gen pure FormulaValue.Empty, // not included because it doesn't work as an inner value
+        Gen.boolean.map(FormulaValue.Bool.apply),
+        Gen.double.map(FormulaValue.Dbl.apply),
+        Gen.stringOf(Gen.ascii).map(FormulaValue.Str.apply),
+        // FormulaValue.Err is covered by random function generation below
+      )
+
+    val genFormulaCmpOp: Gen[FormulaCmpOp] =
+      Gen.chooseNE(FormulaCmpOp.all)
+
+    val genFormulaFunction: Gen[FormulaFunction] =
+      Gen.chooseNE(FormulaFunction.all)
+
+    object valid {
+      import Formula.{ValidF, Valid}
+
+      def gen(fieldSet: FieldSet): Gen[Valid] = {
+        val ogNumberField: Option[Gen[CustomField.Number.Id]] =
+          Gen.tryGenChoose(fieldSet.customNumberFields.iterator.map(_.id))
+
+        gen(ogNumberField)
+      }
+
+      def gen(ogNumberField: Option[Gen[CustomField.Number.Id]]): Gen[Valid] = {
+
+        var flatGens: NonEmptyVector[Gen[ValidF[Nothing]]] =
+          NonEmptyVector(genFormulaValue.map(FormulaAst.Value(_)))
+
+        val ogFieldRef: Option[Gen[FormulaFieldRef]] =
+          ogNumberField.map(_.map(FormulaFieldRef.NumberField.apply))
+
+        for (gFieldRef <- ogFieldRef)
+          flatGens :+= gFieldRef.map(FormulaAst.Field(_))
+
+        val gFlat: Gen[ValidF[Nothing]] =
+          Gen.chooseGenNE(flatGens)
+
+        def coalgebra: FCoalgebraM[Gen, ValidF, Int] =
+          remainingDepth =>
+            if (remainingDepth <= 0)
+              gFlat
+            else {
+              val next = remainingDepth - 1
+              val gNext = Gen.pure(next)
+
+              var gens: NonEmptyVector[Gen[ValidF[Int]]] =
+                flatGens
+
+              gens :+= (for {x <- gNext; y <- gNext} yield FormulaAst.Add(x, y))
+              gens :+= (for {x <- gNext; y <- gNext} yield FormulaAst.Subtract(x, y))
+              gens :+= (for {x <- gNext; y <- gNext} yield FormulaAst.Multiply(x, y))
+              gens :+= (for {x <- gNext; y <- gNext} yield FormulaAst.Divide(x, y))
+              gens :+= (for {x <- gNext; y <- gNext; o <- genFormulaCmpOp} yield FormulaAst.Compare(x, o, y))
+
+              gens :+= genFormulaFunction.flatMap {
+                case f@ FormulaFunction.And      => gNext.list(0 to 3).map(args => FormulaAst.Function(f, args))
+                case f@ FormulaFunction.Average  => gNext.list(1 to 3).map(args => FormulaAst.Function(f, args))
+                case f@ FormulaFunction.Ceiling  => gNext.map(a => FormulaAst.Function(f, a :: Nil))
+                case f@ FormulaFunction.Err      => gNext.map(a => FormulaAst.Function(f, a :: Nil))
+                case f@ FormulaFunction.Floor    => gNext.map(a => FormulaAst.Function(f, a :: Nil))
+                case f@ FormulaFunction.If       => gNext.list(2 to 3).map(args => FormulaAst.Function(f, args))
+                case f@ FormulaFunction.IsBlank  => gNext.map(a => FormulaAst.Function(f, a :: Nil))
+                case f@ FormulaFunction.IsBool   => gNext.map(a => FormulaAst.Function(f, a :: Nil))
+                case f@ FormulaFunction.IsErr    => gNext.map(a => FormulaAst.Function(f, a :: Nil))
+                case f@ FormulaFunction.IsNumber => gNext.map(a => FormulaAst.Function(f, a :: Nil))
+                case f@ FormulaFunction.IsText   => gNext.map(a => FormulaAst.Function(f, a :: Nil))
+                case f@ FormulaFunction.Max      => gNext.list(1 to 3).map(args => FormulaAst.Function(f, args))
+                case f@ FormulaFunction.Min      => gNext.list(1 to 3).map(args => FormulaAst.Function(f, args))
+                case f@ FormulaFunction.Not      => gNext.map(a => FormulaAst.Function(f, a :: Nil))
+                case f@ FormulaFunction.Or       => gNext.list(0 to 3).map(args => FormulaAst.Function(f, args))
+                case f@ FormulaFunction.Round    => gNext.list(1 to 2).map(args => FormulaAst.Function(f, args))
+              }
+
+              Gen.chooseGenNE(gens)
+            }
+
+        Recursion.anaM(coalgebra)(4 `JVM|JS` 3)
       }
     }
   }
@@ -2570,6 +2680,25 @@ object RandomData {
 
     private lazy val derivativeTags: Gen[DerivativeTags] =
       RandomData.derivativeTags(applicableTagId)
+
+    private def fieldReqTypeRulesFormula: Gen[FieldReqTypeRules[ValidFormula]] =
+      fieldReqTypeRules[ValidFormula](
+        Some(reqTypeId),
+        Some(RandomData.formula.valid.gen(None).map(ValidFormula.apply)),
+        allowOptional  = false,
+        allowMandatory = false
+      )
+
+    object customFormulaFieldGD extends GenericDataGen(CustomFormulaFieldGD) {
+      import gd._
+      private def mdp = DataValidators.numberField.maxDecimalPlaces
+      override def valueFor(a: Attr): Gen[Value] = a match {
+        case Name              => fieldName                map Name             .apply
+        case Desc              => desc                     map Desc             .apply
+        case DecimalPlaces     => Gen.chooseInt(mdp)       map DecimalPlaces    .apply
+        case FieldReqTypeRules => fieldReqTypeRulesFormula map FieldReqTypeRules.apply
+      }
+    }
 
     object customNumberFieldGD extends GenericDataGen(CustomNumberFieldGD) {
       import gd._
@@ -2960,6 +3089,12 @@ object RandomData {
     val genManualIssueUpdate = Gen.apply2(ManualIssueUpdate)(manualIssueId, manualIssueText)
     val genManualIssueDelete = manualIssueId.map(ManualIssueDelete)
 
+    val genFieldCustomFormulaCreate: Gen[FieldCustomFormulaCreate] =
+      Gen.apply2(FieldCustomFormulaCreate)(customFieldFormulaId, customFormulaFieldGD.nonEmptyValues)
+
+    val genFieldCustomFormulaUpdate: Gen[FieldCustomFormulaUpdate] =
+      Gen.apply2(FieldCustomFormulaUpdate)(customFieldFormulaId, customFormulaFieldGD.nonEmptyValues)
+
     val genFieldCustomNumberCreate: Gen[FieldCustomNumberCreate] =
       Gen.apply2(FieldCustomNumberCreate)(customFieldNumberId, customNumberFieldGD.nonEmptyValues)
 
@@ -2971,67 +3106,69 @@ object RandomData {
 
     val activeEventGens: NonEmptyVector[Gen[ActiveEvent]] =
       valuesForAdt[ActiveEvent, Gen[ActiveEvent]] {
-        case _: AccessUpdate            => genAccessUpdate
-        case _: ApplicableTagCreate     => genApplicableTagCreate
-        case _: ApplicableTagUpdate     => genApplicableTagUpdate
-        case _: CodeGroupCreate         => genCodeGroupCreate
-        case _: CodeGroupsDelete        => genCodeGroupsDelete
-        case _: CodeGroupUpdate         => genCodeGroupUpdate
-        case _: ContentRestore          => genContentRestore
-        case _: CustomIssueTypeCreate   => genCustomIssueTypeCreate
-        case _: CustomIssueTypeDelete   => genCustomIssueTypeDelete
-        case _: CustomIssueTypeRestore  => genCustomIssueTypeRestore
-        case _: CustomIssueTypeUpdate   => genCustomIssueTypeUpdate
-        case _: CustomReqTypeCreate     => genCustomReqTypeCreate
-        case _: CustomReqTypeDeleteHard => genCustomReqTypeDeleteHard
-        case _: CustomReqTypeDeleteSoft => genCustomReqTypeDeleteSoft
-        case _: CustomReqTypeRestore    => genCustomReqTypeRestore
-        case _: CustomReqTypeUpdate     => genCustomReqTypeUpdate
-        case _: FieldCustomDelete       => genFieldCustomDelete
-        case _: FieldCustomImpCreate    => genFieldCustomImpCreate
-        case _: FieldCustomImpUpdate    => genFieldCustomImpUpdate
-        case _: FieldCustomNumberCreate => genFieldCustomNumberCreate
-        case _: FieldCustomNumberUpdate => genFieldCustomNumberUpdate
-        case _: FieldCustomRestore      => genFieldCustomRestore
-        case _: FieldCustomTagCreate    => genFieldCustomTagCreate
-        case _: FieldCustomTagUpdate    => genFieldCustomTagUpdate
-        case _: FieldCustomTextCreate   => genFieldCustomTextCreate
-        case _: FieldCustomTextUpdate   => genFieldCustomTextUpdate
-        case _: FieldReposition         => genFieldReposition
-        case _: FieldStaticAdd          => genFieldStaticAdd
-        case _: FieldStaticRemove       => genFieldStaticRemove
-        case _: GenericReqCreate        => genGenericReqCreate
-        case _: GenericReqTitleSet      => genGenericReqTitleSet
-        case _: GenericReqTypeSet       => genGenericReqTypeSet
-        case _: ManualIssueCreate       => genManualIssueCreate
-        case _: ManualIssueDelete       => genManualIssueDelete
-        case _: ManualIssueUpdate       => genManualIssueUpdate
-        case _: ProjectDelete           => genProjectDelete
-        case _: ProjectNameSet          => genProjectNameSet
-        case _: ProjectRestore.type     => genProjectRestore
-        case _: ProjectTemplateApply    => genProjectTemplateApply
-        case _: ReqCodesPatch           => genReqCodesPatch
-        case _: ReqFieldCustomNumberSet => genReqFieldCustomNumberSet
-        case _: ReqFieldCustomTextSet   => genReqFieldCustomTextSet
-        case _: ReqImplicationsPatch    => genReqImplicationsPatch
-        case _: ReqsDelete              => genReqsDelete
-        case _: ReqTagsPatch            => genReqTagsPatch
-        case _: SavedViewCreate         => genSavedViewCreate
-        case _: SavedViewDefaultSet     => genSavedViewDefaultSet
-        case _: SavedViewDelete         => genSavedViewDelete
-        case _: SavedViewUpdate         => genSavedViewUpdate
-        case _: TagDelete               => genTagDelete
-        case _: TagGroupCreate          => genTagGroupCreate
-        case _: TagGroupUpdate          => genTagGroupUpdate
-        case _: TagRestore              => genTagRestore
-        case _: UseCaseCreate           => genUseCaseCreate
-        case _: UseCaseStepCreate       => genUseCaseStepCreate
-        case _: UseCaseStepDelete       => genUseCaseStepDelete
-        case _: UseCaseStepRestore      => genUseCaseStepRestore
-        case _: UseCaseStepShiftLeft    => genUseCaseStepShiftLeft
-        case _: UseCaseStepShiftRight   => genUseCaseStepShiftRight
-        case _: UseCaseStepUpdate       => genUseCaseStepUpdate
-        case _: UseCaseTitleSet         => genUseCaseTitleSet
+        case _: AccessUpdate             => genAccessUpdate
+        case _: ApplicableTagCreate      => genApplicableTagCreate
+        case _: ApplicableTagUpdate      => genApplicableTagUpdate
+        case _: CodeGroupCreate          => genCodeGroupCreate
+        case _: CodeGroupsDelete         => genCodeGroupsDelete
+        case _: CodeGroupUpdate          => genCodeGroupUpdate
+        case _: ContentRestore           => genContentRestore
+        case _: CustomIssueTypeCreate    => genCustomIssueTypeCreate
+        case _: CustomIssueTypeDelete    => genCustomIssueTypeDelete
+        case _: CustomIssueTypeRestore   => genCustomIssueTypeRestore
+        case _: CustomIssueTypeUpdate    => genCustomIssueTypeUpdate
+        case _: CustomReqTypeCreate      => genCustomReqTypeCreate
+        case _: CustomReqTypeDeleteHard  => genCustomReqTypeDeleteHard
+        case _: CustomReqTypeDeleteSoft  => genCustomReqTypeDeleteSoft
+        case _: CustomReqTypeRestore     => genCustomReqTypeRestore
+        case _: CustomReqTypeUpdate      => genCustomReqTypeUpdate
+        case _: FieldCustomDelete        => genFieldCustomDelete
+        case _: FieldCustomFormulaCreate => genFieldCustomFormulaCreate
+        case _: FieldCustomFormulaUpdate => genFieldCustomFormulaUpdate
+        case _: FieldCustomImpCreate     => genFieldCustomImpCreate
+        case _: FieldCustomImpUpdate     => genFieldCustomImpUpdate
+        case _: FieldCustomNumberCreate  => genFieldCustomNumberCreate
+        case _: FieldCustomNumberUpdate  => genFieldCustomNumberUpdate
+        case _: FieldCustomRestore       => genFieldCustomRestore
+        case _: FieldCustomTagCreate     => genFieldCustomTagCreate
+        case _: FieldCustomTagUpdate     => genFieldCustomTagUpdate
+        case _: FieldCustomTextCreate    => genFieldCustomTextCreate
+        case _: FieldCustomTextUpdate    => genFieldCustomTextUpdate
+        case _: FieldReposition          => genFieldReposition
+        case _: FieldStaticAdd           => genFieldStaticAdd
+        case _: FieldStaticRemove        => genFieldStaticRemove
+        case _: GenericReqCreate         => genGenericReqCreate
+        case _: GenericReqTitleSet       => genGenericReqTitleSet
+        case _: GenericReqTypeSet        => genGenericReqTypeSet
+        case _: ManualIssueCreate        => genManualIssueCreate
+        case _: ManualIssueDelete        => genManualIssueDelete
+        case _: ManualIssueUpdate        => genManualIssueUpdate
+        case _: ProjectDelete            => genProjectDelete
+        case _: ProjectNameSet           => genProjectNameSet
+        case _: ProjectRestore.type      => genProjectRestore
+        case _: ProjectTemplateApply     => genProjectTemplateApply
+        case _: ReqCodesPatch            => genReqCodesPatch
+        case _: ReqFieldCustomNumberSet  => genReqFieldCustomNumberSet
+        case _: ReqFieldCustomTextSet    => genReqFieldCustomTextSet
+        case _: ReqImplicationsPatch     => genReqImplicationsPatch
+        case _: ReqsDelete               => genReqsDelete
+        case _: ReqTagsPatch             => genReqTagsPatch
+        case _: SavedViewCreate          => genSavedViewCreate
+        case _: SavedViewDefaultSet      => genSavedViewDefaultSet
+        case _: SavedViewDelete          => genSavedViewDelete
+        case _: SavedViewUpdate          => genSavedViewUpdate
+        case _: TagDelete                => genTagDelete
+        case _: TagGroupCreate           => genTagGroupCreate
+        case _: TagGroupUpdate           => genTagGroupUpdate
+        case _: TagRestore               => genTagRestore
+        case _: UseCaseCreate            => genUseCaseCreate
+        case _: UseCaseStepCreate        => genUseCaseStepCreate
+        case _: UseCaseStepDelete        => genUseCaseStepDelete
+        case _: UseCaseStepRestore       => genUseCaseStepRestore
+        case _: UseCaseStepShiftLeft     => genUseCaseStepShiftLeft
+        case _: UseCaseStepShiftRight    => genUseCaseStepShiftRight
+        case _: UseCaseStepUpdate        => genUseCaseStepUpdate
+        case _: UseCaseTitleSet          => genUseCaseTitleSet
       }
 
     val retiredEventGens: NonEmptyVector[Gen[RetiredEvent]] =

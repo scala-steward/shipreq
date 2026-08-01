@@ -8,6 +8,7 @@ import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.event.RetiredGenericData._
 import shipreq.webapp.member.project.event._
 import shipreq.webapp.member.project.filter.Filter
+import shipreq.webapp.member.project.formula.{Formula, ValidFormula}
 import shipreq.webapp.member.protocol.json.JsonCodec
 import shipreq.webapp.member.protocol.json.JsonCodec.Implicits._
 
@@ -33,6 +34,15 @@ object Rev1 {
   // ===================================================================================================================
   // Project data
 
+  implicit lazy val keyDecoderCustomFieldFormulaId: KeyDecoder[CustomField.Formula.Id] =
+    KeyDecoder.decodeKeyInt.map(CustomField.Formula.Id.apply)
+
+  implicit lazy val keyEncoderCustomFieldFormulaId: KeyEncoder[CustomField.Formula.Id] =
+    KeyEncoder.encodeKeyInt.contramap(_.value)
+
+  implicit lazy val codecCustomFieldFormulaId: JsonCodec[CustomField.Formula.Id] =
+    codecTaggedI(CustomField.Formula.Id)
+
   implicit lazy val keyDecoderCustomFieldNumberId: KeyDecoder[CustomField.Number.Id] =
     KeyDecoder.decodeKeyInt.map(CustomField.Number.Id.apply)
 
@@ -43,17 +53,19 @@ object Rev1 {
     codecTaggedI(CustomField.Number.Id)
 
   implicit lazy val decoderCustomFieldId: Decoder[CustomFieldId] = decodeSumBySoleKey {
-    case ("imp" , c) => c.as[CustomField.Implication.Id]
-    case ("num" , c) => c.as[CustomField.Number.Id]
-    case ("tag" , c) => c.as[CustomField.Tag.Id]
-    case ("text", c) => c.as[CustomField.Text.Id]
+    case ("imp"    , c) => c.as[CustomField.Implication.Id]
+    case ("num"    , c) => c.as[CustomField.Number.Id]
+    case ("formula", c) => c.as[CustomField.Formula.Id]
+    case ("tag"    , c) => c.as[CustomField.Tag.Id]
+    case ("text"   , c) => c.as[CustomField.Text.Id]
   }
 
   implicit lazy val encoderCustomFieldId: Encoder[CustomFieldId] = Encoder.instance {
-    case a: CustomField.Implication.Id => Json.obj("imp"  -> a.asJson)
-    case a: CustomField.Number.Id      => Json.obj("num"  -> a.asJson)
-    case a: CustomField.Tag.Id         => Json.obj("tag"  -> a.asJson)
-    case a: CustomField.Text.Id        => Json.obj("text" -> a.asJson)
+    case a: CustomField.Implication.Id => Json.obj("imp"     -> a.asJson)
+    case a: CustomField.Formula.Id     => Json.obj("formula" -> a.asJson)
+    case a: CustomField.Number.Id      => Json.obj("num"     -> a.asJson)
+    case a: CustomField.Tag.Id         => Json.obj("tag"     -> a.asJson)
+    case a: CustomField.Text.Id        => Json.obj("text"    -> a.asJson)
   }
 
   implicit lazy val decoderFieldId: Decoder[FieldId] = decodeSumBySoleKeyOrConst[FieldId](
@@ -64,10 +76,11 @@ object Rev1 {
     "otherTags" -> StaticField.OtherTags,
     "allTags"   -> StaticField.AllTags,
   ) {
-    case ("imp" , c) => c.as[CustomField.Implication.Id]
-    case ("num" , c) => c.as[CustomField.Number.Id]
-    case ("tag" , c) => c.as[CustomField.Tag.Id]
-    case ("text", c) => c.as[CustomField.Text.Id]
+    case ("imp"    , c) => c.as[CustomField.Implication.Id]
+    case ("formula", c) => c.as[CustomField.Formula.Id]
+    case ("num"    , c) => c.as[CustomField.Number.Id]
+    case ("tag"    , c) => c.as[CustomField.Tag.Id]
+    case ("text"   , c) => c.as[CustomField.Text.Id]
   }
 
   implicit lazy val encoderFieldId: Encoder[FieldId] = Encoder.instance {
@@ -77,10 +90,11 @@ object Rev1 {
     case StaticField.StepGraph         => Json.fromString("stepGraph")
     case StaticField.OtherTags         => Json.fromString("otherTags")
     case StaticField.AllTags           => Json.fromString("allTags")
-    case a: CustomField.Implication.Id => Json.obj("imp"  -> a.asJson)
-    case a: CustomField.Number.Id      => Json.obj("num"  -> a.asJson)
-    case a: CustomField.Tag.Id         => Json.obj("tag"  -> a.asJson)
-    case a: CustomField.Text.Id        => Json.obj("text" -> a.asJson)
+    case a: CustomField.Implication.Id => Json.obj("imp"     -> a.asJson)
+    case a: CustomField.Formula.Id     => Json.obj("formula" -> a.asJson)
+    case a: CustomField.Number.Id      => Json.obj("num"     -> a.asJson)
+    case a: CustomField.Tag.Id         => Json.obj("tag"     -> a.asJson)
+    case a: CustomField.Text.Id        => Json.obj("text"    -> a.asJson)
   }
 
   // ===================================================================================================================
@@ -589,6 +603,208 @@ object Rev1 {
   }
 
   // ===================================================================================================================
+  // Formula
+
+  private[this] object FormulaAstKeys {
+    final val KeyAstAdd      = "+"
+    final val KeyAstCompare  = "cmp"
+    final val KeyAstDivide   = "/"
+    final val KeyAstField    = "field"
+    final val KeyAstFunction = "fn"
+    final val KeyAstMultiply = "*"
+    final val KeyAstSubtract = "-"
+    final val KeyAstValue    = "val"
+  }
+
+  implicit lazy val codecFormulaValid: JsonCodec[Formula.Valid] = {
+    import shipreq.webapp.member.project.formula._
+    import Formula.ValidF
+
+    implicit val decoderFormulaFieldRefNumberField: Decoder[FormulaFieldRef.NumberField] =
+      Decoder[CustomField.Number.Id].map(FormulaFieldRef.NumberField.apply)
+
+    implicit val encoderFormulaFieldRefNumberField: Encoder[FormulaFieldRef.NumberField] =
+      Encoder[CustomField.Number.Id].contramap(_.id)
+
+    implicit val decoderFormulaFieldRef: Decoder[FormulaFieldRef] = decodeSumBySoleKey {
+      case ("number", c) => c.as[FormulaFieldRef.NumberField]
+    }
+
+    implicit val encoderFormulaFieldRef: Encoder[FormulaFieldRef] = Encoder.instance {
+      case a: FormulaFieldRef.NumberField => Json.obj("number" -> a.asJson)
+    }
+
+    implicit val decoderFormulaValueDbl: Decoder[FormulaValue.Dbl] =
+      Decoder[Double].map(FormulaValue.Dbl.apply)
+
+    implicit val encoderFormulaValueDbl: Encoder[FormulaValue.Dbl] =
+      Encoder[Double].contramap(_.value)
+
+    implicit val decoderFormulaValueStr: Decoder[FormulaValue.Str] =
+      Decoder[String].map(FormulaValue.Str.apply)
+
+    implicit val encoderFormulaValueStr: Encoder[FormulaValue.Str] =
+      Encoder[String].contramap(_.value)
+
+    implicit val decoderFormulaValueErr: Decoder[FormulaValue.Err] =
+      Decoder[String].map(FormulaValue.Err.apply)
+
+    implicit val encoderFormulaValueErr: Encoder[FormulaValue.Err] =
+      Encoder[String].contramap(_.value)
+
+    implicit val decoderFormulaValueBool: Decoder[FormulaValue.Bool] =
+      Decoder[Boolean].map(FormulaValue.Bool.apply)
+
+    implicit val encoderFormulaValueBool: Encoder[FormulaValue.Bool] =
+      Encoder[Boolean].contramap(_.value)
+
+    implicit val decoderFormulaValue: Decoder[FormulaValue] = decodeSumBySoleKey {
+      case ("bool", c) => c.as[FormulaValue.Bool]
+      case ("dbl" , c) => c.as[FormulaValue.Dbl]
+      case ("str" , c) => c.as[FormulaValue.Str]
+      case ("err" , c) => c.as[FormulaValue.Err]
+      case ("-"   , _) => Right(FormulaValue.Empty)
+    }
+
+    implicit val encoderFormulaValue: Encoder[FormulaValue] = Encoder.instance {
+      case a: FormulaValue.Bool => Json.obj("bool" -> a.asJson)
+      case a: FormulaValue.Dbl  => Json.obj("dbl"  -> a.asJson)
+      case a: FormulaValue.Str  => Json.obj("str"  -> a.asJson)
+      case a: FormulaValue.Err  => Json.obj("err"  -> a.asJson)
+      case FormulaValue.Empty   => Json.obj("-"    -> ().asJson)
+    }
+
+    implicit val encoderFormulaFunction: Encoder[FormulaFunction] =
+      Encoder[String].contramap(_.name)
+
+    implicit val decoderFormulaFunction: Decoder[FormulaFunction] =
+      Decoder[String].emap[FormulaFunction] { str =>
+        FormulaFunction.byName.get(str.toUpperCase) match {
+          case Some(f) => Right(f)
+          case None    => Left("Unknown function: " + str)
+        }
+      }
+
+    implicit val encoderFormulaCmpOp: Encoder[FormulaCmpOp] =
+      Encoder[String].contramap(_.symbol)
+
+    implicit val decoderFormulaCmpOp: Decoder[FormulaCmpOp] =
+      Decoder[String].emap[FormulaCmpOp] { str =>
+        FormulaCmpOp.bySymbol.get(str) match {
+          case Some(f) => Right(f)
+          case None    => Left("Unknown op: " + str)
+        }
+      }
+
+    import FormulaAstKeys._
+    type F = FormulaFieldRef
+    type Fn = FormulaFunction
+
+    implicit val encoderFormulaValueAst: Encoder[FormulaAst.Value] =
+      Encoder[FormulaValue].contramap(_.value)
+
+    implicit val decoderFormulaValueAst: Decoder[FormulaAst.Value] =
+      Decoder[FormulaValue].map(FormulaAst.Value.apply)
+
+    def decodeBinOp[A](name: String, f: (ACursor, ACursor) => A): Decoder[A] =
+      Decoder.instance { c =>
+        val c1 = c.downArray
+        val c2 = c1.right
+        if (c1.succeeded && c2.succeeded)
+          Right(f(c1, c2))
+        else
+          Left(DecodingFailure(s"$name requires a 2-element array", c.history))
+      }
+
+    implicit val encoderFormulaAdd: Encoder[FormulaAst.Add[Json]] =
+      Encoder.instance(a => Json.arr(a.lhs, a.rhs))
+
+    implicit val decoderFormulaAdd: Decoder[FormulaAst.Add[ACursor]] =
+      decodeBinOp("Add", FormulaAst.Add.apply[ACursor])
+
+    implicit val encoderFormulaSubtract: Encoder[FormulaAst.Subtract[Json]] =
+      Encoder.instance(a => Json.arr(a.lhs, a.rhs))
+
+    implicit val decoderFormulaSubtract: Decoder[FormulaAst.Subtract[ACursor]] =
+      decodeBinOp("Subtract", FormulaAst.Subtract.apply[ACursor])
+
+    implicit val encoderFormulaDivide: Encoder[FormulaAst.Divide[Json]] =
+      Encoder.instance(a => Json.arr(a.lhs, a.rhs))
+
+    implicit val decoderFormulaDivide: Decoder[FormulaAst.Divide[ACursor]] =
+      decodeBinOp("Divide", FormulaAst.Divide.apply[ACursor])
+
+    implicit val encoderFormulaMultiply: Encoder[FormulaAst.Multiply[Json]] =
+      Encoder.instance(a => Json.arr(a.lhs, a.rhs))
+
+    implicit val decoderFormulaMultiply: Decoder[FormulaAst.Multiply[ACursor]] =
+      decodeBinOp("Multiply", FormulaAst.Multiply.apply[ACursor])
+
+    implicit val encoderFormulaCompare: Encoder[FormulaAst.Compare[Json]] =
+      Encoder.instance(a => Json.arr(a.lhs, a.op.asJson, a.rhs))
+
+    implicit val decoderFormulaCompare: Decoder[FormulaAst.Compare[ACursor]] =
+      Decoder.instance { c =>
+        val c1 = c.downArray
+        val c2 = c1.right
+        val c3 = c2.right
+        if (c1.succeeded && c2.succeeded && c3.succeeded) {
+          c2.as[FormulaCmpOp].map(op => FormulaAst.Compare(c1, op, c3))
+        } else {
+          Left(DecodingFailure("Compare requires a 3-element array", c.history))
+        }
+      }
+
+    implicit val encoderFormulaFunctionAst: Encoder[FormulaAst.Function[Fn, Json]] =
+      Encoder.forProduct2("fn", "args")(a => (a.function, a.args))
+
+    implicit val decoderFormulaFunctionAst: Decoder[FormulaAst.Function[Fn, ACursor]] =
+      Decoder.instance { c =>
+        for {
+          fn <- c.get[Fn]("fn")
+        } yield {
+          val argsCursor = c.downField("args")
+          val c1 = argsCursor.downArray
+          val args = if (c1.succeeded) {
+            Iterator.iterate(c1)(_.right).takeWhile(_.succeeded).toList
+          } else {
+            List.empty[ACursor]
+          }
+          FormulaAst.Function(fn, args)
+        }
+      }
+
+    implicit val encoderFormulaFieldAst: Encoder[FormulaAst.Field[F]] =
+      Encoder[F].contramap(_.field)
+
+    implicit val decoderFormulaFieldAst: Decoder[FormulaAst.Field[F]] =
+      Decoder[F].map(FormulaAst.Field.apply)
+
+    JsonCodec.fix[ValidF]({
+      case a: FormulaAst.Add[Json]          => Json.obj(KeyAstAdd      -> a.asJson)
+      case a: FormulaAst.Compare[Json]      => Json.obj(KeyAstCompare  -> a.asJson)
+      case a: FormulaAst.Divide[Json]       => Json.obj(KeyAstDivide   -> a.asJson)
+      case a: FormulaAst.Field[F]           => Json.obj(KeyAstField    -> a.asJson)
+      case a: FormulaAst.Function[Fn, Json] => Json.obj(KeyAstFunction -> a.asJson)
+      case a: FormulaAst.Multiply[Json]     => Json.obj(KeyAstMultiply -> a.asJson)
+      case a: FormulaAst.Subtract[Json]     => Json.obj(KeyAstSubtract -> a.asJson)
+      case a: FormulaAst.Value              => Json.obj(KeyAstValue    -> a.asJson)
+    }, decoderFnSumBySoleKey {
+      case (KeyAstAdd     , c) => c.as[FormulaAst.Add[ACursor]]
+      case (KeyAstCompare , c) => c.as[FormulaAst.Compare[ACursor]]
+      case (KeyAstDivide  , c) => c.as[FormulaAst.Divide[ACursor]]
+      case (KeyAstField   , c) => c.as[FormulaAst.Field[F]]
+      case (KeyAstFunction, c) => c.as[FormulaAst.Function[Fn, ACursor]]
+      case (KeyAstMultiply, c) => c.as[FormulaAst.Multiply[ACursor]]
+      case (KeyAstSubtract, c) => c.as[FormulaAst.Subtract[ACursor]]
+      case (KeyAstValue   , c) => c.as[FormulaAst.Value]
+    })
+  }
+
+  implicit lazy val codecValidFormula: JsonCodec[ValidFormula] =
+    codecFormulaValid.xmap(ValidFormula.apply)(_.formula)
+
+  // ===================================================================================================================
   // Events
 
   private[json] implicit lazy val codecSavedViewGDv1: JsonCodec[SavedViewGDv1.NonEmptyValues] = {
@@ -778,6 +994,44 @@ object Rev1 {
     implicit val encoderEventSavedViewUpdate: Encoder[Event.SavedViewUpdate] =
       Encoder.forProduct2("id", "values")(a => (a.id, a.vs))
 
+    private[json] implicit lazy val codecCustomFormulaFieldGD: JsonCodec[CustomFormulaFieldGD.NonEmptyValues] = {
+      import CustomFormulaFieldGD._
+
+      implicit val codecValueForName              = JsonCodec.xmap(ValueForName             .apply)(_.value)
+      implicit val codecValueForDesc              = JsonCodec.xmap(ValueForDesc             .apply)(_.value)
+      implicit val codecValueForDecimalPlaces     = JsonCodec.xmap(ValueForDecimalPlaces    .apply)(_.value)
+      implicit val codecValueForFieldReqTypeRules = JsonCodec.xmap(ValueForFieldReqTypeRules.apply)(_.value)
+
+      implicit val decoderValue: Decoder[Value] = decodeSumBySoleKey {
+        case ("name"    , c) => c.as[ValueForName]
+        case ("desc"    , c) => c.as[ValueForDesc]
+        case ("dp"      , c) => c.as[ValueForDecimalPlaces]
+        case ("reqTypes", c) => c.as[ValueForFieldReqTypeRules]
+      }
+
+      implicit val encoderValue: Encoder[Value] = Encoder.instance {
+        case a: ValueForName              => Json.obj("name"     -> a.asJson)
+        case a: ValueForDesc              => Json.obj("desc"     -> a.asJson)
+        case a: ValueForDecimalPlaces     => Json.obj("dp"       -> a.asJson)
+        case a: ValueForFieldReqTypeRules => Json.obj("reqTypes" -> a.asJson)
+      }
+
+      implicit val values: JsonCodec[Values] = codecIMap(emptyValues)
+      codecNonEmptyMono[Values]
+    }
+
+    implicit val decoderEventFieldCustomFormulaCreate: Decoder[Event.FieldCustomFormulaCreate] =
+      Decoder.forProduct2("id", "values")(Event.FieldCustomFormulaCreate.apply)
+
+    implicit val encoderEventFieldCustomFormulaCreate: Encoder[Event.FieldCustomFormulaCreate] =
+      Encoder.forProduct2("id", "values")(a => (a.id, a.vs))
+
+    implicit val decoderEventFieldCustomFormulaUpdate: Decoder[Event.FieldCustomFormulaUpdate] =
+      Decoder.forProduct2("id", "values")(Event.FieldCustomFormulaUpdate.apply)
+
+    implicit val encoderEventFieldCustomFormulaUpdate: Encoder[Event.FieldCustomFormulaUpdate] =
+      Encoder.forProduct2("id", "values")(a => (a.id, a.vs))
+
     private[json] implicit lazy val codecCustomNumberFieldGD: JsonCodec[CustomNumberFieldGD.NonEmptyValues] = {
       import CustomNumberFieldGD._
 
@@ -839,157 +1093,161 @@ object Rev1 {
   }
 
   implicit lazy val decoderEvent: Decoder[Event] = decodeSumBySoleKey {
-    case ("AccessUpdate"           , c) => c.as[Event.AccessUpdate]
-    case ("ApplicableTagCreate:2"  , c) => c.as[Event.ApplicableTagCreate]
-    case ("ApplicableTagCreate"    , c) => c.as[Event.ApplicableTagCreateV1]
-    case ("ApplicableTagUpdate:2"  , c) => c.as[Event.ApplicableTagUpdate]
-    case ("ApplicableTagUpdate"    , c) => c.as[Event.ApplicableTagUpdateV1]
-    case ("CodeGroupCreate"        , c) => c.as[Event.CodeGroupCreate]
-    case ("CodeGroupsDelete"       , c) => c.as[Event.CodeGroupsDelete]
-    case ("CodeGroupUpdate"        , c) => c.as[Event.CodeGroupUpdate]
-    case ("ContentRestore"         , c) => c.as[Event.ContentRestore]
-    case ("CustomIssueTypeCreate"  , c) => c.as[Event.CustomIssueTypeCreate]
-    case ("CustomIssueTypeDelete"  , c) => c.as[Event.CustomIssueTypeDelete]
-    case ("CustomIssueTypeRestore" , c) => c.as[Event.CustomIssueTypeRestore]
-    case ("CustomIssueTypeUpdate"  , c) => c.as[Event.CustomIssueTypeUpdate]
-    case ("CustomReqTypeCreate:2"  , c) => c.as[Event.CustomReqTypeCreate]
-    case ("CustomReqTypeCreate"    , c) => c.as[Event.CustomReqTypeCreateV1]
-    case ("CustomReqTypeDelete"    , c) => c.as[Event.CustomReqTypeDelete]
-    case ("CustomReqTypeDeleteHard", c) => c.as[Event.CustomReqTypeDeleteHard]
-    case ("CustomReqTypeDeleteSoft", c) => c.as[Event.CustomReqTypeDeleteSoft]
-    case ("CustomReqTypeRestore"   , c) => c.as[Event.CustomReqTypeRestore]
-    case ("CustomReqTypeUpdate:2"  , c) => c.as[Event.CustomReqTypeUpdate]
-    case ("CustomReqTypeUpdate"    , c) => c.as[Event.CustomReqTypeUpdateV1]
-    case ("FieldCustomDelete"      , c) => c.as[Event.FieldCustomDelete]
-    case ("FieldCustomImpCreate:2" , c) => c.as[Event.FieldCustomImpCreate]
-    case ("FieldCustomImpCreate"   , c) => c.as[Event.FieldCustomImpCreateV1]
-    case ("FieldCustomImpUpdate:2" , c) => c.as[Event.FieldCustomImpUpdate]
-    case ("FieldCustomImpUpdate"   , c) => c.as[Event.FieldCustomImpUpdateV1]
-    case ("FieldCustomNumberCreate", c) => c.as[Event.FieldCustomNumberCreate]
-    case ("FieldCustomNumberUpdate", c) => c.as[Event.FieldCustomNumberUpdate]
-    case ("FieldCustomRestore"     , c) => c.as[Event.FieldCustomRestore]
-    case ("FieldCustomTagCreate:2" , c) => c.as[Event.FieldCustomTagCreate]
-    case ("FieldCustomTagCreate"   , c) => c.as[Event.FieldCustomTagCreateV1]
-    case ("FieldCustomTagUpdate:2" , c) => c.as[Event.FieldCustomTagUpdate]
-    case ("FieldCustomTagUpdate"   , c) => c.as[Event.FieldCustomTagUpdateV1]
-    case ("FieldCustomTextCreate:2", c) => c.as[Event.FieldCustomTextCreate]
-    case ("FieldCustomTextCreate"  , c) => c.as[Event.FieldCustomTextCreateV1]
-    case ("FieldCustomTextUpdate:2", c) => c.as[Event.FieldCustomTextUpdate]
-    case ("FieldCustomTextUpdate"  , c) => c.as[Event.FieldCustomTextUpdateV1]
-    case ("FieldReposition"        , c) => c.as[Event.FieldReposition]
-    case ("FieldStaticAdd"         , c) => c.as[Event.FieldStaticAdd]
-    case ("FieldStaticRemove"      , c) => c.as[Event.FieldStaticRemove]
-    case ("GenericReqCreate"       , c) => c.as[Event.GenericReqCreate]
-    case ("GenericReqTitleSet"     , c) => c.as[Event.GenericReqTitleSet]
-    case ("GenericReqTypeSet"      , c) => c.as[Event.GenericReqTypeSet]
-    case ("ManualIssueCreate"      , c) => c.as[Event.ManualIssueCreate]
-    case ("ManualIssueDelete"      , c) => c.as[Event.ManualIssueDelete]
-    case ("ManualIssueUpdate"      , c) => c.as[Event.ManualIssueUpdate]
-    case ("ProjectDelete"          , c) => c.as[Event.ProjectDelete]
-    case ("ProjectNameSet"         , c) => c.as[Event.ProjectNameSet]
-    case ("ProjectRestore"         , c) => c.as[Event.ProjectRestore.type]
-    case ("ProjectTemplateApply"   , c) => c.as[Event.ProjectTemplateApply]
-    case ("ReqCodesPatch"          , c) => c.as[Event.ReqCodesPatch]
-    case ("ReqFieldCustomNumberSet", c) => c.as[Event.ReqFieldCustomNumberSet]
-    case ("ReqFieldCustomTextSet"  , c) => c.as[Event.ReqFieldCustomTextSet]
-    case ("ReqImplicationsPatch"   , c) => c.as[Event.ReqImplicationsPatch]
-    case ("ReqsDelete"             , c) => c.as[Event.ReqsDelete]
-    case ("ReqTagsPatch"           , c) => c.as[Event.ReqTagsPatch]
-    case ("SavedViewCreate:2"      , c) => c.as[Event.SavedViewCreate]
-    case ("SavedViewCreate"        , c) => c.as[Event.SavedViewCreateV1]
-    case ("SavedViewDefaultSet"    , c) => c.as[Event.SavedViewDefaultSet]
-    case ("SavedViewDelete"        , c) => c.as[Event.SavedViewDelete]
-    case ("SavedViewUpdate:2"      , c) => c.as[Event.SavedViewUpdate]
-    case ("SavedViewUpdate"        , c) => c.as[Event.SavedViewUpdateV1]
-    case ("TagDelete"              , c) => c.as[Event.TagDelete]
-    case ("TagGroupCreate"         , c) => c.as[Event.TagGroupCreate]
-    case ("TagGroupUpdate"         , c) => c.as[Event.TagGroupUpdate]
-    case ("TagRestore"             , c) => c.as[Event.TagRestore]
-    case ("UseCaseCreate"          , c) => c.as[Event.UseCaseCreate]
-    case ("UseCaseStepCreate"      , c) => c.as[Event.UseCaseStepCreate]
-    case ("UseCaseStepDelete"      , c) => c.as[Event.UseCaseStepDelete]
-    case ("UseCaseStepRestore"     , c) => c.as[Event.UseCaseStepRestore]
-    case ("UseCaseStepShiftLeft"   , c) => c.as[Event.UseCaseStepShiftLeft]
-    case ("UseCaseStepShiftRight"  , c) => c.as[Event.UseCaseStepShiftRight]
-    case ("UseCaseStepUpdate"      , c) => c.as[Event.UseCaseStepUpdate]
-    case ("UseCaseTitleSet"        , c) => c.as[Event.UseCaseTitleSet]
+    case ("AccessUpdate"            , c) => c.as[Event.AccessUpdate]
+    case ("ApplicableTagCreate:2"   , c) => c.as[Event.ApplicableTagCreate]
+    case ("ApplicableTagCreate"     , c) => c.as[Event.ApplicableTagCreateV1]
+    case ("ApplicableTagUpdate:2"   , c) => c.as[Event.ApplicableTagUpdate]
+    case ("ApplicableTagUpdate"     , c) => c.as[Event.ApplicableTagUpdateV1]
+    case ("CodeGroupCreate"         , c) => c.as[Event.CodeGroupCreate]
+    case ("CodeGroupsDelete"        , c) => c.as[Event.CodeGroupsDelete]
+    case ("CodeGroupUpdate"         , c) => c.as[Event.CodeGroupUpdate]
+    case ("ContentRestore"          , c) => c.as[Event.ContentRestore]
+    case ("CustomIssueTypeCreate"   , c) => c.as[Event.CustomIssueTypeCreate]
+    case ("CustomIssueTypeDelete"   , c) => c.as[Event.CustomIssueTypeDelete]
+    case ("CustomIssueTypeRestore"  , c) => c.as[Event.CustomIssueTypeRestore]
+    case ("CustomIssueTypeUpdate"   , c) => c.as[Event.CustomIssueTypeUpdate]
+    case ("CustomReqTypeCreate:2"   , c) => c.as[Event.CustomReqTypeCreate]
+    case ("CustomReqTypeCreate"     , c) => c.as[Event.CustomReqTypeCreateV1]
+    case ("CustomReqTypeDelete"     , c) => c.as[Event.CustomReqTypeDelete]
+    case ("CustomReqTypeDeleteHard" , c) => c.as[Event.CustomReqTypeDeleteHard]
+    case ("CustomReqTypeDeleteSoft" , c) => c.as[Event.CustomReqTypeDeleteSoft]
+    case ("CustomReqTypeRestore"    , c) => c.as[Event.CustomReqTypeRestore]
+    case ("CustomReqTypeUpdate:2"   , c) => c.as[Event.CustomReqTypeUpdate]
+    case ("CustomReqTypeUpdate"     , c) => c.as[Event.CustomReqTypeUpdateV1]
+    case ("FieldCustomDelete"       , c) => c.as[Event.FieldCustomDelete]
+    case ("FieldCustomFormulaCreate", c) => c.as[Event.FieldCustomFormulaCreate]
+    case ("FieldCustomFormulaUpdate", c) => c.as[Event.FieldCustomFormulaUpdate]
+    case ("FieldCustomImpCreate:2"  , c) => c.as[Event.FieldCustomImpCreate]
+    case ("FieldCustomImpCreate"    , c) => c.as[Event.FieldCustomImpCreateV1]
+    case ("FieldCustomImpUpdate:2"  , c) => c.as[Event.FieldCustomImpUpdate]
+    case ("FieldCustomImpUpdate"    , c) => c.as[Event.FieldCustomImpUpdateV1]
+    case ("FieldCustomNumberCreate" , c) => c.as[Event.FieldCustomNumberCreate]
+    case ("FieldCustomNumberUpdate" , c) => c.as[Event.FieldCustomNumberUpdate]
+    case ("FieldCustomRestore"      , c) => c.as[Event.FieldCustomRestore]
+    case ("FieldCustomTagCreate:2"  , c) => c.as[Event.FieldCustomTagCreate]
+    case ("FieldCustomTagCreate"    , c) => c.as[Event.FieldCustomTagCreateV1]
+    case ("FieldCustomTagUpdate:2"  , c) => c.as[Event.FieldCustomTagUpdate]
+    case ("FieldCustomTagUpdate"    , c) => c.as[Event.FieldCustomTagUpdateV1]
+    case ("FieldCustomTextCreate:2" , c) => c.as[Event.FieldCustomTextCreate]
+    case ("FieldCustomTextCreate"   , c) => c.as[Event.FieldCustomTextCreateV1]
+    case ("FieldCustomTextUpdate:2" , c) => c.as[Event.FieldCustomTextUpdate]
+    case ("FieldCustomTextUpdate"   , c) => c.as[Event.FieldCustomTextUpdateV1]
+    case ("FieldReposition"         , c) => c.as[Event.FieldReposition]
+    case ("FieldStaticAdd"          , c) => c.as[Event.FieldStaticAdd]
+    case ("FieldStaticRemove"       , c) => c.as[Event.FieldStaticRemove]
+    case ("GenericReqCreate"        , c) => c.as[Event.GenericReqCreate]
+    case ("GenericReqTitleSet"      , c) => c.as[Event.GenericReqTitleSet]
+    case ("GenericReqTypeSet"       , c) => c.as[Event.GenericReqTypeSet]
+    case ("ManualIssueCreate"       , c) => c.as[Event.ManualIssueCreate]
+    case ("ManualIssueDelete"       , c) => c.as[Event.ManualIssueDelete]
+    case ("ManualIssueUpdate"       , c) => c.as[Event.ManualIssueUpdate]
+    case ("ProjectDelete"           , c) => c.as[Event.ProjectDelete]
+    case ("ProjectNameSet"          , c) => c.as[Event.ProjectNameSet]
+    case ("ProjectRestore"          , c) => c.as[Event.ProjectRestore.type]
+    case ("ProjectTemplateApply"    , c) => c.as[Event.ProjectTemplateApply]
+    case ("ReqCodesPatch"           , c) => c.as[Event.ReqCodesPatch]
+    case ("ReqFieldCustomNumberSet" , c) => c.as[Event.ReqFieldCustomNumberSet]
+    case ("ReqFieldCustomTextSet"   , c) => c.as[Event.ReqFieldCustomTextSet]
+    case ("ReqImplicationsPatch"    , c) => c.as[Event.ReqImplicationsPatch]
+    case ("ReqsDelete"              , c) => c.as[Event.ReqsDelete]
+    case ("ReqTagsPatch"            , c) => c.as[Event.ReqTagsPatch]
+    case ("SavedViewCreate:2"       , c) => c.as[Event.SavedViewCreate]
+    case ("SavedViewCreate"         , c) => c.as[Event.SavedViewCreateV1]
+    case ("SavedViewDefaultSet"     , c) => c.as[Event.SavedViewDefaultSet]
+    case ("SavedViewDelete"         , c) => c.as[Event.SavedViewDelete]
+    case ("SavedViewUpdate:2"       , c) => c.as[Event.SavedViewUpdate]
+    case ("SavedViewUpdate"         , c) => c.as[Event.SavedViewUpdateV1]
+    case ("TagDelete"               , c) => c.as[Event.TagDelete]
+    case ("TagGroupCreate"          , c) => c.as[Event.TagGroupCreate]
+    case ("TagGroupUpdate"          , c) => c.as[Event.TagGroupUpdate]
+    case ("TagRestore"              , c) => c.as[Event.TagRestore]
+    case ("UseCaseCreate"           , c) => c.as[Event.UseCaseCreate]
+    case ("UseCaseStepCreate"       , c) => c.as[Event.UseCaseStepCreate]
+    case ("UseCaseStepDelete"       , c) => c.as[Event.UseCaseStepDelete]
+    case ("UseCaseStepRestore"      , c) => c.as[Event.UseCaseStepRestore]
+    case ("UseCaseStepShiftLeft"    , c) => c.as[Event.UseCaseStepShiftLeft]
+    case ("UseCaseStepShiftRight"   , c) => c.as[Event.UseCaseStepShiftRight]
+    case ("UseCaseStepUpdate"       , c) => c.as[Event.UseCaseStepUpdate]
+    case ("UseCaseTitleSet"         , c) => c.as[Event.UseCaseTitleSet]
   }
 
   implicit lazy val encoderEvent: Encoder[Event] = Encoder.instance {
-    case a: Event.AccessUpdate            => Json.obj("AccessUpdate"            -> a.asJson)
-    case a: Event.ApplicableTagCreate     => Json.obj("ApplicableTagCreate:2"   -> a.asJson)
-    case a: Event.ApplicableTagCreateV1   => Json.obj("ApplicableTagCreate"     -> a.asJson)
-    case a: Event.ApplicableTagUpdate     => Json.obj("ApplicableTagUpdate:2"   -> a.asJson)
-    case a: Event.ApplicableTagUpdateV1   => Json.obj("ApplicableTagUpdate"     -> a.asJson)
-    case a: Event.CodeGroupCreate         => Json.obj("CodeGroupCreate"         -> a.asJson)
-    case a: Event.CodeGroupsDelete        => Json.obj("CodeGroupsDelete"        -> a.asJson)
-    case a: Event.CodeGroupUpdate         => Json.obj("CodeGroupUpdate"         -> a.asJson)
-    case a: Event.ContentRestore          => Json.obj("ContentRestore"          -> a.asJson)
-    case a: Event.CustomIssueTypeCreate   => Json.obj("CustomIssueTypeCreate"   -> a.asJson)
-    case a: Event.CustomIssueTypeDelete   => Json.obj("CustomIssueTypeDelete"   -> a.asJson)
-    case a: Event.CustomIssueTypeRestore  => Json.obj("CustomIssueTypeRestore"  -> a.asJson)
-    case a: Event.CustomIssueTypeUpdate   => Json.obj("CustomIssueTypeUpdate"   -> a.asJson)
-    case a: Event.CustomReqTypeCreate     => Json.obj("CustomReqTypeCreate:2"   -> a.asJson)
-    case a: Event.CustomReqTypeCreateV1   => Json.obj("CustomReqTypeCreate"     -> a.asJson)
-    case a: Event.CustomReqTypeDelete     => Json.obj("CustomReqTypeDelete"     -> a.asJson)
-    case a: Event.CustomReqTypeDeleteHard => Json.obj("CustomReqTypeDeleteHard" -> a.asJson)
-    case a: Event.CustomReqTypeDeleteSoft => Json.obj("CustomReqTypeDeleteSoft" -> a.asJson)
-    case a: Event.CustomReqTypeRestore    => Json.obj("CustomReqTypeRestore"    -> a.asJson)
-    case a: Event.CustomReqTypeUpdate     => Json.obj("CustomReqTypeUpdate:2"   -> a.asJson)
-    case a: Event.CustomReqTypeUpdateV1   => Json.obj("CustomReqTypeUpdate"     -> a.asJson)
-    case a: Event.FieldCustomDelete       => Json.obj("FieldCustomDelete"       -> a.asJson)
-    case a: Event.FieldCustomImpCreate    => Json.obj("FieldCustomImpCreate:2"  -> a.asJson)
-    case a: Event.FieldCustomImpCreateV1  => Json.obj("FieldCustomImpCreate"    -> a.asJson)
-    case a: Event.FieldCustomImpUpdate    => Json.obj("FieldCustomImpUpdate:2"  -> a.asJson)
-    case a: Event.FieldCustomImpUpdateV1  => Json.obj("FieldCustomImpUpdate"    -> a.asJson)
-    case a: Event.FieldCustomNumberCreate => Json.obj("FieldCustomNumberCreate" -> a.asJson)
-    case a: Event.FieldCustomNumberUpdate => Json.obj("FieldCustomNumberUpdate" -> a.asJson)
-    case a: Event.FieldCustomRestore      => Json.obj("FieldCustomRestore"      -> a.asJson)
-    case a: Event.FieldCustomTagCreate    => Json.obj("FieldCustomTagCreate:2"  -> a.asJson)
-    case a: Event.FieldCustomTagCreateV1  => Json.obj("FieldCustomTagCreate"    -> a.asJson)
-    case a: Event.FieldCustomTagUpdate    => Json.obj("FieldCustomTagUpdate:2"  -> a.asJson)
-    case a: Event.FieldCustomTagUpdateV1  => Json.obj("FieldCustomTagUpdate"    -> a.asJson)
-    case a: Event.FieldCustomTextCreate   => Json.obj("FieldCustomTextCreate:2" -> a.asJson)
-    case a: Event.FieldCustomTextCreateV1 => Json.obj("FieldCustomTextCreate"   -> a.asJson)
-    case a: Event.FieldCustomTextUpdate   => Json.obj("FieldCustomTextUpdate:2" -> a.asJson)
-    case a: Event.FieldCustomTextUpdateV1 => Json.obj("FieldCustomTextUpdate"   -> a.asJson)
-    case a: Event.FieldReposition         => Json.obj("FieldReposition"         -> a.asJson)
-    case a: Event.FieldStaticAdd          => Json.obj("FieldStaticAdd"          -> a.asJson)
-    case a: Event.FieldStaticRemove       => Json.obj("FieldStaticRemove"       -> a.asJson)
-    case a: Event.GenericReqCreate        => Json.obj("GenericReqCreate"        -> a.asJson)
-    case a: Event.GenericReqTitleSet      => Json.obj("GenericReqTitleSet"      -> a.asJson)
-    case a: Event.GenericReqTypeSet       => Json.obj("GenericReqTypeSet"       -> a.asJson)
-    case a: Event.ManualIssueCreate       => Json.obj("ManualIssueCreate"       -> a.asJson)
-    case a: Event.ManualIssueDelete       => Json.obj("ManualIssueDelete"       -> a.asJson)
-    case a: Event.ManualIssueUpdate       => Json.obj("ManualIssueUpdate"       -> a.asJson)
-    case a: Event.ProjectDelete           => Json.obj("ProjectDelete"           -> a.asJson)
-    case a: Event.ProjectNameSet          => Json.obj("ProjectNameSet"          -> a.asJson)
-    case a: Event.ProjectRestore.type     => Json.obj("ProjectRestore"          -> a.asJson)
-    case a: Event.ProjectTemplateApply    => Json.obj("ProjectTemplateApply"    -> a.asJson)
-    case a: Event.ReqCodesPatch           => Json.obj("ReqCodesPatch"           -> a.asJson)
-    case a: Event.ReqFieldCustomNumberSet => Json.obj("ReqFieldCustomNumberSet" -> a.asJson)
-    case a: Event.ReqFieldCustomTextSet   => Json.obj("ReqFieldCustomTextSet"   -> a.asJson)
-    case a: Event.ReqImplicationsPatch    => Json.obj("ReqImplicationsPatch"    -> a.asJson)
-    case a: Event.ReqsDelete              => Json.obj("ReqsDelete"              -> a.asJson)
-    case a: Event.ReqTagsPatch            => Json.obj("ReqTagsPatch"            -> a.asJson)
-    case a: Event.SavedViewCreate         => Json.obj("SavedViewCreate:2"       -> a.asJson)
-    case a: Event.SavedViewCreateV1       => Json.obj("SavedViewCreate"         -> a.asJson)
-    case a: Event.SavedViewDefaultSet     => Json.obj("SavedViewDefaultSet"     -> a.asJson)
-    case a: Event.SavedViewDelete         => Json.obj("SavedViewDelete"         -> a.asJson)
-    case a: Event.SavedViewUpdate         => Json.obj("SavedViewUpdate:2"       -> a.asJson)
-    case a: Event.SavedViewUpdateV1       => Json.obj("SavedViewUpdate"         -> a.asJson)
-    case a: Event.TagDelete               => Json.obj("TagDelete"               -> a.asJson)
-    case a: Event.TagGroupCreate          => Json.obj("TagGroupCreate"          -> a.asJson)
-    case a: Event.TagGroupUpdate          => Json.obj("TagGroupUpdate"          -> a.asJson)
-    case a: Event.TagRestore              => Json.obj("TagRestore"              -> a.asJson)
-    case a: Event.UseCaseCreate           => Json.obj("UseCaseCreate"           -> a.asJson)
-    case a: Event.UseCaseStepCreate       => Json.obj("UseCaseStepCreate"       -> a.asJson)
-    case a: Event.UseCaseStepDelete       => Json.obj("UseCaseStepDelete"       -> a.asJson)
-    case a: Event.UseCaseStepRestore      => Json.obj("UseCaseStepRestore"      -> a.asJson)
-    case a: Event.UseCaseStepShiftLeft    => Json.obj("UseCaseStepShiftLeft"    -> a.asJson)
-    case a: Event.UseCaseStepShiftRight   => Json.obj("UseCaseStepShiftRight"   -> a.asJson)
-    case a: Event.UseCaseStepUpdate       => Json.obj("UseCaseStepUpdate"       -> a.asJson)
-    case a: Event.UseCaseTitleSet         => Json.obj("UseCaseTitleSet"         -> a.asJson)
+    case a: Event.AccessUpdate             => Json.obj("AccessUpdate"             -> a.asJson)
+    case a: Event.ApplicableTagCreate      => Json.obj("ApplicableTagCreate:2"    -> a.asJson)
+    case a: Event.ApplicableTagCreateV1    => Json.obj("ApplicableTagCreate"      -> a.asJson)
+    case a: Event.ApplicableTagUpdate      => Json.obj("ApplicableTagUpdate:2"    -> a.asJson)
+    case a: Event.ApplicableTagUpdateV1    => Json.obj("ApplicableTagUpdate"      -> a.asJson)
+    case a: Event.CodeGroupCreate          => Json.obj("CodeGroupCreate"          -> a.asJson)
+    case a: Event.CodeGroupsDelete         => Json.obj("CodeGroupsDelete"         -> a.asJson)
+    case a: Event.CodeGroupUpdate          => Json.obj("CodeGroupUpdate"          -> a.asJson)
+    case a: Event.ContentRestore           => Json.obj("ContentRestore"           -> a.asJson)
+    case a: Event.CustomIssueTypeCreate    => Json.obj("CustomIssueTypeCreate"    -> a.asJson)
+    case a: Event.CustomIssueTypeDelete    => Json.obj("CustomIssueTypeDelete"    -> a.asJson)
+    case a: Event.CustomIssueTypeRestore   => Json.obj("CustomIssueTypeRestore"   -> a.asJson)
+    case a: Event.CustomIssueTypeUpdate    => Json.obj("CustomIssueTypeUpdate"    -> a.asJson)
+    case a: Event.CustomReqTypeCreate      => Json.obj("CustomReqTypeCreate:2"    -> a.asJson)
+    case a: Event.CustomReqTypeCreateV1    => Json.obj("CustomReqTypeCreate"      -> a.asJson)
+    case a: Event.CustomReqTypeDelete      => Json.obj("CustomReqTypeDelete"      -> a.asJson)
+    case a: Event.CustomReqTypeDeleteHard  => Json.obj("CustomReqTypeDeleteHard"  -> a.asJson)
+    case a: Event.CustomReqTypeDeleteSoft  => Json.obj("CustomReqTypeDeleteSoft"  -> a.asJson)
+    case a: Event.CustomReqTypeRestore     => Json.obj("CustomReqTypeRestore"     -> a.asJson)
+    case a: Event.CustomReqTypeUpdate      => Json.obj("CustomReqTypeUpdate:2"    -> a.asJson)
+    case a: Event.CustomReqTypeUpdateV1    => Json.obj("CustomReqTypeUpdate"      -> a.asJson)
+    case a: Event.FieldCustomDelete        => Json.obj("FieldCustomDelete"        -> a.asJson)
+    case a: Event.FieldCustomFormulaCreate => Json.obj("FieldCustomFormulaCreate" -> a.asJson)
+    case a: Event.FieldCustomFormulaUpdate => Json.obj("FieldCustomFormulaUpdate" -> a.asJson)
+    case a: Event.FieldCustomImpCreate     => Json.obj("FieldCustomImpCreate:2"   -> a.asJson)
+    case a: Event.FieldCustomImpCreateV1   => Json.obj("FieldCustomImpCreate"     -> a.asJson)
+    case a: Event.FieldCustomImpUpdate     => Json.obj("FieldCustomImpUpdate:2"   -> a.asJson)
+    case a: Event.FieldCustomImpUpdateV1   => Json.obj("FieldCustomImpUpdate"     -> a.asJson)
+    case a: Event.FieldCustomNumberCreate  => Json.obj("FieldCustomNumberCreate"  -> a.asJson)
+    case a: Event.FieldCustomNumberUpdate  => Json.obj("FieldCustomNumberUpdate"  -> a.asJson)
+    case a: Event.FieldCustomRestore       => Json.obj("FieldCustomRestore"       -> a.asJson)
+    case a: Event.FieldCustomTagCreate     => Json.obj("FieldCustomTagCreate:2"   -> a.asJson)
+    case a: Event.FieldCustomTagCreateV1   => Json.obj("FieldCustomTagCreate"     -> a.asJson)
+    case a: Event.FieldCustomTagUpdate     => Json.obj("FieldCustomTagUpdate:2"   -> a.asJson)
+    case a: Event.FieldCustomTagUpdateV1   => Json.obj("FieldCustomTagUpdate"     -> a.asJson)
+    case a: Event.FieldCustomTextCreate    => Json.obj("FieldCustomTextCreate:2"  -> a.asJson)
+    case a: Event.FieldCustomTextCreateV1  => Json.obj("FieldCustomTextCreate"    -> a.asJson)
+    case a: Event.FieldCustomTextUpdate    => Json.obj("FieldCustomTextUpdate:2"  -> a.asJson)
+    case a: Event.FieldCustomTextUpdateV1  => Json.obj("FieldCustomTextUpdate"    -> a.asJson)
+    case a: Event.FieldReposition          => Json.obj("FieldReposition"          -> a.asJson)
+    case a: Event.FieldStaticAdd           => Json.obj("FieldStaticAdd"           -> a.asJson)
+    case a: Event.FieldStaticRemove        => Json.obj("FieldStaticRemove"        -> a.asJson)
+    case a: Event.GenericReqCreate         => Json.obj("GenericReqCreate"         -> a.asJson)
+    case a: Event.GenericReqTitleSet       => Json.obj("GenericReqTitleSet"       -> a.asJson)
+    case a: Event.GenericReqTypeSet        => Json.obj("GenericReqTypeSet"        -> a.asJson)
+    case a: Event.ManualIssueCreate        => Json.obj("ManualIssueCreate"        -> a.asJson)
+    case a: Event.ManualIssueDelete        => Json.obj("ManualIssueDelete"        -> a.asJson)
+    case a: Event.ManualIssueUpdate        => Json.obj("ManualIssueUpdate"        -> a.asJson)
+    case a: Event.ProjectDelete            => Json.obj("ProjectDelete"            -> a.asJson)
+    case a: Event.ProjectNameSet           => Json.obj("ProjectNameSet"           -> a.asJson)
+    case a: Event.ProjectRestore.type      => Json.obj("ProjectRestore"           -> a.asJson)
+    case a: Event.ProjectTemplateApply     => Json.obj("ProjectTemplateApply"     -> a.asJson)
+    case a: Event.ReqCodesPatch            => Json.obj("ReqCodesPatch"            -> a.asJson)
+    case a: Event.ReqFieldCustomNumberSet  => Json.obj("ReqFieldCustomNumberSet"  -> a.asJson)
+    case a: Event.ReqFieldCustomTextSet    => Json.obj("ReqFieldCustomTextSet"    -> a.asJson)
+    case a: Event.ReqImplicationsPatch     => Json.obj("ReqImplicationsPatch"     -> a.asJson)
+    case a: Event.ReqsDelete               => Json.obj("ReqsDelete"               -> a.asJson)
+    case a: Event.ReqTagsPatch             => Json.obj("ReqTagsPatch"             -> a.asJson)
+    case a: Event.SavedViewCreate          => Json.obj("SavedViewCreate:2"        -> a.asJson)
+    case a: Event.SavedViewCreateV1        => Json.obj("SavedViewCreate"          -> a.asJson)
+    case a: Event.SavedViewDefaultSet      => Json.obj("SavedViewDefaultSet"      -> a.asJson)
+    case a: Event.SavedViewDelete          => Json.obj("SavedViewDelete"          -> a.asJson)
+    case a: Event.SavedViewUpdate          => Json.obj("SavedViewUpdate:2"        -> a.asJson)
+    case a: Event.SavedViewUpdateV1        => Json.obj("SavedViewUpdate"          -> a.asJson)
+    case a: Event.TagDelete                => Json.obj("TagDelete"                -> a.asJson)
+    case a: Event.TagGroupCreate           => Json.obj("TagGroupCreate"           -> a.asJson)
+    case a: Event.TagGroupUpdate           => Json.obj("TagGroupUpdate"           -> a.asJson)
+    case a: Event.TagRestore               => Json.obj("TagRestore"               -> a.asJson)
+    case a: Event.UseCaseCreate            => Json.obj("UseCaseCreate"            -> a.asJson)
+    case a: Event.UseCaseStepCreate        => Json.obj("UseCaseStepCreate"        -> a.asJson)
+    case a: Event.UseCaseStepDelete        => Json.obj("UseCaseStepDelete"        -> a.asJson)
+    case a: Event.UseCaseStepRestore       => Json.obj("UseCaseStepRestore"       -> a.asJson)
+    case a: Event.UseCaseStepShiftLeft     => Json.obj("UseCaseStepShiftLeft"     -> a.asJson)
+    case a: Event.UseCaseStepShiftRight    => Json.obj("UseCaseStepShiftRight"    -> a.asJson)
+    case a: Event.UseCaseStepUpdate        => Json.obj("UseCaseStepUpdate"        -> a.asJson)
+    case a: Event.UseCaseTitleSet          => Json.obj("UseCaseTitleSet"          -> a.asJson)
   }
 
   implicit lazy val decoderVerifiedEvent: Decoder[VerifiedEvent] =

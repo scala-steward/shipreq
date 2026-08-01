@@ -6,7 +6,9 @@ import japgolly.microlibs.utils.{ConciseIntSetFormat, Memo}
 import scala.collection.immutable.SortedSet
 import shipreq.base.util.SafeStringOps._
 import shipreq.base.util._
+import shipreq.webapp.member.project.data.DataImplicits._
 import shipreq.webapp.member.project.data._
+import shipreq.webapp.member.project.formula.{FormulaEvalCache, FormulaValue}
 import shipreq.webapp.member.project.text.Atom.{AnyAtom, DisplayReqRef}
 import shipreq.webapp.member.project.text.GrammarSpec.Surrounds
 import shipreq.webapp.member.project.text.ProjectText.SetRenderStyle
@@ -110,6 +112,9 @@ object PlainText {
 
   def reqTypeFull(rt: ReqType): String =
     s"${rt.mnemonic.value}: ${rt.name}"
+
+  def formulaError(err: FormulaValue.Err): String =
+    "#ERR: " + err.value
 
   // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
@@ -521,5 +526,17 @@ object PlainText {
 
     def textWithoutMarkup(text: Text.AnyOptional, live: Live): String =
       nestedText(live, text, includeMarkup = false)
+
+    override def formulaEval(eval: FormulaEvalCache.Eval, fid: CustomField.Formula.Id): String =
+      eval.value match {
+        case FormulaValue.Dbl(d) =>
+          val f = p.config.fields.custom(fid)
+          number(d, f.decimalPlaces, eval.live, eval.validity)
+
+        case b: FormulaValue.Bool => b.show
+        case e: FormulaValue.Err  => formulaError(e)
+        case FormulaValue.Str(s)  => s
+        case FormulaValue.Empty   => ""
+      }
   }
 }

@@ -6,25 +6,26 @@ import japgolly.microlibs.recursion._
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.microlibs.utils.ConciseIntSetFormat
 import java.util.regex.Pattern
-import shipreq.base.util.{Applicable, ErrorMsg, OptionalBoolFn, TransitiveClosure}
+import shipreq.base.util.{Applicable, ErrorMsg, OptionalBoolFn, TransitiveClosure, Util}
 import shipreq.webapp.base.util._
 import shipreq.webapp.member.project.data
 import shipreq.webapp.member.project.data.DataImplicits._
 import shipreq.webapp.member.project.data.derivation.DataLogic.IssueLookup
 import shipreq.webapp.member.project.data.derivation.VirtualProjectTags
 import shipreq.webapp.member.project.data.{FilterDead, HideDead, ShowDead}
+import shipreq.webapp.member.project.formula.FormulaEvalCache
 import shipreq.webapp.member.project.issue.Issues
 import shipreq.webapp.member.project.text.{Atom, Grammar, PlainText, TextSearch}
 
 /** Algebras:
   *
   * {{{
-  *   unparse        : FAlgebra [             PotentialF,   AtomOrComposite[String]]
-  *   validate       : FAlgebraM[String \/ *, PotentialF,   Valid                  ]
-  *   unvalidate     : FAlgebra [             ValidF,       Potential              ]
-  *   makeExtensional: FAlgebra [             ValidF,       Extensional            ]
-  *   compile        : FAlgebra [             ExtensionalF, CompiledFilter         ]
-  *   remove         : FAlgebra [             ValidF,       Boolean \/ Valid       ]
+  *   unparse        : FAlgebra [               PotentialF,   AtomOrComposite[String]]
+  *   validate       : FAlgebraM[ErrorMsg \/ *, PotentialF,   Valid                  ]
+  *   unvalidate     : FAlgebra [               ValidF,       Potential              ]
+  *   makeExtensional: FAlgebra [               ValidF,       Extensional            ]
+  *   compile        : FAlgebra [               ExtensionalF, CompiledFilter         ]
+  *   remove         : FAlgebra [               ValidF,       Boolean \/ Valid       ]
   * }}}
   */
 object FilterAlgebra {
@@ -75,8 +76,8 @@ object FilterAlgebra {
       case FieldCriteria.Attr(a)                    =>  "=" ~ a
       case FieldCriteria.ReqTypePosSet(s)           =>  "=" ~ ConciseIntSetFormat(s.whole.map(_.value))
       case FieldCriteria.Query(q)                   =>  "=" ~ subquery(q)
-      case FieldCriteria.CompareNumber(None, d)     =>  "=" ~ d.toString
-      case FieldCriteria.CompareNumber(Some(op), d) =>  op.symbol ~ d.toString
+      case FieldCriteria.CompareNumber(None, d)     =>  "=" ~ Util.doubleToString(d)
+      case FieldCriteria.CompareNumber(Some(op), d) =>  op.symbol ~ Util.doubleToString(d)
     }
 
     val impCriteria: Potential.ImpCriteriaF[AtomOrComposite[String]] => String = {
@@ -233,6 +234,7 @@ object FilterAlgebra {
             case (\/-(f: CustomField)                       , Blank
                                                             | NotBlank
                                                             | NotApplicable) => \/-(Valid.fieldProp(\/-(f.id), FieldCriteria.Attr(attr)))
+            case (\/-(f: CustomField.Formula)               , DefaultInUse ) => \/-(Valid.fieldProp(\/-(f.id), FieldCriteria.Attr(attr)))
             case (\/-(f: CustomField.Number)                , DefaultInUse ) => \/-(Valid.fieldProp(\/-(f.id), FieldCriteria.Attr(attr)))
             case (\/-(f: CustomField.Tag)                   , DefaultInUse ) => \/-(Valid.fieldProp(\/-(f.id), FieldCriteria.Attr(attr)))
             case (\/-(_: CustomField.Text)                  , DefaultInUse ) => fail("Text fields don't have defaults.")
@@ -262,6 +264,12 @@ object FilterAlgebra {
             val n = FieldCriteria.CompareNumber(None, s.value.head.value)
             \/-(Valid.fieldProp(\/-(f.id), n))
 
+          // For formula fields, re-interpret ReqTypePosSet as a CompareNumber
+          // eg. "field:Rating=5"
+          case \/-(f: CustomField.Formula) if s.value.size == 1 =>
+            val n = FieldCriteria.CompareNumber(None, s.value.head.value)
+            \/-(Valid.fieldProp(\/-(f.id), n))
+
           case _ =>
             valuesNotAllowed
         }
@@ -274,8 +282,9 @@ object FilterAlgebra {
 
       def parseAsCompareNumber(field: ParsedField, n: FieldCriteria.CompareNumber): R =
         field match {
-          case \/-(f: CustomField.Number) => \/-(Valid.fieldProp(\/-(f.id), n))
-          case _                          => valuesNotAllowed
+          case \/-(f: CustomField.Number)  => \/-(Valid.fieldProp(\/-(f.id), n))
+          case \/-(f: CustomField.Formula) => \/-(Valid.fieldProp(\/-(f.id), n))
+          case _                           => valuesNotAllowed
         }
 
       parseFieldName(fieldName).flatMap { field =>
@@ -474,6 +483,8 @@ object FilterAlgebra {
               filterDead : FilterDead,
               projectText: PlainText.ForProject.NoCtx,
               textSearch : TextSearch,
+              issues     : Issues,
+              formulaEval: FormulaEvalCache,
               issueLookup: IssueLookup,
               tags       : VirtualProjectTags): FAlgebra[ExtensionalF, CompiledFilter] = {
     var cata: Extensional => CompiledFilter = null
@@ -491,7 +502,7 @@ object FilterAlgebra {
     // - Squash Not(Not(x)) => x
 
     import shipreq.webapp.member.project.data.{ReqType => _, _}
-    lazy val issuesBySource = p.issues.bySource
+    lazy val issuesBySource = issues.bySource
 
     def ignore: Any => Boolean = null
     def fail: Any => Boolean = _ => false
@@ -627,6 +638,16 @@ object FilterAlgebra {
 
       (criteria, fieldArg) match {
 
+        case (FieldCriteria.CompareNumber(op, targetNum), \/-(fid: CustomField.Formula.Id)) =>
+          val fe = formulaEval(fid)
+          reqOnly { req =>
+            val numOption = fe(req).toOption.flatMap(_.value.doubleOption)
+            op match {
+              case None    => numOption.contains(targetNum)
+              case Some(o) => numOption.exists(o.cmpDoubles(_, targetNum))
+            }
+          }
+
         case (FieldCriteria.CompareNumber(op, targetNumRaw), \/-(fid: CustomField.Number.Id)) =>
           val field = p.config.fields.custom(fid)
           val targetNum = field.scale(targetNumRaw)
@@ -634,13 +655,13 @@ object FilterAlgebra {
 
             case None =>
               fieldApplicableReqOnly(fid) { req =>
-                val numOption = p.content.getVirtualNum(field, req)
+                val numOption = p.content.reqNums.getVirtual(field, req)
                 numOption.contains(targetNum)
               }
 
             case Some(op) =>
               fieldApplicableReqOnly(fid) { req =>
-                val numOption = p.content.getVirtualNum(field, req)
+                val numOption = p.content.reqNums.getVirtual(field, req)
                 numOption.exists(op.cmpDoubles(_, targetNum))
               }
           }
@@ -655,8 +676,12 @@ object FilterAlgebra {
           val lookup = p.dataLogic.customFieldImps(filterDead)(id)
           reqOnly(req => lookup.getReqIds(req.id).exists(criteria.contains))
 
+        case (FieldCriteria.Attr(Blank), \/-(fid: CustomField.Formula.Id)) =>
+          val fe = formulaEval(fid)
+          reqOnly(req => fe(req).exists(_.value.isEmpty))
+
         case (FieldCriteria.Attr(Blank), \/-(fid: CustomField.Number.Id)) =>
-          val reqNums = p.content.reqNumsFor(fid)
+          val reqNums = p.content.reqNums(fid)
           fieldApplicableReqOnly(fid) { req =>
             if (reqNums.contains(req.id))
               false
@@ -707,7 +732,7 @@ object FilterAlgebra {
           }
 
         case (FieldCriteria.Attr(DefaultInUse), \/-(fid: CustomField.Number.Id)) =>
-          val reqNums = p.content.reqNumsFor(fid)
+          val reqNums = p.content.reqNums(fid)
           fieldApplicableReqOnly(fid) { req =>
             if (reqNums.contains(req.id))
               false
@@ -717,6 +742,9 @@ object FilterAlgebra {
               res.isDefault
             }
           }
+
+        case (FieldCriteria.Attr(DefaultInUse), \/-(fid: CustomField.Formula.Id)) =>
+          fieldApplicableReqOnly(fid)(_ => true)
 
         case (FieldCriteria.Attr(DefaultInUse), \/-(f: CustomField.Tag.Id)) =>
           fieldApplicableReqOnly(f)(req => tags(req.id, filterDead).defaults.contains(f))
@@ -740,6 +768,7 @@ object FilterAlgebra {
 
         case (FieldCriteria.ReqTypePosSet(_) | FieldCriteria.Query(_),
                  -\/(_)
+               | \/-(_: CustomField.Formula.Id)
                | \/-(_: CustomField.Number.Id)
                | \/-(_: CustomField.Tag.Id)
                | \/-(_: CustomField.Text.Id)

@@ -11,7 +11,7 @@ import shipreq.webapp.base.ui.semantic.Menu.DropdownType
 import shipreq.webapp.base.ui.semantic.{Breadcrumb, Colour, Dropdown, Icon, Menu, Size}
 import shipreq.webapp.base.ui.widgets.FeedbackModal
 import shipreq.webapp.client.project.app.Style
-import shipreq.webapp.client.project.widgets.{FilterHelp, RichTextEditorHelp}
+import shipreq.webapp.client.project.widgets.{FilterHelp, FormulaHelp, RichTextEditorHelp}
 import shipreq.webapp.member.project.data.{Project, ProjectMetaData}
 import shipreq.webapp.member.project.text.PlainText
 import shipreq.webapp.member.project.util.DataReusability._
@@ -188,6 +188,7 @@ object Layout {
         _,
         Style.layout,
         FilterHelp.modal.render,
+        FormulaHelp.modal.render,
         Toast.Component(p.toast),
         p.feedbackModal.render,
         p.reauthModal.render,

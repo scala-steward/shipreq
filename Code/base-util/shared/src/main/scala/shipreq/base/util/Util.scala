@@ -5,7 +5,9 @@ import cats.{Applicative, Eq, Order}
 import japgolly.microlibs.stdlib_ext.MutableArray
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.microlibs.utils.Memo
+import java.math.{BigDecimal, RoundingMode}
 import java.net.URL
+import java.util.regex.Pattern
 import scala.collection.immutable.TreeMap
 import scala.collection.{Factory, Iterable}
 import scala.reflect.ClassTag
@@ -267,6 +269,16 @@ object Util {
     else if (z.isEmpty) mergeSets(u, v, w, x, y)
     else (Set.newBuilder[A] ++= u ++= v ++= w ++= x ++= y ++= z).result()
 
+  def mergeSets[A: UnivEq](t: Set[_ <: A], u: Set[_ <: A], v: Set[_ <: A], w: Set[_ <: A], x: Set[_ <: A], y: Set[_ <: A], z: Set[_ <: A]): Set[A] =
+         if (t.isEmpty) mergeSets(u, v, w, x, y, z)
+    else if (u.isEmpty) mergeSets(t, v, w, x, y, z)
+    else if (v.isEmpty) mergeSets(t, u, w, x, y, z)
+    else if (w.isEmpty) mergeSets(t, u, v, x, y, z)
+    else if (x.isEmpty) mergeSets(t, u, v, w, y, z)
+    else if (y.isEmpty) mergeSets(t, u, v, w, x, z)
+    else if (z.isEmpty) mergeSets(t, u, v, w, x, y)
+    else (Set.newBuilder[A] ++= t ++= u ++= v ++= w ++= x ++= y ++= z).result()
+
   def enumOrdering[A: UnivEq, B: Ordering](as: IterableOnce[A])(by: A => B): Ordering[A] = {
     val sorted = MutableArray(as).sortBySchwartzian(by).array
     val ord = sorted.iterator.mapToOrder
@@ -429,4 +441,12 @@ object Util {
         ArraySeq.unsafeWrapArray(result)
     }
   }
+
+  private val trailingZeros = Pattern.compile("\\.0+$")
+
+  def doubleToString(d: Double): String =
+    trailingZeros.matcher(d.toString).replaceFirst("")
+
+  def setScale(d: Double, decimalPlaces: Int): Double =
+    new BigDecimal(d).setScale(decimalPlaces, RoundingMode.HALF_UP).doubleValue
 }

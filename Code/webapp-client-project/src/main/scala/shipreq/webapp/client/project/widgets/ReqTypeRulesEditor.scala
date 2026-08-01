@@ -12,7 +12,6 @@ import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.html_<^._
 import monocle.Lens
 import monocle.macros.Lenses
-import org.scalajs.dom.html
 import scalacss.ScalaCssReact._
 import shipreq.base.util._
 import shipreq.webapp.base.ui.GeneralTheme
@@ -25,12 +24,39 @@ import shipreq.webapp.client.project.util.DataReusability._
 import shipreq.webapp.member.feature.AutoCompleteFeature._
 import shipreq.webapp.member.project.data.FieldReqTypeRules.Resolution
 import shipreq.webapp.member.project.data.{Colour => _, _}
+import shipreq.webapp.member.project.formula.ValidFormula
 
 object ReqTypeRulesEditor {
 
-  val NoDefault            = new ReqTypeRulesEditor[Impossible](allowDefaults = false, keyFor = _.impossible)
-  val ApplicableTagDefault = new ReqTypeRulesEditor[ApplicableTagId](allowDefaults = true, keyFor = _.value.toString)
-  val DoubleDefault        = new ReqTypeRulesEditor[Double](allowDefaults = true, keyFor = _.toString)
+  val NoDefault = new ReqTypeRulesEditor[Impossible](
+    allowOptional = true,
+    allowMandatory = true,
+    allowDefaults = false,
+    newRowDefault = Resolution.default,
+    keyFor = _.impossible)
+
+  val ApplicableTagDefault = new ReqTypeRulesEditor[ApplicableTagId](
+    allowOptional = true,
+    allowMandatory = true,
+    allowDefaults = true,
+    newRowDefault = Resolution.default,
+    keyFor = _.value.toString)
+
+  val DoubleDefault = new ReqTypeRulesEditor[Double](
+    allowOptional = true,
+    allowMandatory = true,
+    allowDefaults = true,
+    newRowDefault = Resolution.default,
+    keyFor = _.toString)
+
+  val ForFormulaFields = new ReqTypeRulesEditor[ValidFormula](
+    allowOptional = false,
+    allowMandatory = false,
+    allowDefaults = true,
+    newRowDefault = Resolution.DefaultTo(()),
+    keyFor = _ => "", // unused
+    defaultToItemText = "Apply formula…",
+    horizontalDefaultWidget = true)
 
   // -------------------------------------------------------------------------------------------------------------------
 
@@ -127,7 +153,7 @@ object ReqTypeRulesEditor {
                                          enabled      : Enabled): Props[D] = {
 
       val defaultWidget: DefaultWidgetFn[D] =
-        Reusable.ap(Reusable.implicitly(defaults), renderDefault) { (defaults , renderDefault) =>
+        Reusable.ap(Reusable.implicitly(defaults), renderDefault) { (defaults, renderDefault) =>
           lazy val defaultSet = defaults.toSet
 
           (ss, enabled, keyFor) => {
@@ -188,16 +214,16 @@ object ReqTypeRulesEditor {
     val allDead: Set[ReqTypeId] =
       dead.foldLeft(Set.empty[ReqTypeId])((q, p) => Util.mergeSets(q, p.ids.whole))
 
-    def addRow: State[D] =
-      copy(perReqType = perReqType :+ State.PerReqType.empty[D])
+    def addRow(res: Resolution[Unit]): State[D] =
+      copy(perReqType = perReqType :+ State.PerReqType.empty[D](res))
 
     def delRow(idx: Int): State[D] =
       copy(perReqType = perReqType.delete(idx).getOrElse(perReqType))
   }
 
   object State {
-    def empty[D]: State[D] =
-      apply(Nil, Vector.empty, State.ResValue.empty)
+    def empty[D](res: Resolution[Unit]): State[D] =
+      apply(Nil, Vector.empty, State.ResValue.empty(res))
 
     def init[D](cfg: ProjectConfig, rules: FieldReqTypeRules.ByResolution[D])(toText: D => String): State[D] = {
       val dead: List[DeadRow[D]] =
@@ -239,8 +265,8 @@ object ReqTypeRulesEditor {
     final case class PerReqType[D](text: String, res: ResValue[D], key: Key)
 
     object PerReqType {
-      def empty[D]: PerReqType[D] =
-        apply("", ResValue.empty, keyGen.next())
+      def empty[D](res: Resolution[Unit]): PerReqType[D] =
+        apply("", ResValue.empty(res), keyGen.next())
 
       def from[D](cfg: ProjectConfig, ids: NonEmptySet[ReqTypeId], res: Resolution[D])(toText: D => String): PerReqType[D] = {
         def reqTypes(live: Live) = ids.iterator.flatMap(cfg.reqTypes.get).filter(_.live is live)
@@ -255,8 +281,8 @@ object ReqTypeRulesEditor {
     }
 
     object ResValue {
-      def empty[D]: ResValue[D] =
-        apply(Resolution.default, "", None)
+      def empty[D](res: Resolution[Unit]): ResValue[D] =
+        apply(res, "", None)
 
       def from[D](res: Resolution[D])(toText: D => String): ResValue[D] =
         res match {
@@ -297,7 +323,13 @@ object ReqTypeRulesEditor {
 
 // =====================================================================================================================
 
-final class ReqTypeRulesEditor[D: Reusability: UnivEq](allowDefaults: Boolean, keyFor: D => String) {
+final class ReqTypeRulesEditor[D: Reusability: UnivEq](allowOptional: Boolean,
+                                                       allowMandatory: Boolean,
+                                                       allowDefaults: Boolean,
+                                                       newRowDefault: Resolution[Unit],
+                                                       keyFor: D => String,
+                                                       defaultToItemText: String = "Default to…",
+                                                       horizontalDefaultWidget: Boolean = false) {
 
   type Props           = ReqTypeRulesEditor.Props[D]
   type State           = ReqTypeRulesEditor.State[D]
@@ -305,6 +337,9 @@ final class ReqTypeRulesEditor[D: Reusability: UnivEq](allowDefaults: Boolean, k
   type StatePerReqType = ReqTypeRulesEditor.State.PerReqType[D]
   type StateResValue   = ReqTypeRulesEditor.State.ResValue[D]
   type Validation      = ReqTypeRulesEditor.Validation[D]
+
+  def emptyState: State =
+    ReqTypeRulesEditor.State.empty(newRowDefault)
 
   final class Backend($: BackendScope[Props, Unit]) {
     import ReqTypeRulesEditor.Internals._
@@ -351,7 +386,7 @@ final class ReqTypeRulesEditor[D: Reusability: UnivEq](allowDefaults: Boolean, k
       Enabled.memo(e =>
         Button(tipe = Button.Type.BasicIconOnly(Icon.Plus), colour = Colour.Green)
           .disableMaybe(e)
-          .onClick($.props.flatMap(_.state.modState(_.addRow))))
+          .onClick($.props.flatMap(_.state.modState(_.addRow(newRowDefault)))))
 
     private val delRowButton =
       Button(tipe = Button.Type.BasicIconOnly(Icon.Trash), colour = ColourPlus.Negative)
@@ -360,15 +395,15 @@ final class ReqTypeRulesEditor[D: Reusability: UnivEq](allowDefaults: Boolean, k
       def option(title: String, res: Resolution[Unit]): Dropdown.Item[Resolution[Unit]] =
         Dropdown.Item(resOptionKey(res), title, res)
 
-      def defaultTo     = option("Default to…", Resolution.DefaultTo(()))
-      val mandatory     = option("Mandatory", Resolution.Mandatory)
-      val notApplicable = option("Not applicable", Resolution.NotApplicable)
-      val optional      = option("Optional", Resolution.Optional)
-
+      val items = ArraySeq.newBuilder[Dropdown.Item[Resolution[Unit]]]
       if (allowDefaults)
-        ArraySeq(defaultTo, mandatory, notApplicable, optional)
-      else
-        ArraySeq(mandatory, notApplicable, optional)
+        items += option(defaultToItemText, Resolution.DefaultTo(()))
+      if (allowMandatory)
+        items += option("Mandatory", Resolution.Mandatory)
+      items += option("Not applicable", Resolution.NotApplicable)
+      if (allowOptional)
+        items += option("Optional", Resolution.Optional)
+      items.result()
     }
 
     private val perReqTypeLens: Int => Lens[State, StatePerReqType] =
@@ -383,8 +418,12 @@ final class ReqTypeRulesEditor[D: Reusability: UnivEq](allowDefaults: Boolean, k
           .disableMaybe(p.enabled)
           .onClick(p.state.modState(_.delRow(idx)))
 
-      @UsesSemanticUiManually
-      def renderRes(ss: StateSnapshot[StateResValue], enabled: Enabled): TagMod = {
+      def renderRow(rowKey  : Key,
+                    tdTypes : TagMod,
+                    tdButton: TagMod,
+                    ss      : StateSnapshot[StateResValue],
+                    enabled : Enabled,
+                   ): VdomNode = {
 
         val resSelect =
           Dropdown.Props.Optional(
@@ -394,28 +433,47 @@ final class ReqTypeRulesEditor[D: Reusability: UnivEq](allowDefaults: Boolean, k
             onChange = o => ss.modState(_.copy(res = o.value))
           ).render
 
-        def defaultWidget = p.defaultWidget(ss, enabled, keyFor)
+        val showDefault = ss.value.res.isDefault
 
-        if (ss.value.res.isDefault)
-          TagMod(resSelect, defaultWidget)
+        val defaultWidget = p.defaultWidget(ss, enabled, keyFor)
+
+        if (horizontalDefaultWidget)
+          React.Fragment.withKey(rowKey)(
+            <.tr(
+              ^.key := rowKey,
+              <.td(tdTypes),
+              <.td(*.rulesEditorRule, resSelect),
+              <.td(*.rulesEditorButton, tdButton)),
+            Option.when(showDefault)(
+              <.tr(
+                ^.key := "D:" + rowKey,
+                <.td(*.rulesEditorHorizDefault, ^.colSpan := 2, defaultWidget),
+                <.td(*.rulesEditorHorizNoButton))),
+          )
         else
-          resSelect
+          <.tr(
+            ^.key := rowKey,
+            <.td(tdTypes),
+            <.td(*.rulesEditorRule, resSelect, Option.when(showDefault)(defaultWidget)),
+            <.td(*.rulesEditorButton, tdButton))
       }
 
-      def renderDeadRow(row: StateDeadRow): VdomTagOf[html.TableRow] = {
+      def renderDeadRow(row: StateDeadRow): VdomNode = {
         val reqTypes =
           p.reqTypes.sortIdsByMnemonic(row.ids.whole)
             .map(rt => <.span(*.rulesDeadReqTypesInner, rt.mnemonic.value))
             .mkTagMod(", ")
 
-        <.tr(
-          ^.key := row.key,
-          <.td(*.rulesDeadReqTypes, "Dead req types:", reqTypes),
-          <.td(*.rulesEditorRule, renderRes(StateSnapshot(row.res).readOnly, Disabled)),
-          <.td(*.rulesEditorButton))
+        renderRow(
+          rowKey   = row.key,
+          tdTypes  = TagMod(*.rulesDeadReqTypes, "Dead req types:", reqTypes),
+          tdButton = EmptyVdom,
+          ss       = StateSnapshot(row.res).readOnly,
+          enabled  = Disabled,
+        )
       }
 
-      def renderPerReqType(idx: Int): VdomTagOf[html.TableRow] = {
+      def renderPerReqType(idx: Int): VdomNode = {
         val row          = s.perReqType(idx)
         val lens         = perReqTypeLens(idx)
         val ss           = p.state.zoomStateL(lens)
@@ -441,14 +499,16 @@ final class ReqTypeRulesEditor[D: Reusability: UnivEq](allowDefaults: Boolean, k
                 error = GeneralTheme.renderSimpleInvalidity(reqTypesValidated),
                 enabled = p.enabled)))
 
-        <.tr(
-          ^.key := row.key,
-          <.td(reqTypes),
-          <.td(*.rulesEditorRule, renderRes(ss.zoomStateL(ReqTypeRulesEditor.State.PerReqType.res), p.enabled)),
-          <.td(*.rulesEditorButton, delRowButton(idx)))
+        renderRow(
+          rowKey   = row.key,
+          tdTypes  = reqTypes,
+          tdButton = delRowButton(idx),
+          ss       = ss.zoomStateL(ReqTypeRulesEditor.State.PerReqType.res),
+          enabled  = p.enabled,
+        )
       }
 
-      def renderOtherwise(ss: StateSnapshot[StateResValue]): VdomTagOf[html.TableRow] = {
+      def renderOtherwise(ss: StateSnapshot[StateResValue]): VdomNode = {
 
         def fullReqTypeDesc =
           MutableArray(
@@ -475,11 +535,13 @@ final class ReqTypeRulesEditor[D: Reusability: UnivEq](allowDefaults: Boolean, k
           else
             fullReqTypeDesc
 
-        <.tr(
-          ^.key := "o",
-          <.td(*.rulesEditorOtherwise, desc),
-          <.td(*.rulesEditorRule, renderRes(ss, p.enabled)),
-          <.td(*.rulesEditorButton, newRowButton(p.enabled)))
+        renderRow(
+          rowKey   = "o",
+          tdTypes  = TagMod(*.rulesEditorOtherwise, desc),
+          tdButton = newRowButton(p.enabled),
+          ss       = ss,
+          enabled  = p.enabled,
+        )
       }
 
       <.table(

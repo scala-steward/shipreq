@@ -11,6 +11,7 @@ object Latest {
   @inline implicit def decoderVerifiedEvent = v2.Rev1.decoderVerifiedEvent
   @inline implicit def encoderVerifiedEvent = v2.Rev1.encoderVerifiedEvent
   @inline implicit def codecValidFilter     = v2.Rev1.codecValidFilter
+  @inline implicit def codecFormulaValid    = v2.Rev1.codecFormulaValid
 
   val AtomCodecs      = v1.Rev6.AtomCodecs
   val SavedViewCodecs = v2.Rev1.SavedViewCodecs

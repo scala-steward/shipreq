@@ -479,6 +479,7 @@ object FieldConfigTest extends TestSuite {
       StaticField.ImplicationGraph.name,
       StaticField.OtherTags.name,
       StaticField.AllTags.name,
+      "Formula field",
       "Numeric field",
       "Implication field",
       "Tag field",

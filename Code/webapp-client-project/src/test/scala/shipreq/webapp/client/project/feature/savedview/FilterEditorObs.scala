@@ -18,5 +18,5 @@ final class FilterEditorObs(inputZipper: DomZipperJs) {
 
 object FilterEditorObs {
   def needIn($: DomZipperJs): FilterEditorObs =
-    new FilterEditorObs($("input[placeholder='Filter...']"))
+    new FilterEditorObs($("input[placeholder='Filter…']"))
 }

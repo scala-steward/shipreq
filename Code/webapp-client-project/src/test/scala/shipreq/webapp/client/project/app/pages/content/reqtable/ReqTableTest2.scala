@@ -546,6 +546,117 @@ object ReqTableTest2 extends TestSuite {
     runTest(plan withInitialState project)
   }
 
+  def testFormulaFields()(implicit path: TestPath) = {
+    import shipreq.webapp.member.test.project.SampleProject7.Values._
+    import shipreq.webapp.member.test.project.UnsafeTypes._
+    import shipreq.webapp.member.project.formula.{Formula, FormulaParser, ValidFormula}
+    import shipreq.webapp.member.project.event.CustomFormulaFieldGD
+
+    val ratingFieldId = 88.CFNum
+    val formulaFieldId = CustomField.Formula.Id(89)
+
+    val projectWithRating = applyEventsSuccessfully(
+      SampleProject7.project,
+      Event.FieldCustomNumberCreate(ratingFieldId, CustomNumberFieldGD(
+        name = "Rating",
+        desc = None,
+        range = (0.0, 100.0),
+        decimalPlaces = 2,
+        fieldReqTypeRules = FieldReqTypeRules.optional.defaultTo(10.0)(br).defaultTo(1.0)(mf)
+      ))
+    )
+
+    val potentialFormula = FormulaParser.parse("field:Rating * 2").toOption.get
+    val validFormula = Formula.Potential.validate(potentialFormula, projectWithRating.config.fields).toOption.get
+    val formulaWrapper = ValidFormula(validFormula)
+
+    val project = applyEventsSuccessfully(
+      projectWithRating,
+      Event.FieldCustomFormulaCreate(formulaFieldId, CustomFormulaFieldGD(
+        name = "Score",
+        desc = None,
+        decimalPlaces = 2,
+        fieldReqTypeRules = FieldReqTypeRules.notApplicable.defaultTo(formulaWrapper)(br, mf)
+      ))
+    )
+
+    val plan = Plan.action(
+      enterFilter("MF-1 | BR-1")
+        >> showHideColumn("Rating")
+        >> showHideColumn("Score")
+
+        >> sortBy("Score")
+        +> cellEditor("MF-1", "Score").text.assert("2.00")
+        +> cellEditor("BR-1", "Score").text.assert("20.00")
+        +> tablePubids.assert.equal("MF-1", "BR-1")
+
+        >> cellEditor("MF-1", "Score").assertCantStartEdit
+
+        >> cellEditor("MF-1", "Rating").set("5")
+        +> cellEditor("MF-1", "Rating").text.assert("5.00")
+        +> cellEditor("MF-1", "Score").text.assert("10.00")
+        +> tablePubids.assert.equal("MF-1", "BR-1")
+
+        >> cellEditor("MF-1", "Rating").set("15")
+        +> cellEditor("MF-1", "Rating").text.assert("15.00")
+        +> cellEditor("MF-1", "Score").text.assert("30.00")
+        +> tablePubids.assert.equal("BR-1", "MF-1")
+    )
+
+    runTest(plan withInitialState project)
+  }
+
+  def testFormulaFieldsFilter()(implicit path: TestPath) = {
+    import shipreq.webapp.member.test.project.SampleProject7.Values._
+    import shipreq.webapp.member.test.project.UnsafeTypes._
+    import shipreq.webapp.member.project.formula.{Formula, FormulaParser, ValidFormula}
+    import shipreq.webapp.member.project.event.CustomFormulaFieldGD
+
+    val ratingFieldId = 88.CFNum
+    val formulaFieldId = CustomField.Formula.Id(89)
+
+    val projectWithRating = applyEventsSuccessfully(
+      SampleProject7.project,
+      Event.FieldCustomNumberCreate(ratingFieldId, CustomNumberFieldGD(
+        name = "Rating",
+        desc = None,
+        range = (0.0, 100.0),
+        decimalPlaces = 2,
+        fieldReqTypeRules = FieldReqTypeRules.optional.defaultTo(10.0)(br).defaultTo(1.0)(mf)
+      ))
+    )
+
+    val potentialFormula = FormulaParser.parse("field:Rating * 2").toOption.get
+    val validFormula = Formula.Potential.validate(potentialFormula, projectWithRating.config.fields).toOption.get
+    val formulaWrapper = ValidFormula(validFormula)
+
+    val project = applyEventsSuccessfully(
+      projectWithRating,
+      Event.FieldCustomFormulaCreate(formulaFieldId, CustomFormulaFieldGD(
+        name = "Score",
+        desc = None,
+        decimalPlaces = 2,
+        fieldReqTypeRules = FieldReqTypeRules.notApplicable.defaultTo(formulaWrapper)(br, mf)
+      ))
+    )
+
+    val allMfs = (1 to 18).map(i => s"MF-$i").toVector ++ (20 to 27).map(i => s"MF-$i").toVector
+    val allBrs = Vector("BR-1", "BR-2", "BR-3")
+
+    val plan = Plan.action(
+      enterFilter("field:Score=20")
+        +> tablePubids.assert.equal(allBrs: _*)
+
+        >> enterFilter("field:Score>5")
+        +> tablePubids.assert.equal(allBrs: _*)
+
+        >> enterFilter("field:Score<5")
+        +> tablePubids.assert.equal(allMfs: _*)
+    )
+
+    runTest(plan withInitialState project)
+  }
+
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   override def tests = Tests {
@@ -588,6 +699,11 @@ object ReqTableTest2 extends TestSuite {
       "core" - testNumericFieldsCore()
       "filter" - testNumericFieldsFilter()
       "sortRounded" - testNumericFieldsSortRounded()
+    }
+
+    "formulaFields" - {
+      "main"   - testFormulaFields()
+      "filter" - testFormulaFieldsFilter()
     }
   }
 }

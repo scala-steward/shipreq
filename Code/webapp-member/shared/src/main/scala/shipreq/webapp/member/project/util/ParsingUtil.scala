@@ -82,7 +82,7 @@ abstract class ParsingUtil extends Parser {
 
   def double: Rule1[Double] =
     rule(
-      capture('-'.? ~ CharPredicate.Digit.+ ~ optional('.' ~ CharPredicate.Digit.*))
+      capture('-'.? ~ CharPredicate.Digit.+ ~ optional('.' ~ CharPredicate.Digit.*) ~ optional(anyOf("eE") ~ anyOf("+-").? ~ CharPredicate.Digit.+))
       ~> toDoubleOption ~ popOptional[Double])
 
   def pop[A]: Rule[A :: HNil, HNil] =

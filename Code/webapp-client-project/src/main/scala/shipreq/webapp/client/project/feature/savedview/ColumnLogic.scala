@@ -53,6 +53,7 @@ object ColumnLogic {
     case Column.CustomField(id: data.CustomField.Tag        .Id) => Some(EditorFeature.FieldKey.CustomFieldTags(id))
     case Column.CustomField(id: data.CustomField.Text       .Id) => Some(EditorFeature.FieldKey.CustomTextField(id))
     case Column.Pubid
+       | Column.CustomField(_: data.CustomField.Formula.Id)
        | Column.DeletionReason                                   => None
   } {
     case EditorFeature.FieldKey.ReqType                => Some(Column.ReqType)
@@ -78,6 +79,7 @@ object ColumnLogic {
     case Column.CustomField(id: data.CustomField.Tag        .Id) => Some(EditorFeature.FieldKey.CustomFieldTags(id))
     case Column.CustomField(id: data.CustomField.Text       .Id) => Some(EditorFeature.FieldKey.CustomTextField(id))
     case Column.Pubid
+       | Column.CustomField(_: data.CustomField.Formula.Id)
        | Column.DeletionReason
        | Column.ReqType                                          => None
   } {

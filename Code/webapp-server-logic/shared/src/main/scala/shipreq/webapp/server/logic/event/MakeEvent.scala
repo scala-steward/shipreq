@@ -141,6 +141,11 @@ object MakeEvent {
           val id = CustomField.Implication.Id(nextId)
           FieldCustomImpCreate(id, c.reqTypeId, gdAllValues(CustomImpFieldGD, "c"))
 
+        case c: UpdateConfigCmd.CustomFieldCreateFormula =>
+          locally(c) // used by macros
+          val id = CustomField.Formula.Id(nextId)
+          FieldCustomFormulaCreate(id, gdAllValues(CustomFormulaFieldGD, "c"))
+
         case c: UpdateConfigCmd.CustomFieldCreateNumber =>
           locally(c) // used by macros
           val id = CustomField.Number.Id(nextId)
@@ -160,6 +165,12 @@ object MakeEvent {
           project.config.fields.customAttempt(id) toMakeEventResult { cur =>
             val vs2 = gdUnequalValues2(CustomImpFieldGD, cur, vs)
             eventIfNonEmpty(vs2)(FieldCustomImpUpdate(id, _))
+          }
+
+        case UpdateConfigCmd.CustomFieldUpdateFormula(id, vs) =>
+          project.config.fields.customAttempt(id) toMakeEventResult { cur =>
+            val vs2 = gdUnequalValues2(CustomFormulaFieldGD, cur, vs)
+            eventIfNonEmpty(vs2)(FieldCustomFormulaUpdate(id, _))
           }
 
         case UpdateConfigCmd.CustomFieldUpdateNumber(id, vs) =>

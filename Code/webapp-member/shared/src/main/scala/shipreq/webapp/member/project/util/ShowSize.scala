@@ -138,6 +138,7 @@ object ShowSize {
       Node("Fields", all) <~
         Node("Static fields", all - cust) <~
         Node("Custom fields", cust).countChildren(fs.customFields.values) {
+          case _: CustomField.Formula     => "Formula"
           case _: CustomField.Number      => "Number"
           case _: CustomField.Tag         => "Tag"
           case _: CustomField.Text        => "Text"

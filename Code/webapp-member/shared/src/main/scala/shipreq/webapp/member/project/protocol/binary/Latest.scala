@@ -12,6 +12,7 @@ object Latest {
   @inline implicit def picklerVerifiedEventSeq         = v2.Rev1.picklerVerifiedEventSeq
   @inline implicit def picklerVerifiedEventNonEmptySeq = v2.Rev1.picklerVerifiedEventNonEmptySeq
   @inline implicit def pickleValidFilter               = v2.Rev1.pickleValidFilter
+  @inline implicit def pickleFormulaValid              = v2.Rev1.pickleFormulaValid
 
   val AtomPicklers      = v1.Rev6.AtomPicklers
   val SavedViewPicklers = v2.Rev1.SavedViewPicklers

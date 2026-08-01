@@ -82,6 +82,7 @@ object ApplyEventTestFns {
          | _: FieldCustomTextCreate
          | _: FieldCustomTagCreateV1
          | _: FieldCustomTagCreate
+         | _: FieldCustomFormulaCreate
          | _: FieldCustomNumberCreate
          | _: FieldCustomImpCreateV1
          | _: FieldCustomImpCreate    => customFields += 1
@@ -129,6 +130,7 @@ object ApplyEventTestFns {
          | _: CustomReqTypeUpdate
          | _: CustomReqTypeUpdateV1
          | _: FieldCustomDelete
+         | _: FieldCustomFormulaUpdate
          | _: FieldCustomImpUpdate
          | _: FieldCustomImpUpdateV1
          | _: FieldCustomNumberUpdate

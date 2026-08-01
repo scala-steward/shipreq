@@ -578,7 +578,7 @@ object ContentEventTest extends TestSuite {
       def e = ReqFieldCustomNumberSet(1, cfNum1, Some(12.3))
       "add" - {
         val p = _assertPass(emptyGR1, e)
-        val d = p.content.reqNums
+        val d = p.content.reqNums.data
         assertEq(d.size, 1)
         val m = d(cfNum1)
         assertEq(m.size, 1)
@@ -586,7 +586,7 @@ object ContentEventTest extends TestSuite {
       }
       "remove" - {
         val p = _assertPass(emptyGR1, e, ReqFieldCustomNumberSet(1, cfNum1, None))
-        val d = p.content.reqNums
+        val d = p.content.reqNums.data
         assertEq(d.size, 0)
       }
       "reqNotFound"   - assertFail("found")(e)

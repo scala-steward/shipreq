@@ -8,23 +8,25 @@ import shipreq.webapp.client.project.feature.{EditorFeature, RenderFeature}
 import shipreq.webapp.client.project.widgets.ViewReq._
 import shipreq.webapp.member.project.data.FieldReqTypeRules.Resolution
 import shipreq.webapp.member.project.data._
+import shipreq.webapp.member.project.formula.FormulaEvalCache
 import shipreq.webapp.member.project.text.ProjectText.SetRenderStyle
 import shipreq.webapp.member.project.text.{PlainText, ProjectText}
 
 /**
   * Easy means to view/render a requirement.
   */
-final class ViewReq[A](data           : Data,
-                       pt             : ProjectText[ProjectText.Context, A],
-                       impsStyle      : SetRenderStyle,
-                       viewTags       : ViewTags.ForReq[A],
-                       fmtReqTypeShort: Boolean) {
+final class ViewReq[A](data            : Data,
+                       pt              : ProjectText[ProjectText.Context, A],
+                       formulaEvalCache: FormulaEvalCache,
+                       impsStyle       : SetRenderStyle,
+                       viewTags        : ViewTags.ForReq[A],
+                       fmtReqTypeShort : Boolean) {
 
   def withFullReqTypeFmt: ViewReq[A] =
-    new ViewReq(data, pt, impsStyle, viewTags, false)
+    new ViewReq(data, pt, formulaEvalCache, impsStyle, viewTags, false)
 
   def withImplicationsSetStyle(style: SetRenderStyle): ViewReq[A] =
-    new ViewReq(data, pt, style, viewTags, fmtReqTypeShort)
+    new ViewReq(data, pt, formulaEvalCache, style, viewTags, fmtReqTypeShort)
 
   def reqType: A = {
     val id = data.req.reqTypeId
@@ -81,6 +83,9 @@ final class ViewReq[A](data           : Data,
       \/-(viewTags.vector(fid, data.focusedTags, data.unfocusedTags))
   }
 
+  def customFieldFormula(fid: CustomField.Formula.Id): IfApplicable[A] =
+    formulaEvalCache(fid)(data.req).map(pt.formulaEval(_, fid))
+
   def customFieldNumber(id: CustomField.Number.Id): IfApplicable[A] =
     data.fieldRules.num(id) match {
       case Resolution.Optional
@@ -102,21 +107,23 @@ final class ViewReq[A](data           : Data,
 
   val customField: CustomFieldId => IfApplicable[A] = {
     case id: CustomField.Implication.Id => imps(id)
+    case id: CustomField.Formula    .Id => customFieldFormula(id)
     case id: CustomField.Number     .Id => customFieldNumber(id)
     case id: CustomField.Tag        .Id => fieldTags(id)
     case id: CustomField.Text       .Id => customFieldText(id)
   }
 
   val render: RenderFeature.FieldKey.ForSomeReq => IfApplicable[A] = {
-    case RenderFeature.FieldKey.CustomNumberField(field) => customFieldNumber(field)
-    case RenderFeature.FieldKey.CustomTextField(field)   => customFieldText(field)
-    case RenderFeature.FieldKey.CustomFieldTags(field)   => fieldTags(field)
-    case RenderFeature.FieldKey.Implications   (scope)   => imps(scope)
-    case RenderFeature.FieldKey.Codes                    => \/-(codes)
-    case RenderFeature.FieldKey.Title                    => \/-(title)
-    case RenderFeature.FieldKey.ReqType                  => \/-(reqType)
-    case RenderFeature.FieldKey.OtherTags                => \/-(otherTags)
-    case RenderFeature.FieldKey.AllTags                  => \/-(allTags)
+    case RenderFeature.FieldKey.CustomFormulaField(field) => customFieldFormula(field)
+    case RenderFeature.FieldKey.CustomNumberField(field)  => customFieldNumber(field)
+    case RenderFeature.FieldKey.CustomTextField(field)    => customFieldText(field)
+    case RenderFeature.FieldKey.CustomFieldTags(field)    => fieldTags(field)
+    case RenderFeature.FieldKey.Implications   (scope)    => imps(scope)
+    case RenderFeature.FieldKey.Codes                     => \/-(codes)
+    case RenderFeature.FieldKey.Title                     => \/-(title)
+    case RenderFeature.FieldKey.ReqType                   => \/-(reqType)
+    case RenderFeature.FieldKey.OtherTags                 => \/-(otherTags)
+    case RenderFeature.FieldKey.AllTags                   => \/-(allTags)
   }
 
   val editable: EditorFeature.FieldKey.ForSomeReq => IfApplicable[A] =
@@ -142,11 +149,11 @@ object ViewReq {
                         fieldRules      : FieldSetRules,
                        ) {
 
-    def apply(pw: ProjectWidgets.AnyCtx): ToVdom =
-      apply(pw, pw.viewTags.forReq(filterDead)(req.id))
+    def apply(pw: ProjectWidgets.AnyCtx, fec: FormulaEvalCache): ToVdom =
+      apply(pw, pw.viewTags.forReq(filterDead)(req.id), fec)
 
-    def apply[A](pt: ProjectText[ProjectText.Context, A], viewTags: ViewTags.ForReq[A]): ViewReq[A] =
-      new ViewReq(this, pt, SetRenderStyle.SingleLineBrief, viewTags, true)
+    def apply[A](pt: ProjectText[ProjectText.Context, A], viewTags: ViewTags.ForReq[A], fec: FormulaEvalCache): ViewReq[A] =
+      new ViewReq(this, pt, fec, SetRenderStyle.SingleLineBrief, viewTags, true)
   }
 
   object Data {

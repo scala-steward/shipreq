@@ -6,6 +6,7 @@ import scala.collection.immutable.SortedSet
 import shipreq.base.util._
 import shipreq.webapp.member.project.data.DataImplicits._
 import shipreq.webapp.member.project.data._
+import shipreq.webapp.member.project.formula.FormulaEvalCache
 import shipreq.webapp.member.project.util.Must._
 import shipreq.webapp.member.project.util.ReqCodeTreeItem
 
@@ -141,6 +142,8 @@ abstract class ProjectText[+Ctx <: Context, Out](project: Project, final val ctx
 
   def whenBlankButMandatory: Out
 
+  def formulaEval(eval: FormulaEvalCache.Eval, fid: CustomField.Formula.Id): Out
+
   def pastPubids(ids: SortedSet[ExternalPubid]): Out
 
   def reqCode(c: ReqCode.Value): Out
@@ -204,7 +207,7 @@ abstract class ProjectText[+Ctx <: Context, Out](project: Project, final val ctx
 
   private final val customNumberFieldOption: CustomField.Number.Id => Req => Option[Out] =
     Memo { fid =>
-      val reqNums   = project.content.reqNumsFor(fid)
+      val reqNums   = project.content.reqNums(fid)
       val field     = cfg.fields.custom(fid)
       val liveField = field.live(cfg)
       memoByReqId { req =>
@@ -213,7 +216,7 @@ abstract class ProjectText[+Ctx <: Context, Out](project: Project, final val ctx
           .orElse(default)
           .map { n =>
             val live     = liveField & req.live(cfg.reqTypes)
-            val validity = Valid.when(n >= field.min && n <= field.max)
+            val validity = Valid.when(field.isWithinRange(n))
             number(n, field.decimalPlaces, live, validity)
           }
       }

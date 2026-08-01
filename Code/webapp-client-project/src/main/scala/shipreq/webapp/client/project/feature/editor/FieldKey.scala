@@ -215,13 +215,14 @@ object FieldKey {
   implicit val reusability: Reusability[FieldKey] =
     Reusability.byUnivEq
 
-  def customField(id: CustomFieldId): FieldKey =
-    id match {
-      case i: CustomField.Number.Id      => CustomNumberField(i)
-      case i: CustomField.Text.Id        => CustomTextField(i)
-      case i: CustomField.Tag.Id         => CustomFieldTags(i)
-      case i: CustomField.Implication.Id => Implications(-\/(i))
-    }
+  // def customField(id: CustomFieldId): Option[FieldKey] =
+  //   id match {
+  //     case _: CustomField.Formula.Id     => None
+  //     case i: CustomField.Number.Id      => Some(CustomNumberField(i))
+  //     case i: CustomField.Text.Id        => Some(CustomTextField(i))
+  //     case i: CustomField.Tag.Id         => Some(CustomFieldTags(i))
+  //     case i: CustomField.Implication.Id => Some(Implications(-\/(i)))
+  //   }
 
   def impliedBy = Implications(\/-(Backwards))
 

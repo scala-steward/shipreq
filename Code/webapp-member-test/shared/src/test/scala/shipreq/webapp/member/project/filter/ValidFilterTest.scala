@@ -1,8 +1,8 @@
 package shipreq.webapp.member.project.filter
 
 import shipreq.webapp.member.project.data.SpecialBuiltInField._
-import shipreq.webapp.member.project.data.{Project, ReqTypePos}
-import shipreq.webapp.member.project.event.{CustomTextFieldGD, Event}
+import shipreq.webapp.member.project.data._
+import shipreq.webapp.member.project.event._
 import shipreq.webapp.member.project.filter.Filter.Implicits._
 import shipreq.webapp.member.test.WebappTestUtil._
 import shipreq.webapp.member.test.project.{SampleProject6, SampleProject7}
@@ -60,6 +60,26 @@ object ValidFilterTest extends TestSuite {
         "queryTitle" - assertTranslationFails(PF.fieldProp("Title", Query(PF.text("x"))))(posNA)
         "queryTxt"   - assertTranslationFails(PF.fieldProp("Description", Query(PF.text("x"))))(posNA)
         "queryTag"   - assertTranslationFails(PF.fieldProp("Priority", Query(PF.text("x"))))(posNA)
+        "formulaEq"  - {
+          val fmlFieldId = CustomField.Formula.Id(100)
+          val p = applyEventsSuccessfully(SampleProject6.project, Event.FieldCustomFormulaCreate(fmlFieldId, CustomFormulaFieldGD.nev(
+            CustomFormulaFieldGD.Name("Score"),
+            CustomFormulaFieldGD.Desc(None),
+            CustomFormulaFieldGD.DecimalPlaces(0),
+            CustomFormulaFieldGD.FieldReqTypeRules(FieldReqTypeRules.const(FieldReqTypeRules.Resolution.NotApplicable))
+          )))
+          assertTranslation(PF.fieldProp("Score", ReqTypePosSet(NonEmptySet(20))), p)(VF.fieldProp(\/-(fmlFieldId), CompareNumber(None, 20.0)))
+        }
+        "formulaCmp" - {
+          val fmlFieldId = CustomField.Formula.Id(100)
+          val p = applyEventsSuccessfully(SampleProject6.project, Event.FieldCustomFormulaCreate(fmlFieldId, CustomFormulaFieldGD.nev(
+            CustomFormulaFieldGD.Name("Score"),
+            CustomFormulaFieldGD.Desc(None),
+            CustomFormulaFieldGD.DecimalPlaces(0),
+            CustomFormulaFieldGD.FieldReqTypeRules(FieldReqTypeRules.const(FieldReqTypeRules.Resolution.NotApplicable))
+          )))
+          assertTranslation(PF.fieldProp("Score", CompareNumber(Some(FilterAst.OrderOp.>), 20.0)), p)(VF.fieldProp(\/-(fmlFieldId), CompareNumber(Some(FilterAst.OrderOp.>), 20.0)))
+        }
       }
       "scoped1" - {
         import FilterAst.Scope.Derivation
@@ -119,6 +139,16 @@ object ValidFilterTest extends TestSuite {
         "pos" - assertValidToText(VF.fieldProp(\/-(mfField), poses(1,3,4,5,6,9)))("field:MF=1,3-6,9")
         "query1" - assertValidToText(VF.fieldProp(\/-(mfField), Query(VF.text("x"))))("field:MF=(x)")
         "query2" - assertValidToText(VF.fieldProp(\/-(mfField), Query(VF.anyOf(VF.text("x"), VF.text("y")))))("field:MF=(x | y)")
+        "formulaCmp" - {
+          val fmlFieldId = CustomField.Formula.Id(100)
+          val p = applyEventsSuccessfully(SampleProject6.project, Event.FieldCustomFormulaCreate(fmlFieldId, CustomFormulaFieldGD.nev(
+            CustomFormulaFieldGD.Name("Score"),
+            CustomFormulaFieldGD.Desc(None),
+            CustomFormulaFieldGD.DecimalPlaces(0),
+            CustomFormulaFieldGD.FieldReqTypeRules(FieldReqTypeRules.const(FieldReqTypeRules.Resolution.NotApplicable))
+          )))
+          assertValidToText(VF.fieldProp(\/-(fmlFieldId), CompareNumber(None, 20.0)), p)("field:Score=20")
+        }
       }
     }
 

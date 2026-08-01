@@ -3,8 +3,10 @@ package shipreq.webapp.member.project.issue
 import japgolly.microlibs.adt_macros.AdtMacros
 import scala.collection.mutable
 import shipreq.base.util._
+import shipreq.webapp.member.project.data.DataImplicits._
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.data.derivation._
+import shipreq.webapp.member.project.formula.{FormulaEvalCache, FormulaFieldRef}
 import shipreq.webapp.member.project.text.{Atom, Text}
 
 object IssueDetectors {
@@ -36,7 +38,7 @@ object IssueDetectors {
 
       // Check numbers
       run(ctx, fields.nums) { f =>
-        val numMap = ctx.project.content.reqNumsFor(f.id)
+        val numMap = ctx.project.content.reqNums(f.id)
         !numMap.contains(_)
       }
 
@@ -326,6 +328,68 @@ object IssueDetectors {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+  case object FieldFormulaRefsDeadField extends Instance {
+    override val detect = ctx => {
+
+      val cfg = ctx.project.config
+      for (src <- cfg.liveCustomFormulaFields) {
+        var issues = Set.empty[Issue]
+
+        src.fieldReqTypeRules.liveResolutionIterator(cfg.reqTypes).foreach {
+          case FieldReqTypeRules.Resolution.DefaultTo(formula) =>
+            formula.fieldRefs.foreach {
+
+              case FormulaFieldRef.NumberField(tgtId) =>
+                val tgt = cfg.fields.custom(tgtId)
+                if (tgt.live(cfg) is Dead)
+                  issues += Issue.FieldFormulaRefsDeadNumberField(src, tgt)
+            }
+
+          case FieldReqTypeRules.Resolution.Optional
+             | FieldReqTypeRules.Resolution.Mandatory
+             | FieldReqTypeRules.Resolution.NotApplicable =>
+        }
+
+        issues.foreach(ctx.add)
+      }
+    }
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  case object FormulaEvalErr extends Instance {
+    override val detect = ctx =>
+      ctx.foreachLiveReq(() => detectInReqs(ctx))
+
+    private def detectInReqs(ctx: Ctx): Req => Unit = {
+      val fields           = ctx.project.config.liveCustomFormulaFields
+      val formulaEvalCache = ctx.formulaEvalCache
+
+      req => {
+        for {
+          field <- fields
+          eval <- formulaEvalCache(field.id)(req)
+        } {
+          eval.issues.foreach {
+            case FormulaEvalCache.Issue.BadDataEvalError(err) =>
+              ctx.add(Issue.FormulaEvalErrBadData(req, field, err))
+
+            case FormulaEvalCache.Issue.UserDefinedEvalError(err) =>
+              ctx.add(Issue.FormulaEvalErrUserDefined(req, field, err))
+
+            case FormulaEvalCache.Issue.ReliesOnDeadNumberField =>
+              // Do nothing — this is covered by FieldFormulaRefsDeadField
+
+            case FormulaEvalCache.Issue.ReliesOnOutOfRangeNumber =>
+              // Do nothing — NumberOutOfRange is enough
+          }
+        }
+      }
+    }
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
   case object ImplicationRequired extends Instance {
     override val detect = ctx => {
       val reqTypeIds = ctx.project.config.reqTypes.idsRequiringImplication
@@ -425,9 +489,9 @@ object IssueDetectors {
           req => {
             for {
               field <- fields
-              num   <- content.reqNumsFor(field.id).get(req.id)
+              num   <- content.reqNums(field.id).get(req.id)
             } {
-              if (num < field.min || num > field.max)
+              if (!field.isWithinRange(num))
                 ctx.add(Issue.NumberOutOfRange(req, field))
             }
           }

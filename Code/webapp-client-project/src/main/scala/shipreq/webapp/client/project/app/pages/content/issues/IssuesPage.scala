@@ -23,6 +23,7 @@ import shipreq.webapp.member.project.util.DataReusability._
 object IssuesPage {
 
   final case class StaticProps(pxProject       : Px[Project],
+                               pxIssues        : Px[Issues],
                                pxRenderFeature : Px[FilterDead => RenderFeature.ForProject],
                                pxPlainText     : Px[PlainText.ForProject.NoCtx],
                                pxProjectWidgets: Px[ProjectWidgets.NoCtx],
@@ -93,9 +94,9 @@ object IssuesPage {
 
     private val pxFilteredIssues: Px[Issues] =
       for {
-        p <- pxProject
+        i <- pxIssues
         f <- pxFilterCompiled
-      } yield f.fold(p.issues)(p.issues.filter)
+      } yield f.fold(i)(i.filter)
 
     private val filterUpdateFn: FilterEditor.UpdateFn =
       (newState, newValue, cb) =>
@@ -109,6 +110,7 @@ object IssuesPage {
       val project        = pxProject.value()
       def projectWidgets = pxProjectWidgets.value()
       def textSearch     = pxTextSearch.value()
+      val allIssues      = pxIssues.value()
 
       def renderNew =
         NewIssue.Props(
@@ -126,7 +128,7 @@ object IssuesPage {
           <.div(*.emptyCont, NoContent.render))
 
       def renderContent(issues: Issues) = {
-        val filteredOut = project.issues.vector.length - issues.vector.length
+        val filteredOut = allIssues.vector.length - issues.vector.length
 
         <.div(
           <.div(*.pageRow1,
@@ -138,8 +140,7 @@ object IssuesPage {
           table.component(Table.Props(issues, p.editor, p.editorArgs, p.cmdAsync, p.editability)))
       }
 
-      val issues = project.issues
-      if (issues.isEmpty)
+      if (allIssues.isEmpty)
         renderEmpty
       else
         renderContent(pxFilteredIssues.value())

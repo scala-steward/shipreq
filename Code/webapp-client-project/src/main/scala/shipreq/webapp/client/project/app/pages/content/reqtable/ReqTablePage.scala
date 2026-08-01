@@ -22,6 +22,7 @@ import shipreq.webapp.member.feature.PreviewFeature
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.data.savedview._
 import shipreq.webapp.member.project.filter.Filter
+import shipreq.webapp.member.project.formula.FormulaEvalCache
 import shipreq.webapp.member.project.protocol.websocket.UpdateContentCmd
 import shipreq.webapp.member.project.text.{PlainText, TextSearch}
 import shipreq.webapp.member.ui.{FilterDeadButton, Toast}
@@ -40,6 +41,7 @@ object ReqTablePage {
                                pxPlainText           : Px[PlainText.ForProject.NoCtx],
                                pxTextSearch          : Px[TextSearch],
                                pxProjectWidgets      : Reusable[Px[ProjectWidgets.NoCtx]],
+                               pxFormulaEvalCache    : Px[FormulaEvalCache],
                                pxFilterCompilerFromFD: Px[FilterDead => Filter.Valid.Compiler],
                                reqDetailRC           : RouterCtl[ExternalPubid],
                                assetManifest         : AssetManifest,
@@ -101,11 +103,12 @@ object ReqTablePage {
 
     val pxRows: Px[Vector[Row]] =
       for {
-        p  <- pxProject
-        v  <- pxActiveView
-        pw <- pxProjectWidgets
-        fc <- pxFilterCompilerFromFD
-      } yield Logic.rowsForTable(p, v, pw.plainText, fc(v.filterDead))
+        p   <- pxProject
+        v   <- pxActiveView
+        pw  <- pxProjectWidgets
+        fec <- pxFormulaEvalCache
+        fc  <- pxFilterCompilerFromFD
+      } yield Logic.rowsForTable(p, v, pw.plainText, fec, fc(v.filterDead))
 
     val pxRowIdsWithWholeRowAsync: Px[Set[Row.SourceId]] =
       pxProps(_.rowAsync.keySet)
@@ -165,7 +168,7 @@ object ReqTablePage {
       } yield SelectionCtrls.Props(
         sel, rows, setModal.map(_.setState), project, projectWidgets, textSearch, updateIO, rowAsyncW)
 
-    val reqTable = new Table(pxProjectWidgets, pxPlainText)
+    val reqTable = new Table(pxProjectWidgets, pxPlainText, pxFormulaEvalCache)
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 

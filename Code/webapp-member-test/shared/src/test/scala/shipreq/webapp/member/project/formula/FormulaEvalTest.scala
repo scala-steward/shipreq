@@ -1,0 +1,272 @@
+package shipreq.webapp.member.project.formula
+
+import japgolly.microlibs.testutil.TestUtil._
+import shipreq.base.util._
+import shipreq.webapp.member.project.data.DataImplicits._
+import shipreq.webapp.member.project.data._
+import shipreq.webapp.member.project.formula.FormulaValue._
+import sourcecode.Line
+import utest._
+
+object FormulaEvalTest extends TestSuite {
+  import FormulaTestShared._
+
+  private def parseAndValidate(input: String, fieldSet: FieldSet): Formula.Valid = {
+    FormulaParser.parse(input) match {
+      case \/-(potential) =>
+        Formula.Potential.validate(potential, fieldSet) match {
+          case \/-(valid) => valid
+          case -\/(err)   => fail(s"Validation failed: ${err.value}")
+        }
+      case -\/(err) => fail(s"Parsing failed: $err")
+    }
+  }
+
+  private def runEval(input: String,
+                      fieldSet: FieldSet,
+                      reqNums: ReqData.Numbers,
+                      req: Req): ErrorMsg \/ FormulaValue = {
+    val formula = parseAndValidate(input, fieldSet)
+
+    val formulaFieldId = CustomField.Formula.Id(999)
+    val formulaField = CustomField.Formula(
+      id = formulaFieldId,
+      name = "formula_test",
+      desc = None,
+      decimalPlaces = 2,
+      fieldReqTypeRules = FieldReqTypeRules.const(FieldReqTypeRules.Resolution.DefaultTo(ValidFormula(formula))),
+      liveExplicitly = Live
+    )
+
+    val updatedFieldSet = fieldSet.copy(
+      customFields = fieldSet.customFields.add(formulaField),
+      order = fieldSet.order :+ formulaFieldId
+    )
+
+    val r = if (req == null) FormulaTestShared.req else req
+
+    val reqTypes = r.reqTypeId match {
+      case cid: CustomReqTypeId =>
+        val customReqType = CustomReqType(
+          id = cid,
+          mnemonic = ReqType.Mnemonic("TEST"),
+          oldMnemonics = Set.empty,
+          name = "Test",
+          description = None,
+          implication = Optional,
+          live = Live
+        )
+        ReqTypes(emptyDataMap(CustomReqType).add(customReqType))
+      case _: StaticReqType =>
+        ReqTypes.empty
+    }
+
+    val cfg = ProjectConfig(
+      customIssueTypes = emptyDataMap(CustomIssueType),
+      reqTypes = reqTypes,
+      fields = updatedFieldSet,
+      tags = Tags.empty
+    )
+
+    val cache = new FormulaEvalCache(cfg, reqNums, Map(r.id -> r.reqTypeId))
+
+    cache(formulaFieldId)(r) match {
+      case \/-(eval) => eval.value match {
+        case e: FormulaValue.Err => -\/(ErrorMsg(e.value))
+        case v                   => \/-(v)
+      }
+      case -\/(NotApplicable) => -\/(ErrorMsg("Not applicable"))
+    }
+  }
+
+  private def assertEval(input: String,
+                         expected: FormulaValue,
+                         fieldSet: FieldSet = FieldSet.empty,
+                         reqNums: ReqData.Numbers = ReqData.Numbers.empty,
+                         req: Req = null)(implicit q: Line): Unit = {
+    runEval(input, fieldSet, reqNums, req) match {
+      case \/-(value) => assertEq(input, value, expected)
+      case -\/(err)   => fail(s"Eval failed: ${err.value}")
+    }
+  }
+
+  private def assertEvalError(input: String,
+                              expectedErrorMsg: String,
+                              fieldSet: FieldSet = FieldSet.empty,
+                              reqNums: ReqData.Numbers = ReqData.Numbers.empty,
+                              req: Req = null)(implicit q: Line): Unit = {
+    runEval(input, fieldSet, reqNums, req) match {
+      case \/-(value) => fail(s"Eval succeeded with $value, expected failure: $expectedErrorMsg")
+      case -\/(err)   => assertEq(input, err.value, expectedErrorMsg)
+    }
+  }
+
+  override def tests = Tests {
+
+    "literals" - {
+      "dbl" - assertEval("123.45", Dbl(123.45))
+      "str" - assertEval("\"hello\"", Str("hello"))
+      "boolTrue" - assertEval("true", Bool(true))
+      "boolFalse" - assertEval("false", Bool(false))
+    }
+
+    "arithmetic" - {
+      "addDbl" - assertEval("1 + 2", Dbl(3))
+      "addStr" - assertEval("\"hello \" + \"world\"", Str("hello world"))
+      "addStrDbl" - assertEval("\"number \" + 123", Str("number 123"))
+      "addStrBool" - assertEval("\"bool is \" + true", Str("bool is TRUE"))
+      "subDbl" - assertEval("5 - 2", Dbl(3))
+      "mulDbl" - assertEval("3 * 4", Dbl(12))
+      "mulStrDblI" - assertEval("\"x\" * 4", Str("xxxx"))
+      "mulStrDblD" - assertEval("\"x\" * 4.5", Str("xxxxx"))
+      "divDbl" - assertEval("12 / 3", Dbl(4))
+      "divZero" - assertEvalError("12 / 0", "Division by zero.")
+      "addError" - assertEvalError("1 + \"a\"", "Type mismatch.")
+      "subError" - assertEvalError("\"a\" - \"b\"", "Type mismatch.")
+      "mulError" - assertEvalError("3 * \"a\"", "Type mismatch.")
+      "divError" - assertEvalError("12 / \"a\"", "Type mismatch.")
+      "addEmptyL" - assertEval("field:score + 1", Empty, fieldSet, req = req)
+      "addEmptyR" - assertEval("1 + field:score", Empty, fieldSet, req = req)
+      "addStrEmptyL" - assertEval("field:score + \"a\"", Str("a"), fieldSet, req = req)
+      "addStrEmptyR" - assertEval("\"a\" + field:score", Str("a"), fieldSet, req = req)
+      "subEmptyL" - assertEval("field:score - 1", Empty, fieldSet, req = req)
+      "subEmptyR" - assertEval("1 - field:score", Empty, fieldSet, req = req)
+      "mulEmptyL" - assertEval("field:score * 3", Empty, fieldSet, req = req)
+      "mulEmptyR" - assertEval("3 * field:score", Empty, fieldSet, req = req)
+      "divEmptyL" - assertEval("field:score / 2", Empty, fieldSet, req = req)
+      "divEmptyR" - assertEval("12 / field:score", Empty, fieldSet, req = req)
+      "divEmptyZeroL" - assertEval("field:score / 0", Empty, fieldSet, req = req)
+    }
+
+    "comparisons" - {
+      "eqDblTrue" - assertEval("1 = 1", Bool(true))
+      "eqDblFalse" - assertEval("1 = 2", Bool(false))
+      "eqStrTrue" - assertEval("\"a\" = \"a\"", Bool(true))
+      "eqStrFalse" - assertEval("\"a\" = \"b\"", Bool(false))
+      "eqBoolTrue" - assertEval("true = true", Bool(true))
+      "eqBoolFalse" - assertEval("true = false", Bool(false))
+      "eqError" - assertEval("1 = \"a\"", Bool(false))
+
+      "neDblTrue" - assertEval("1 != 2", Bool(true))
+      "neDblFalse" - assertEval("1 != 1", Bool(false))
+      "neStrTrue" - assertEval("\"a\" != \"b\"", Bool(true))
+      "neBoolTrue" - assertEval("true != false", Bool(true))
+      "neError" - assertEval("1 != \"a\"", Bool(true))
+
+      "ltTrue" - assertEval("1 < 2", Bool(true))
+      "ltFalse" - assertEval("2 < 1", Bool(false))
+      "leTrue" - assertEval("1 <= 1", Bool(true))
+      "gtTrue" - assertEval("2 > 1", Bool(true))
+      "geTrue" - assertEval("2 >= 2", Bool(true))
+      "compareStrError" - assertEvalError("\"a\" < \"b\"", "Type mismatch.")
+      "compareBoolError" - assertEvalError("true < false", "Type mismatch.")
+
+      "eqEmpty" - assertEval("IF(false, 1) = IF(false, 2)", Bool(true))
+      "neEmpty" - assertEval("IF(false, 1) != IF(false, 2)", Bool(false))
+    }
+
+    "functions" - {
+      "ifTrue" - assertEval("IF(true, 1)", Dbl(1))
+      "ifFalse" - assertEval("IF(false, 1)", Empty)
+      "ifElseTrue" - assertEval("IF(true, 1, 2)", Dbl(1))
+      "ifElseFalse" - assertEval("IF(false, 1, 2)", Dbl(2))
+      "ifError" - assertEvalError("IF(1, 2)", "Type mismatch.")
+
+      "notTrue" - assertEval("NOT(true)", Bool(false))
+      "notFalse" - assertEval("NOT(false)", Bool(true))
+      "notError" - assertEvalError("NOT(1)", "Type mismatch.")
+
+      "and0" - assertEval("AND()", Bool(true))
+      "and1" - assertEval("AND(true)", Bool(true))
+      "and2" - assertEval("AND(false)", Bool(false))
+      "and3" - assertEval("AND(true, true)", Bool(true))
+      "and4" - assertEval("AND(true, false)", Bool(false))
+      "andError" - assertEvalError("AND(true, 1)", "Type mismatch.")
+
+      "or0" - assertEval("OR()", Bool(false))
+      "or1" - assertEval("OR(true)", Bool(true))
+      "or2" - assertEval("OR(false)", Bool(false))
+      "or3" - assertEval("OR(true, false)", Bool(true))
+      "or4" - assertEval("OR(false, false)", Bool(false))
+      "orError" - assertEvalError("OR(false, 1)", "Type mismatch.")
+
+      "round1" - assertEval("ROUND(1.234)", Dbl(1))
+      "round2" - assertEval("ROUND(1.5)", Dbl(2))
+      "round3" - assertEval("ROUND(1.234, 2)", Dbl(1.23))
+      "round4" - assertEval("ROUND(1.236, 2)", Dbl(1.24))
+      "roundError" - assertEvalError("ROUND(\"a\")", "Type mismatch.")
+      "roundScaleError" - assertEvalError("ROUND(1.2, \"a\")", "Type mismatch.")
+      "roundEmpty1" - assertEval("ROUND(field:score)", Empty, fieldSet, req = req)
+      "roundEmpty2" - assertEval("ROUND(field:score, 2)", Empty, fieldSet, req = req)
+
+      "average1" - assertEval("AVERAGE(2)", Dbl(2))
+      "average2" - assertEval("AVERAGE(1, 2, 6)", Dbl(3))
+      "average3" - assertEval("AVERAGE(1.5, 2.5)", Dbl(2))
+      "averageError" - assertEvalError("AVERAGE(1, \"a\")", "Type mismatch.")
+
+      "max1" - assertEval("MAX(5)", Dbl(5))
+      "max2" - assertEval("MAX(1, 3, 2)", Dbl(3))
+      "maxError" - assertEvalError("MAX(1, \"a\")", "Type mismatch.")
+
+      "min1" - assertEval("MIN(5)", Dbl(5))
+      "min2" - assertEval("MIN(3, 1, 2)", Dbl(1))
+      "minError" - assertEvalError("MIN(1, \"a\")", "Type mismatch.")
+
+      "ceiling1" - assertEval("CEILING(1.2)", Dbl(2))
+      "ceiling2" - assertEval("CEILING(2.0)", Dbl(2))
+      "ceiling3" - assertEval("CEILING(-1.2)", Dbl(-1))
+      "ceilingError" - assertEvalError("CEILING(\"a\")", "Type mismatch.")
+      "ceilingEmpty" - assertEval("CEILING(field:score)", Empty, fieldSet, req = req)
+
+      "floor1" - assertEval("FLOOR(1.8)", Dbl(1))
+      "floor2" - assertEval("FLOOR(2.0)", Dbl(2))
+      "floor3" - assertEval("FLOOR(-1.2)", Dbl(-2))
+      "floorError" - assertEvalError("FLOOR(\"a\")", "Type mismatch.")
+      "floorEmpty" - assertEval("FLOOR(field:score)", Empty, fieldSet, req = req)
+
+      "errStr" - assertEvalError("ERR(\"abc\")", "abc")
+
+      "isBlankTrue" - assertEval("ISBLANK(field:score)", Bool(true), fieldSet, req = req)
+      "isBlankFalseDbl" - assertEval("ISBLANK(1)", Bool(false))
+      "isBlankFalseStr" - assertEval("ISBLANK(\"hello\")", Bool(false))
+      "isBlankFalseBool" - assertEval("ISBLANK(true)", Bool(false))
+
+      "isBool1" - assertEval("ISBOOL(true)", Bool(true))
+      "isBool2" - assertEval("ISBOOL(false)", Bool(true))
+      "isBool3" - assertEval("ISBOOL(1.2)", Bool(false))
+      "isBool4" - assertEval("ISBOOL(\"hello\")", Bool(false))
+
+      "isErr1" - assertEval("ISERR(ERR(\"abc\"))", Bool(true))
+      "isErr2" - assertEval("ISERR(1)", Bool(false))
+
+      "isNumber1" - assertEval("ISNUMBER(1.2)", Bool(true))
+      "isNumber2" - assertEval("ISNUMBER(true)", Bool(false))
+      "isNumber3" - assertEval("ISNUMBER(\"hello\")", Bool(false))
+
+      "isText1" - assertEval("ISTEXT(\"hello\")", Bool(true))
+      "isText2" - assertEval("ISTEXT(1.2)", Bool(false))
+      "isText3" - assertEval("ISTEXT(true)", Bool(false))
+    }
+
+    "fields" - {
+      "fieldPresent" - {
+        val reqNums = ReqData.Numbers(Map(scoreFieldId -> Map(reqId -> 45.67)))
+        assertEval("field:score", Dbl(45.67), fieldSet, reqNums, req)
+      }
+      "fieldDefault" - {
+        assertEval("field:bonus", Dbl(10.0), fieldSet, ReqData.Numbers.empty, req)
+      }
+      "fieldEmpty" - {
+        assertEval("field:score", Empty, fieldSet, ReqData.Numbers.empty, req)
+      }
+      "ifIsBlank" - {
+        val f = "IF(ISBLANK(field:score), ERR(\"Score is blank\"), field:score * 2)"
+        "blank" - assertEvalError(f, "Score is blank", fieldSet, ReqData.Numbers.empty, req)
+        "populated" - {
+          val reqNums = ReqData.Numbers(Map(scoreFieldId -> Map(reqId -> 123)))
+          assertEval(f, Dbl(246), fieldSet, reqNums, req)
+        }
+      }
+    }
+  }
+}

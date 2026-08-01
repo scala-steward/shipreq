@@ -8,21 +8,32 @@ import shipreq.webapp.member.project.data.savedview.{ImpGraphConfig, SavedView}
 import shipreq.webapp.member.project.data.{Live => _, _}
 import shipreq.webapp.member.project.event._
 import shipreq.webapp.member.project.filter.Filter
+import shipreq.webapp.member.project.formula.{Formula, ValidFormula}
 import shipreq.webapp.member.project.sort.SortMethod
 import shipreq.webapp.member.project.text.Text
 
 /** v2.1
   *
-  * - Added CustomFieldType.Number
+  * - Added CustomField.Formula
+  * - Added CustomField.Formula.Id
   * - Added CustomField.Number
   * - Added CustomField.Number.Id
+  * - Added CustomFieldType.Formula
+  * - Added CustomFieldType.Number
+  * - Added Event.FieldCustomFormulaCreate
+  * - Added Event.FieldCustomFormulaUpdate
+  * - Added Event.FieldCustomNumberCreate
+  * - Added Event.FieldCustomNumberUpdate
   * - Added Event.ProjectDelete
   * - Added Event.ProjectRestore
+  * - Added Event.ReqFieldCustomNumberSet
+  * - Added Formula.Valid
   * - Added Project.deletionReason
   * - Added ProjectContent.reqNums (and deps)
   * - Added ProjectMetaData.live
   */
 object Rev1 {
+  import boopickle.ConstPickler
   import boopickle.DefaultBasic._
   import shipreq.webapp.base.protocol.binary.v1.BaseData._
   import shipreq.webapp.member.project.protocol.binary.v1.BaseMemberData1._
@@ -290,18 +301,23 @@ object Rev1 {
   // ===================================================================================================================
   // Project data
 
+  implicit lazy val picklerCustomFieldFormulaId: Pickler[CustomField.Formula.Id] =
+    pickleTaggedI(CustomField.Formula.Id).reuseByUnivEq
+
   implicit lazy val picklerCustomFieldNumberId: Pickler[CustomField.Number.Id] =
     pickleTaggedI(CustomField.Number.Id).reuseByUnivEq
 
   implicit lazy val picklerCustomFieldType: Pickler[CustomFieldType] =
     new Pickler[CustomFieldType] {
       private[this] final val KeyImplication = 'i'
+      private[this] final val KeyFormula     = 'f'
       private[this] final val KeyNumber      = 'n'
       private[this] final val KeyTag         = 't'
       private[this] final val KeyText        = 'x'
       override def pickle(a: CustomFieldType)(implicit state: PickleState): Unit =
         a match {
           case CustomFieldType.Implication => state.enc.writeByte(KeyImplication)
+          case CustomFieldType.Formula     => state.enc.writeByte(KeyFormula    )
           case CustomFieldType.Number      => state.enc.writeByte(KeyNumber     )
           case CustomFieldType.Tag         => state.enc.writeByte(KeyTag        )
           case CustomFieldType.Text        => state.enc.writeByte(KeyText       )
@@ -309,6 +325,7 @@ object Rev1 {
       override def unpickle(implicit state: UnpickleState): CustomFieldType =
         state.dec.readByte match {
           case KeyImplication => CustomFieldType.Implication
+          case KeyFormula     => CustomFieldType.Formula
           case KeyNumber      => CustomFieldType.Number
           case KeyTag         => CustomFieldType.Tag
           case KeyText        => CustomFieldType.Text
@@ -318,12 +335,14 @@ object Rev1 {
   implicit lazy val picklerCustomFieldId: Pickler[CustomFieldId] =
     new Pickler[CustomFieldId] {
       private[this] final val KeyImplication = 'i'
+      private[this] final val KeyFormula     = 'f'
       private[this] final val KeyNumber      = 'n'
       private[this] final val KeyTag         = 't'
       private[this] final val KeyText        = 'x'
       override def pickle(a: CustomFieldId)(implicit state: PickleState): Unit =
         a match {
           case b: CustomField.Implication.Id => state.enc.writeByte(KeyImplication); state.pickle(b)
+          case b: CustomField.Formula    .Id => state.enc.writeByte(KeyFormula    ); state.pickle(b)
           case b: CustomField.Number     .Id => state.enc.writeByte(KeyNumber     ); state.pickle(b)
           case b: CustomField.Tag        .Id => state.enc.writeByte(KeyTag        ); state.pickle(b)
           case b: CustomField.Text       .Id => state.enc.writeByte(KeyText       ); state.pickle(b)
@@ -331,10 +350,32 @@ object Rev1 {
       override def unpickle(implicit state: UnpickleState): CustomFieldId =
         state.dec.readByte match {
           case KeyImplication => state.unpickle[CustomField.Implication.Id]
+          case KeyFormula     => state.unpickle[CustomField.Formula    .Id]
           case KeyNumber      => state.unpickle[CustomField.Number     .Id]
           case KeyTag         => state.unpickle[CustomField.Tag        .Id]
           case KeyText        => state.unpickle[CustomField.Text       .Id]
         }
+    }
+
+  implicit lazy val picklerCustomFieldFormula: Pickler[CustomField.Formula] =
+    new Pickler[CustomField.Formula] {
+      override def pickle(a: CustomField.Formula)(implicit state: PickleState): Unit = {
+        state.pickle(a.id)
+        state.pickle(a.name)
+        state.pickle(a.desc)
+        state.pickle(a.decimalPlaces)
+        state.pickle(a.fieldReqTypeRules)
+        state.pickle(a.liveExplicitly)
+      }
+      override def unpickle(implicit state: UnpickleState): CustomField.Formula = {
+        val id                = state.unpickle[CustomField.Formula.Id]
+        val name              = state.unpickle[String]
+        val desc              = state.unpickle[Option[String]]
+        val decimalPlaces     = state.unpickle[Int]
+        val fieldReqTypeRules = state.unpickle[FieldReqTypeRules.ForFormulaField]
+        val liveExplicitly    = state.unpickle[Live]
+        CustomField.Formula(id, name, desc, decimalPlaces, fieldReqTypeRules, liveExplicitly)
+      }
     }
 
   implicit lazy val picklerCustomFieldNumber: Pickler[CustomField.Number] =
@@ -365,12 +406,14 @@ object Rev1 {
   implicit lazy val picklerCustomField: Pickler[CustomField] =
     new Pickler[CustomField] {
       private[this] final val KeyImplication = 'i'
+      private[this] final val KeyFormula     = 'f'
       private[this] final val KeyNumber      = 'n'
       private[this] final val KeyTag         = 't'
       private[this] final val KeyText        = 'x'
       override def pickle(a: CustomField)(implicit state: PickleState): Unit =
         a match {
           case b: CustomField.Implication => state.enc.writeByte(KeyImplication); state.pickle(b)
+          case b: CustomField.Formula     => state.enc.writeByte(KeyFormula    ); state.pickle(b)
           case b: CustomField.Number      => state.enc.writeByte(KeyNumber     ); state.pickle(b)
           case b: CustomField.Tag         => state.enc.writeByte(KeyTag        ); state.pickle(b)
           case b: CustomField.Text        => state.enc.writeByte(KeyText       ); state.pickle(b)
@@ -378,6 +421,7 @@ object Rev1 {
       override def unpickle(implicit state: UnpickleState): CustomField =
         state.dec.readByte match {
           case KeyImplication => state.unpickle[CustomField.Implication]
+          case KeyFormula     => state.unpickle[CustomField.Formula    ]
           case KeyNumber      => state.unpickle[CustomField.Number     ]
           case KeyTag         => state.unpickle[CustomField.Tag        ]
           case KeyText        => state.unpickle[CustomField.Text       ]
@@ -387,6 +431,7 @@ object Rev1 {
   implicit lazy val picklerFieldId: Pickler[FieldId] =
     new Pickler[FieldId] {
       private[this] final val KeyCustomImplication       = 'i'
+      private[this] final val KeyCustomFormula           = 'f'
       private[this] final val KeyCustomNumber            = 'n'
       private[this] final val KeyCustomTag               = 't'
       private[this] final val KeyCustomText              = 'x'
@@ -399,6 +444,7 @@ object Rev1 {
       override def pickle(a: FieldId)(implicit state: PickleState): Unit =
         a match {
           case b: CustomField.Implication.Id => state.enc.writeByte(KeyCustomImplication          ); state.pickle(b)
+          case b: CustomField.Formula    .Id => state.enc.writeByte(KeyCustomFormula              ); state.pickle(b)
           case b: CustomField.Number     .Id => state.enc.writeByte(KeyCustomNumber               ); state.pickle(b)
           case b: CustomField.Tag        .Id => state.enc.writeByte(KeyCustomTag                  ); state.pickle(b)
           case b: CustomField.Text       .Id => state.enc.writeByte(KeyCustomText                 ); state.pickle(b)
@@ -412,6 +458,7 @@ object Rev1 {
       override def unpickle(implicit state: UnpickleState): FieldId =
         state.dec.readByte match {
           case KeyCustomImplication       => state.unpickle[CustomField.Implication.Id]
+          case KeyCustomFormula           => state.unpickle[CustomField.Formula    .Id]
           case KeyCustomNumber            => state.unpickle[CustomField.Number     .Id]
           case KeyCustomTag               => state.unpickle[CustomField.Tag        .Id]
           case KeyCustomText              => state.unpickle[CustomField.Text       .Id]
@@ -431,6 +478,7 @@ object Rev1 {
       private[this] final val KeyUseCaseStepGraph = 'G'
       private[this] final val KeyUseCaseSteps     = 'T'
       private[this] final val KeyCustomTag        = 't'
+      private[this] final val KeyFormula          = 'f'
       private[this] final val KeyNumber           = 'n'
       private[this] final val KeyText             = 'x'
       private[this] final val KeyStaticTag        = '#'
@@ -440,6 +488,7 @@ object Rev1 {
           case StaticFieldType.ImplicationGraph => state.enc.writeByte(KeyImplicationGraph)
           case StaticFieldType.UseCaseSteps     => state.enc.writeByte(KeyUseCaseSteps    )
           case StaticFieldType.UseCaseStepGraph => state.enc.writeByte(KeyUseCaseStepGraph)
+          case CustomFieldType.Formula          => state.enc.writeByte(KeyFormula         )
           case CustomFieldType.Number           => state.enc.writeByte(KeyNumber          )
           case CustomFieldType.Text             => state.enc.writeByte(KeyText            )
           case CustomFieldType.Tag              => state.enc.writeByte(KeyCustomTag       )
@@ -451,6 +500,7 @@ object Rev1 {
           case KeyImplicationGraph => StaticFieldType.ImplicationGraph
           case KeyUseCaseSteps     => StaticFieldType.UseCaseSteps
           case KeyUseCaseStepGraph => StaticFieldType.UseCaseStepGraph
+          case KeyFormula          => CustomFieldType.Formula
           case KeyNumber           => CustomFieldType.Number
           case KeyText             => CustomFieldType.Text
           case KeyCustomTag        => CustomFieldType.Tag
@@ -492,8 +542,9 @@ object Rev1 {
     }
 
   implicit lazy val picklerReqDataNumbers: Pickler[ReqData.Numbers] = {
-    implicit val picklerValues: Pickler[Map[ReqId, Double]] = pickleMap
-    pickleMap
+    implicit val pickler1: Pickler[Map[ReqId, Double]] = pickleMap
+    implicit val pickler2: Pickler[Map[CustomField.Number.Id, Map[ReqId, Double]]] = pickleMap
+    transformPickler(ReqData.Numbers.apply)(_.data)
   }
 
   implicit lazy val picklerProjectContent: Pickler[ProjectContent] =
@@ -1007,6 +1058,232 @@ object Rev1 {
   }
 
   // ===================================================================================================================
+  // Formula
+
+  implicit lazy val pickleFormulaValid: Pickler[Formula.Valid] = {
+    import shipreq.webapp.member.project.formula._
+    import Formula.ValidF
+
+    implicit val picklerListUnit: Pickler[List[Unit]] =
+      implicitly[Pickler[Int]].xmap(List.fill(_)(()))(_.size)
+
+    implicit val picklerFormulaValueDbl: Pickler[FormulaValue.Dbl] =
+      transformPickler(FormulaValue.Dbl.apply)(_.value)
+
+    implicit val picklerFormulaValueStr: Pickler[FormulaValue.Str] =
+      transformPickler(FormulaValue.Str.apply)(_.value)
+
+    implicit val picklerFormulaValueErr: Pickler[FormulaValue.Err] =
+      transformPickler(FormulaValue.Err.apply)(_.value)
+
+    implicit val picklerFormulaValueBool: Pickler[FormulaValue.Bool] =
+      transformPickler(FormulaValue.Bool.apply)(_.value)
+
+    implicit val picklerFormulaValue: Pickler[FormulaValue] =
+      new Pickler[FormulaValue] {
+        private[this] final val KeyBool  = 'b'
+        private[this] final val KeyDbl   = 'd'
+        private[this] final val KeyEmpty = '0'
+        private[this] final val KeyStr   = 's'
+        private[this] final val KeyErr   = 'e'
+        override def pickle(a: FormulaValue)(implicit state: PickleState): Unit =
+          a match {
+            case b: FormulaValue.Bool  => state.enc.writeByte(KeyBool ); state.pickle(b)
+            case b: FormulaValue.Dbl   => state.enc.writeByte(KeyDbl  ); state.pickle(b)
+            case FormulaValue.Empty    => state.enc.writeByte(KeyEmpty)
+            case b: FormulaValue.Str   => state.enc.writeByte(KeyStr  ); state.pickle(b)
+            case b: FormulaValue.Err   => state.enc.writeByte(KeyErr  ); state.pickle(b)
+          }
+        override def unpickle(implicit state: UnpickleState): FormulaValue =
+          state.dec.readByte match {
+            case KeyBool  => state.unpickle[FormulaValue.Bool]
+            case KeyDbl   => state.unpickle[FormulaValue.Dbl]
+            case KeyEmpty => FormulaValue.Empty
+            case KeyStr   => state.unpickle[FormulaValue.Str]
+            case KeyErr   => state.unpickle[FormulaValue.Err]
+          }
+      }
+
+    implicit val picklerFormulaAstValue: Pickler[FormulaAst.Value] =
+      transformPickler(FormulaAst.Value.apply)(_.value)
+
+  implicit val picklerFormulaCmpOp: Pickler[FormulaCmpOp] =
+    new Pickler[FormulaCmpOp] {
+      private[this] final val Key_eq = 0
+      private[this] final val Key_!= = 1
+      private[this] final val Key_<  = 2
+      private[this] final val Key_<= = 3
+      private[this] final val Key_>  = 4
+      private[this] final val Key_>= = 5
+      override def pickle(a: FormulaCmpOp)(implicit state: PickleState): Unit =
+        a match {
+          case FormulaCmpOp.`=` => state.enc.writeByte(Key_eq)
+          case FormulaCmpOp.!=  => state.enc.writeByte(Key_!=)
+          case FormulaCmpOp.<   => state.enc.writeByte(Key_< )
+          case FormulaCmpOp.<=  => state.enc.writeByte(Key_<=)
+          case FormulaCmpOp.>   => state.enc.writeByte(Key_> )
+          case FormulaCmpOp.>=  => state.enc.writeByte(Key_>=)
+        }
+      override def unpickle(implicit state: UnpickleState): FormulaCmpOp =
+        state.dec.readByte match {
+          case Key_eq => FormulaCmpOp.`=`
+          case Key_!= => FormulaCmpOp.!=
+          case Key_<  => FormulaCmpOp.<
+          case Key_<= => FormulaCmpOp.<=
+          case Key_>  => FormulaCmpOp.>
+          case Key_>= => FormulaCmpOp.>=
+        }
+    }
+
+    implicit val picklerFormulaAstCompare: Pickler[FormulaAst.Compare[Unit]] =
+      picklerFormulaCmpOp.xmap(FormulaAst.Compare((), _, ()))(_.op)
+
+    implicit val picklerFormulaFunction: Pickler[FormulaFunction] =
+      new Pickler[FormulaFunction] {
+        private[this] final val KeyAnd      = 0
+        private[this] final val KeyAverage  = 1
+        private[this] final val KeyCeiling  = 2
+        private[this] final val KeyFloor    = 3
+        private[this] final val KeyIf       = 4
+        private[this] final val KeyIsBlank  = 5
+        private[this] final val KeyIsBool   = 6
+        private[this] final val KeyIsNumber = 7
+        private[this] final val KeyIsText   = 8
+        private[this] final val KeyMax      = 9
+        private[this] final val KeyMin      = 10
+        private[this] final val KeyNot      = 11
+        private[this] final val KeyOr       = 12
+        private[this] final val KeyRound    = 13
+        private[this] final val KeyErr      = 14
+        private[this] final val KeyIsErr    = 15
+        override def pickle(a: FormulaFunction)(implicit state: PickleState): Unit =
+          a match {
+            case FormulaFunction.And      => state.enc.writeByte(KeyAnd     )
+            case FormulaFunction.Average  => state.enc.writeByte(KeyAverage )
+            case FormulaFunction.Ceiling  => state.enc.writeByte(KeyCeiling )
+            case FormulaFunction.Err      => state.enc.writeByte(KeyErr     )
+            case FormulaFunction.Floor    => state.enc.writeByte(KeyFloor   )
+            case FormulaFunction.If       => state.enc.writeByte(KeyIf      )
+            case FormulaFunction.IsBlank  => state.enc.writeByte(KeyIsBlank )
+            case FormulaFunction.IsBool   => state.enc.writeByte(KeyIsBool  )
+            case FormulaFunction.IsErr    => state.enc.writeByte(KeyIsErr   )
+            case FormulaFunction.IsNumber => state.enc.writeByte(KeyIsNumber)
+            case FormulaFunction.IsText   => state.enc.writeByte(KeyIsText  )
+            case FormulaFunction.Max      => state.enc.writeByte(KeyMax     )
+            case FormulaFunction.Min      => state.enc.writeByte(KeyMin     )
+            case FormulaFunction.Not      => state.enc.writeByte(KeyNot     )
+            case FormulaFunction.Or       => state.enc.writeByte(KeyOr      )
+            case FormulaFunction.Round    => state.enc.writeByte(KeyRound   )
+          }
+        override def unpickle(implicit state: UnpickleState): FormulaFunction =
+          state.dec.readByte match {
+            case KeyAnd      => FormulaFunction.And
+            case KeyAverage  => FormulaFunction.Average
+            case KeyCeiling  => FormulaFunction.Ceiling
+            case KeyErr      => FormulaFunction.Err
+            case KeyFloor    => FormulaFunction.Floor
+            case KeyIf       => FormulaFunction.If
+            case KeyIsBlank  => FormulaFunction.IsBlank
+            case KeyIsBool   => FormulaFunction.IsBool
+            case KeyIsErr    => FormulaFunction.IsErr
+            case KeyIsNumber => FormulaFunction.IsNumber
+            case KeyIsText   => FormulaFunction.IsText
+            case KeyMax      => FormulaFunction.Max
+            case KeyMin      => FormulaFunction.Min
+            case KeyNot      => FormulaFunction.Not
+            case KeyOr       => FormulaFunction.Or
+            case KeyRound    => FormulaFunction.Round
+          }
+      }
+
+    implicit val picklerFormulaAstFunction: Pickler[FormulaAst.Function[FormulaFunction, Unit]] =
+      new Pickler[FormulaAst.Function[FormulaFunction, Unit]] {
+        override def pickle(a: FormulaAst.Function[FormulaFunction, Unit])(implicit state: PickleState): Unit = {
+          state.pickle(a.function)
+          state.pickle(a.args)
+        }
+        override def unpickle(implicit state: UnpickleState): FormulaAst.Function[FormulaFunction, Unit] = {
+          val function = state.unpickle[FormulaFunction]
+          val args     = state.unpickle[List[Unit]]
+          FormulaAst.Function(function, args)
+        }
+      }
+
+    implicit val picklerFormulaFieldRefNumberField: Pickler[FormulaFieldRef.NumberField] =
+      transformPickler(FormulaFieldRef.NumberField.apply)(_.id)
+
+    implicit val picklerFormulaFieldRef: Pickler[FormulaFieldRef] =
+      new Pickler[FormulaFieldRef] {
+        private[this] final val KeyNumberField = 'n'
+        override def pickle(a: FormulaFieldRef)(implicit state: PickleState): Unit =
+          a match {
+            case b: FormulaFieldRef.NumberField => state.enc.writeByte(KeyNumberField); state.pickle(b)
+          }
+        override def unpickle(implicit state: UnpickleState): FormulaFieldRef =
+          state.dec.readByte match {
+            case KeyNumberField => state.unpickle[FormulaFieldRef.NumberField]
+          }
+      }
+
+    implicit val picklerFormulaAstField: Pickler[FormulaAst.Field[FormulaFieldRef]] =
+      picklerFormulaFieldRef.xmap(FormulaAst.Field(_))(_.field)
+
+    implicit val picklerFormulaAstAdd: Pickler[FormulaAst.Add[Unit]] =
+      ConstPickler(FormulaAst.Add((), ()))
+
+    implicit val picklerFormulaAstSubtract: Pickler[FormulaAst.Subtract[Unit]] =
+      ConstPickler(FormulaAst.Subtract((), ()))
+
+    implicit val picklerFormulaAstMultiply: Pickler[FormulaAst.Multiply[Unit]] =
+      ConstPickler(FormulaAst.Multiply((), ()))
+
+    implicit val picklerFormulaAstDivide: Pickler[FormulaAst.Divide[Unit]] =
+      ConstPickler(FormulaAst.Divide((), ()))
+
+    implicit val picklerFormulaAst: Pickler[ValidF[Unit]] =
+      new Pickler[ValidF[Unit]] {
+        private type A = Unit
+        private type F = FormulaFieldRef
+        private type Fn = FormulaFunction
+        private[this] final val KeyAdd      = '+'
+        private[this] final val KeyCompare  = '='
+        private[this] final val KeyDivide   = '/'
+        private[this] final val KeyField    = 'f'
+        private[this] final val KeyFunction = 'F'
+        private[this] final val KeyMultiply = '*'
+        private[this] final val KeySubtract = '-'
+        private[this] final val KeyValue    = 'v'
+        override def pickle(a: ValidF[Unit])(implicit state: PickleState): Unit =
+          a match {
+            case b: FormulaAst.Add[A]          => state.enc.writeByte(KeyAdd     ); state.pickle(b)
+            case b: FormulaAst.Compare[A]      => state.enc.writeByte(KeyCompare ); state.pickle(b)
+            case b: FormulaAst.Divide[A]       => state.enc.writeByte(KeyDivide  ); state.pickle(b)
+            case b: FormulaAst.Field[F]        => state.enc.writeByte(KeyField   ); state.pickle(b)
+            case b: FormulaAst.Function[Fn, A] => state.enc.writeByte(KeyFunction); state.pickle(b)
+            case b: FormulaAst.Multiply[A]     => state.enc.writeByte(KeyMultiply); state.pickle(b)
+            case b: FormulaAst.Subtract[A]     => state.enc.writeByte(KeySubtract); state.pickle(b)
+            case b: FormulaAst.Value           => state.enc.writeByte(KeyValue   ); state.pickle(b)
+          }
+        override def unpickle(implicit state: UnpickleState): ValidF[Unit] =
+          state.dec.readByte match {
+            case KeyAdd      => state.unpickle[FormulaAst.Add[A]]
+            case KeyCompare  => state.unpickle[FormulaAst.Compare[A]]
+            case KeyDivide   => state.unpickle[FormulaAst.Divide[A]]
+            case KeyField    => state.unpickle[FormulaAst.Field[F]]
+            case KeyFunction => state.unpickle[FormulaAst.Function[Fn, A]]
+            case KeyMultiply => state.unpickle[FormulaAst.Multiply[A]]
+            case KeySubtract => state.unpickle[FormulaAst.Subtract[A]]
+            case KeyValue    => state.unpickle[FormulaAst.Value]
+          }
+      }
+
+    pickleFix[ValidF]
+  }
+
+  implicit lazy val pickleValidFormula: Pickler[ValidFormula] =
+    pickleFormulaValid.xmap(ValidFormula.apply)(_.formula)
+
+  // ===================================================================================================================
   // Events
 
   private[binary] implicit val picklerEventFieldCustomDelete: Pickler[Event.FieldCustomDelete] =
@@ -1181,6 +1458,66 @@ object Rev1 {
         val id = state.unpickle[SavedView.Id]
         val vs = state.unpickle[SavedViewGD.NonEmptyValues]
         Event.SavedViewUpdate(id, vs)
+      }
+    }
+
+  implicit lazy val pickleCustomFormulaFieldGD: Pickler[CustomFormulaFieldGD.NonEmptyValues] = {
+    import CustomFormulaFieldGD._
+
+    implicit val picklerValueForName              = transformPickler(ValueForName             .apply)(_.value)
+    implicit val picklerValueForDesc              = transformPickler(ValueForDesc             .apply)(_.value)
+    implicit val picklerValueForDecimalPlaces     = transformPickler(ValueForDecimalPlaces    .apply)(_.value)
+    implicit val picklerValueForFieldReqTypeRules = transformPickler(ValueForFieldReqTypeRules.apply)(_.value)
+
+    implicit val picklerValue: Pickler[Value] =
+      new Pickler[Value] {
+        private[this] final val KeyName          = 'n'
+        private[this] final val KeyDesc          = 'd'
+        private[this] final val KeyDecimalPlaces = 'p'
+        private[this] final val KeyReqTypes      = 'R'
+        override def pickle(a: Value)(implicit state: PickleState): Unit =
+          a match {
+            case b: ValueForName              => state.enc.writeByte(KeyName         ); state.pickle(b)
+            case b: ValueForDesc              => state.enc.writeByte(KeyDesc         ); state.pickle(b)
+            case b: ValueForDecimalPlaces     => state.enc.writeByte(KeyDecimalPlaces); state.pickle(b)
+            case b: ValueForFieldReqTypeRules => state.enc.writeByte(KeyReqTypes     ); state.pickle(b)
+          }
+        override def unpickle(implicit state: UnpickleState): Value =
+          state.dec.readByte match {
+            case KeyName          => state.unpickle[ValueForName]
+            case KeyDesc          => state.unpickle[ValueForDesc]
+            case KeyDecimalPlaces => state.unpickle[ValueForDecimalPlaces]
+            case KeyReqTypes      => state.unpickle[ValueForFieldReqTypeRules]
+          }
+      }
+
+    val values: Pickler[Values] = pickleIMap(emptyValues)
+    pickleNonEmptyMono[Values](values, implicitly)
+  }
+
+  private[binary] implicit lazy val picklerEventFieldCustomFormulaCreate: Pickler[Event.FieldCustomFormulaCreate] =
+    new Pickler[Event.FieldCustomFormulaCreate] {
+      override def pickle(a: Event.FieldCustomFormulaCreate)(implicit state: PickleState): Unit = {
+        state.pickle(a.id)
+        state.pickle(a.vs)
+      }
+      override def unpickle(implicit state: UnpickleState): Event.FieldCustomFormulaCreate = {
+        val id = state.unpickle[CustomField.Formula.Id]
+        val vs = state.unpickle[CustomFormulaFieldGD.NonEmptyValues]
+        Event.FieldCustomFormulaCreate(id, vs)
+      }
+    }
+
+  private[binary] implicit lazy val picklerEventFieldCustomFormulaUpdate: Pickler[Event.FieldCustomFormulaUpdate] =
+    new Pickler[Event.FieldCustomFormulaUpdate] {
+      override def pickle(a: Event.FieldCustomFormulaUpdate)(implicit state: PickleState): Unit = {
+        state.pickle(a.id)
+        state.pickle(a.vs)
+      }
+      override def unpickle(implicit state: UnpickleState): Event.FieldCustomFormulaUpdate = {
+        val id = state.unpickle[CustomField.Formula.Id]
+        val vs = state.unpickle[CustomFormulaFieldGD.NonEmptyValues]
+        Event.FieldCustomFormulaUpdate(id, vs)
       }
     }
 
@@ -1389,235 +1726,241 @@ object Rev1 {
   implicit lazy val picklerEvent: Pickler[Event] =
     new Pickler[Event] {
       import Event._
-      private[this] final val KeyApplicableTagCreateV1   =  0
-      private[this] final val KeyApplicableTagUpdateV1   =  1
-      private[this] final val KeyCodeGroupCreate         =  2
-      private[this] final val KeyCodeGroupUpdate         =  3
-      private[this] final val KeyCodeGroupsDelete        =  4
-      private[this] final val KeyContentRestore          =  5
-      private[this] final val KeyCustomIssueTypeCreate   =  6
-      private[this] final val KeyCustomIssueTypeDelete   =  7
-      private[this] final val KeyCustomIssueTypeRestore  =  8
-      private[this] final val KeyCustomIssueTypeUpdate   =  9
-      private[this] final val KeyCustomReqTypeCreateV1   = 10
-      private[this] final val KeyCustomReqTypeDelete     = 11
-      private[this] final val KeyCustomReqTypeRestore    = 12
-      private[this] final val KeyCustomReqTypeUpdateV1   = 13
-      private[this] final val KeyFieldCustomDelete       = 14
-      private[this] final val KeyFieldCustomImpCreateV1  = 15
-      private[this] final val KeyFieldCustomImpUpdateV1  = 16
-      private[this] final val KeyFieldCustomRestore      = 17
-      private[this] final val KeyFieldCustomTagCreateV1  = 18
-      private[this] final val KeyFieldCustomTagUpdateV1  = 19
-      private[this] final val KeyFieldCustomTextCreateV1 = 20
-      private[this] final val KeyFieldCustomTextUpdateV1 = 21
-      private[this] final val KeyFieldReposition         = 22
-      private[this] final val KeyFieldStaticAdd          = 23
-      private[this] final val KeyFieldStaticRemove       = 24
-      private[this] final val KeyGenericReqCreate        = 25
-      private[this] final val KeyGenericReqTitleSet      = 26
-      private[this] final val KeyGenericReqTypeSet       = 27
-      private[this] final val KeyManualIssueCreate       = 28
-      private[this] final val KeyManualIssueDelete       = 29
-      private[this] final val KeyManualIssueUpdate       = 30
-      private[this] final val KeyProjectNameSet          = 31
-      private[this] final val KeyProjectTemplateApply    = 32
-      private[this] final val KeyReqCodesPatch           = 33
-      private[this] final val KeyReqFieldCustomTextSet   = 34
-      private[this] final val KeyReqImplicationsPatch    = 35
-      private[this] final val KeyReqTagsPatch            = 36
-      private[this] final val KeyReqsDelete              = 37
-      private[this] final val KeySavedViewCreateV1       = 38
-      private[this] final val KeySavedViewDefaultSet     = 39
-      private[this] final val KeySavedViewDelete         = 40
-      private[this] final val KeySavedViewUpdateV1       = 41
-      private[this] final val KeyTagDelete               = 42
-      private[this] final val KeyTagGroupCreate          = 43
-      private[this] final val KeyTagGroupUpdate          = 44
-      private[this] final val KeyTagRestore              = 45
-      private[this] final val KeyUseCaseCreate           = 46
-      private[this] final val KeyUseCaseStepCreate       = 47
-      private[this] final val KeyUseCaseStepDelete       = 48
-      private[this] final val KeyUseCaseStepRestore      = 49
-      private[this] final val KeyUseCaseStepShiftLeft    = 50
-      private[this] final val KeyUseCaseStepShiftRight   = 51
-      private[this] final val KeyUseCaseStepUpdate       = 52
-      private[this] final val KeyUseCaseTitleSet         = 53
-      private[this] final val KeyApplicableTagCreateV2   = 54
-      private[this] final val KeyApplicableTagUpdateV2   = 55
-      private[this] final val KeyCustomReqTypeDeleteHard = 56
-      private[this] final val KeyCustomReqTypeDeleteSoft = 57
-      private[this] final val KeyFieldCustomImpCreateV2  = 58
-      private[this] final val KeyFieldCustomImpUpdateV2  = 59
-      private[this] final val KeyFieldCustomTagCreateV2  = 60
-      private[this] final val KeyFieldCustomTagUpdateV2  = 61
-      private[this] final val KeyFieldCustomTextCreateV2 = 62
-      private[this] final val KeyFieldCustomTextUpdateV2 = 63
-      private[this] final val KeyCustomReqTypeCreateV2   = 64
-      private[this] final val KeyCustomReqTypeUpdateV2   = 65
-      private[this] final val KeySavedViewCreateV2       = 66
-      private[this] final val KeySavedViewUpdateV2       = 67
-      private[this] final val KeyAccessUpdate            = 68
-      private[this] final val KeyProjectDelete           = 69
-      private[this] final val KeyProjectRestore          = 70
-      private[this] final val KeyFieldCustomNumberCreate = 71
-      private[this] final val KeyFieldCustomNumberUpdate = 72
-      private[this] final val KeyReqFieldCustomNumberSet = 73
+      private[this] final val KeyApplicableTagCreateV1    =  0
+      private[this] final val KeyApplicableTagUpdateV1    =  1
+      private[this] final val KeyCodeGroupCreate          =  2
+      private[this] final val KeyCodeGroupUpdate          =  3
+      private[this] final val KeyCodeGroupsDelete         =  4
+      private[this] final val KeyContentRestore           =  5
+      private[this] final val KeyCustomIssueTypeCreate    =  6
+      private[this] final val KeyCustomIssueTypeDelete    =  7
+      private[this] final val KeyCustomIssueTypeRestore   =  8
+      private[this] final val KeyCustomIssueTypeUpdate    =  9
+      private[this] final val KeyCustomReqTypeCreateV1    = 10
+      private[this] final val KeyCustomReqTypeDelete      = 11
+      private[this] final val KeyCustomReqTypeRestore     = 12
+      private[this] final val KeyCustomReqTypeUpdateV1    = 13
+      private[this] final val KeyFieldCustomDelete        = 14
+      private[this] final val KeyFieldCustomImpCreateV1   = 15
+      private[this] final val KeyFieldCustomImpUpdateV1   = 16
+      private[this] final val KeyFieldCustomRestore       = 17
+      private[this] final val KeyFieldCustomTagCreateV1   = 18
+      private[this] final val KeyFieldCustomTagUpdateV1   = 19
+      private[this] final val KeyFieldCustomTextCreateV1  = 20
+      private[this] final val KeyFieldCustomTextUpdateV1  = 21
+      private[this] final val KeyFieldReposition          = 22
+      private[this] final val KeyFieldStaticAdd           = 23
+      private[this] final val KeyFieldStaticRemove        = 24
+      private[this] final val KeyGenericReqCreate         = 25
+      private[this] final val KeyGenericReqTitleSet       = 26
+      private[this] final val KeyGenericReqTypeSet        = 27
+      private[this] final val KeyManualIssueCreate        = 28
+      private[this] final val KeyManualIssueDelete        = 29
+      private[this] final val KeyManualIssueUpdate        = 30
+      private[this] final val KeyProjectNameSet           = 31
+      private[this] final val KeyProjectTemplateApply     = 32
+      private[this] final val KeyReqCodesPatch            = 33
+      private[this] final val KeyReqFieldCustomTextSet    = 34
+      private[this] final val KeyReqImplicationsPatch     = 35
+      private[this] final val KeyReqTagsPatch             = 36
+      private[this] final val KeyReqsDelete               = 37
+      private[this] final val KeySavedViewCreateV1        = 38
+      private[this] final val KeySavedViewDefaultSet      = 39
+      private[this] final val KeySavedViewDelete          = 40
+      private[this] final val KeySavedViewUpdateV1        = 41
+      private[this] final val KeyTagDelete                = 42
+      private[this] final val KeyTagGroupCreate           = 43
+      private[this] final val KeyTagGroupUpdate           = 44
+      private[this] final val KeyTagRestore               = 45
+      private[this] final val KeyUseCaseCreate            = 46
+      private[this] final val KeyUseCaseStepCreate        = 47
+      private[this] final val KeyUseCaseStepDelete        = 48
+      private[this] final val KeyUseCaseStepRestore       = 49
+      private[this] final val KeyUseCaseStepShiftLeft     = 50
+      private[this] final val KeyUseCaseStepShiftRight    = 51
+      private[this] final val KeyUseCaseStepUpdate        = 52
+      private[this] final val KeyUseCaseTitleSet          = 53
+      private[this] final val KeyApplicableTagCreateV2    = 54
+      private[this] final val KeyApplicableTagUpdateV2    = 55
+      private[this] final val KeyCustomReqTypeDeleteHard  = 56
+      private[this] final val KeyCustomReqTypeDeleteSoft  = 57
+      private[this] final val KeyFieldCustomImpCreateV2   = 58
+      private[this] final val KeyFieldCustomImpUpdateV2   = 59
+      private[this] final val KeyFieldCustomTagCreateV2   = 60
+      private[this] final val KeyFieldCustomTagUpdateV2   = 61
+      private[this] final val KeyFieldCustomTextCreateV2  = 62
+      private[this] final val KeyFieldCustomTextUpdateV2  = 63
+      private[this] final val KeyCustomReqTypeCreateV2    = 64
+      private[this] final val KeyCustomReqTypeUpdateV2    = 65
+      private[this] final val KeySavedViewCreateV2        = 66
+      private[this] final val KeySavedViewUpdateV2        = 67
+      private[this] final val KeyAccessUpdate             = 68
+      private[this] final val KeyProjectDelete            = 69
+      private[this] final val KeyProjectRestore           = 70
+      private[this] final val KeyFieldCustomNumberCreate  = 71
+      private[this] final val KeyFieldCustomNumberUpdate  = 72
+      private[this] final val KeyReqFieldCustomNumberSet  = 73
+      private[this] final val KeyFieldCustomFormulaCreate = 74
+      private[this] final val KeyFieldCustomFormulaUpdate = 75
 
       override def pickle(a: Event)(implicit state: PickleState): Unit =
         a match {
-          case b: AccessUpdate            => state.enc.writeByte(KeyAccessUpdate           ); state.pickle(b)
-          case b: ApplicableTagCreate     => state.enc.writeByte(KeyApplicableTagCreateV2  ); state.pickle(b)
-          case b: ApplicableTagCreateV1   => state.enc.writeByte(KeyApplicableTagCreateV1  ); state.pickle(b)
-          case b: ApplicableTagUpdate     => state.enc.writeByte(KeyApplicableTagUpdateV2  ); state.pickle(b)
-          case b: ApplicableTagUpdateV1   => state.enc.writeByte(KeyApplicableTagUpdateV1  ); state.pickle(b)
-          case b: CodeGroupCreate         => state.enc.writeByte(KeyCodeGroupCreate        ); state.pickle(b)
-          case b: CodeGroupsDelete        => state.enc.writeByte(KeyCodeGroupsDelete       ); state.pickle(b)
-          case b: CodeGroupUpdate         => state.enc.writeByte(KeyCodeGroupUpdate        ); state.pickle(b)
-          case b: ContentRestore          => state.enc.writeByte(KeyContentRestore         ); state.pickle(b)
-          case b: CustomIssueTypeCreate   => state.enc.writeByte(KeyCustomIssueTypeCreate  ); state.pickle(b)
-          case b: CustomIssueTypeDelete   => state.enc.writeByte(KeyCustomIssueTypeDelete  ); state.pickle(b)
-          case b: CustomIssueTypeRestore  => state.enc.writeByte(KeyCustomIssueTypeRestore ); state.pickle(b)
-          case b: CustomIssueTypeUpdate   => state.enc.writeByte(KeyCustomIssueTypeUpdate  ); state.pickle(b)
-          case b: CustomReqTypeCreate     => state.enc.writeByte(KeyCustomReqTypeCreateV2  ); state.pickle(b)
-          case b: CustomReqTypeCreateV1   => state.enc.writeByte(KeyCustomReqTypeCreateV1  ); state.pickle(b)
-          case b: CustomReqTypeDelete     => state.enc.writeByte(KeyCustomReqTypeDelete    ); state.pickle(b)
-          case b: CustomReqTypeDeleteHard => state.enc.writeByte(KeyCustomReqTypeDeleteHard); state.pickle(b)
-          case b: CustomReqTypeDeleteSoft => state.enc.writeByte(KeyCustomReqTypeDeleteSoft); state.pickle(b)
-          case b: CustomReqTypeRestore    => state.enc.writeByte(KeyCustomReqTypeRestore   ); state.pickle(b)
-          case b: CustomReqTypeUpdate     => state.enc.writeByte(KeyCustomReqTypeUpdateV2  ); state.pickle(b)
-          case b: CustomReqTypeUpdateV1   => state.enc.writeByte(KeyCustomReqTypeUpdateV1  ); state.pickle(b)
-          case b: FieldCustomDelete       => state.enc.writeByte(KeyFieldCustomDelete      ); state.pickle(b)
-          case b: FieldCustomImpCreate    => state.enc.writeByte(KeyFieldCustomImpCreateV2 ); state.pickle(b)
-          case b: FieldCustomImpCreateV1  => state.enc.writeByte(KeyFieldCustomImpCreateV1 ); state.pickle(b)
-          case b: FieldCustomImpUpdate    => state.enc.writeByte(KeyFieldCustomImpUpdateV2 ); state.pickle(b)
-          case b: FieldCustomImpUpdateV1  => state.enc.writeByte(KeyFieldCustomImpUpdateV1 ); state.pickle(b)
-          case b: FieldCustomNumberCreate => state.enc.writeByte(KeyFieldCustomNumberCreate); state.pickle(b)
-          case b: FieldCustomNumberUpdate => state.enc.writeByte(KeyFieldCustomNumberUpdate); state.pickle(b)
-          case b: FieldCustomRestore      => state.enc.writeByte(KeyFieldCustomRestore     ); state.pickle(b)
-          case b: FieldCustomTagCreate    => state.enc.writeByte(KeyFieldCustomTagCreateV2 ); state.pickle(b)
-          case b: FieldCustomTagCreateV1  => state.enc.writeByte(KeyFieldCustomTagCreateV1 ); state.pickle(b)
-          case b: FieldCustomTagUpdate    => state.enc.writeByte(KeyFieldCustomTagUpdateV2 ); state.pickle(b)
-          case b: FieldCustomTagUpdateV1  => state.enc.writeByte(KeyFieldCustomTagUpdateV1 ); state.pickle(b)
-          case b: FieldCustomTextCreate   => state.enc.writeByte(KeyFieldCustomTextCreateV2); state.pickle(b)
-          case b: FieldCustomTextCreateV1 => state.enc.writeByte(KeyFieldCustomTextCreateV1); state.pickle(b)
-          case b: FieldCustomTextUpdate   => state.enc.writeByte(KeyFieldCustomTextUpdateV2); state.pickle(b)
-          case b: FieldCustomTextUpdateV1 => state.enc.writeByte(KeyFieldCustomTextUpdateV1); state.pickle(b)
-          case b: FieldReposition         => state.enc.writeByte(KeyFieldReposition        ); state.pickle(b)
-          case b: FieldStaticAdd          => state.enc.writeByte(KeyFieldStaticAdd         ); state.pickle(b)
-          case b: FieldStaticRemove       => state.enc.writeByte(KeyFieldStaticRemove      ); state.pickle(b)
-          case b: GenericReqCreate        => state.enc.writeByte(KeyGenericReqCreate       ); state.pickle(b)
-          case b: GenericReqTitleSet      => state.enc.writeByte(KeyGenericReqTitleSet     ); state.pickle(b)
-          case b: GenericReqTypeSet       => state.enc.writeByte(KeyGenericReqTypeSet      ); state.pickle(b)
-          case b: ManualIssueCreate       => state.enc.writeByte(KeyManualIssueCreate      ); state.pickle(b)
-          case b: ManualIssueDelete       => state.enc.writeByte(KeyManualIssueDelete      ); state.pickle(b)
-          case b: ManualIssueUpdate       => state.enc.writeByte(KeyManualIssueUpdate      ); state.pickle(b)
-          case b: ProjectDelete           => state.enc.writeByte(KeyProjectDelete          ); state.pickle(b)
-          case b: ProjectNameSet          => state.enc.writeByte(KeyProjectNameSet         ); state.pickle(b)
-          case b: ProjectRestore.type     => state.enc.writeByte(KeyProjectRestore         ); state.pickle(b)
-          case b: ProjectTemplateApply    => state.enc.writeByte(KeyProjectTemplateApply   ); state.pickle(b)
-          case b: ReqCodesPatch           => state.enc.writeByte(KeyReqCodesPatch          ); state.pickle(b)
-          case b: ReqFieldCustomNumberSet => state.enc.writeByte(KeyReqFieldCustomNumberSet); state.pickle(b)
-          case b: ReqFieldCustomTextSet   => state.enc.writeByte(KeyReqFieldCustomTextSet  ); state.pickle(b)
-          case b: ReqImplicationsPatch    => state.enc.writeByte(KeyReqImplicationsPatch   ); state.pickle(b)
-          case b: ReqsDelete              => state.enc.writeByte(KeyReqsDelete             ); state.pickle(b)
-          case b: ReqTagsPatch            => state.enc.writeByte(KeyReqTagsPatch           ); state.pickle(b)
-          case b: SavedViewCreate         => state.enc.writeByte(KeySavedViewCreateV2      ); state.pickle(b)
-          case b: SavedViewCreateV1       => state.enc.writeByte(KeySavedViewCreateV1      ); state.pickle(b)
-          case b: SavedViewDefaultSet     => state.enc.writeByte(KeySavedViewDefaultSet    ); state.pickle(b)
-          case b: SavedViewDelete         => state.enc.writeByte(KeySavedViewDelete        ); state.pickle(b)
-          case b: SavedViewUpdate         => state.enc.writeByte(KeySavedViewUpdateV2      ); state.pickle(b)
-          case b: SavedViewUpdateV1       => state.enc.writeByte(KeySavedViewUpdateV1      ); state.pickle(b)
-          case b: TagDelete               => state.enc.writeByte(KeyTagDelete              ); state.pickle(b)
-          case b: TagGroupCreate          => state.enc.writeByte(KeyTagGroupCreate         ); state.pickle(b)
-          case b: TagGroupUpdate          => state.enc.writeByte(KeyTagGroupUpdate         ); state.pickle(b)
-          case b: TagRestore              => state.enc.writeByte(KeyTagRestore             ); state.pickle(b)
-          case b: UseCaseCreate           => state.enc.writeByte(KeyUseCaseCreate          ); state.pickle(b)
-          case b: UseCaseStepCreate       => state.enc.writeByte(KeyUseCaseStepCreate      ); state.pickle(b)
-          case b: UseCaseStepDelete       => state.enc.writeByte(KeyUseCaseStepDelete      ); state.pickle(b)
-          case b: UseCaseStepRestore      => state.enc.writeByte(KeyUseCaseStepRestore     ); state.pickle(b)
-          case b: UseCaseStepShiftLeft    => state.enc.writeByte(KeyUseCaseStepShiftLeft   ); state.pickle(b)
-          case b: UseCaseStepShiftRight   => state.enc.writeByte(KeyUseCaseStepShiftRight  ); state.pickle(b)
-          case b: UseCaseStepUpdate       => state.enc.writeByte(KeyUseCaseStepUpdate      ); state.pickle(b)
-          case b: UseCaseTitleSet         => state.enc.writeByte(KeyUseCaseTitleSet        ); state.pickle(b)
+          case b: AccessUpdate             => state.enc.writeByte(KeyAccessUpdate            ); state.pickle(b)
+          case b: ApplicableTagCreate      => state.enc.writeByte(KeyApplicableTagCreateV2   ); state.pickle(b)
+          case b: ApplicableTagCreateV1    => state.enc.writeByte(KeyApplicableTagCreateV1   ); state.pickle(b)
+          case b: ApplicableTagUpdate      => state.enc.writeByte(KeyApplicableTagUpdateV2   ); state.pickle(b)
+          case b: ApplicableTagUpdateV1    => state.enc.writeByte(KeyApplicableTagUpdateV1   ); state.pickle(b)
+          case b: CodeGroupCreate          => state.enc.writeByte(KeyCodeGroupCreate         ); state.pickle(b)
+          case b: CodeGroupsDelete         => state.enc.writeByte(KeyCodeGroupsDelete        ); state.pickle(b)
+          case b: CodeGroupUpdate          => state.enc.writeByte(KeyCodeGroupUpdate         ); state.pickle(b)
+          case b: ContentRestore           => state.enc.writeByte(KeyContentRestore          ); state.pickle(b)
+          case b: CustomIssueTypeCreate    => state.enc.writeByte(KeyCustomIssueTypeCreate   ); state.pickle(b)
+          case b: CustomIssueTypeDelete    => state.enc.writeByte(KeyCustomIssueTypeDelete   ); state.pickle(b)
+          case b: CustomIssueTypeRestore   => state.enc.writeByte(KeyCustomIssueTypeRestore  ); state.pickle(b)
+          case b: CustomIssueTypeUpdate    => state.enc.writeByte(KeyCustomIssueTypeUpdate   ); state.pickle(b)
+          case b: CustomReqTypeCreate      => state.enc.writeByte(KeyCustomReqTypeCreateV2   ); state.pickle(b)
+          case b: CustomReqTypeCreateV1    => state.enc.writeByte(KeyCustomReqTypeCreateV1   ); state.pickle(b)
+          case b: CustomReqTypeDelete      => state.enc.writeByte(KeyCustomReqTypeDelete     ); state.pickle(b)
+          case b: CustomReqTypeDeleteHard  => state.enc.writeByte(KeyCustomReqTypeDeleteHard ); state.pickle(b)
+          case b: CustomReqTypeDeleteSoft  => state.enc.writeByte(KeyCustomReqTypeDeleteSoft ); state.pickle(b)
+          case b: CustomReqTypeRestore     => state.enc.writeByte(KeyCustomReqTypeRestore    ); state.pickle(b)
+          case b: CustomReqTypeUpdate      => state.enc.writeByte(KeyCustomReqTypeUpdateV2   ); state.pickle(b)
+          case b: CustomReqTypeUpdateV1    => state.enc.writeByte(KeyCustomReqTypeUpdateV1   ); state.pickle(b)
+          case b: FieldCustomDelete        => state.enc.writeByte(KeyFieldCustomDelete       ); state.pickle(b)
+          case b: FieldCustomFormulaCreate => state.enc.writeByte(KeyFieldCustomFormulaCreate); state.pickle(b)
+          case b: FieldCustomFormulaUpdate => state.enc.writeByte(KeyFieldCustomFormulaUpdate); state.pickle(b)
+          case b: FieldCustomImpCreate     => state.enc.writeByte(KeyFieldCustomImpCreateV2  ); state.pickle(b)
+          case b: FieldCustomImpCreateV1   => state.enc.writeByte(KeyFieldCustomImpCreateV1  ); state.pickle(b)
+          case b: FieldCustomImpUpdate     => state.enc.writeByte(KeyFieldCustomImpUpdateV2  ); state.pickle(b)
+          case b: FieldCustomImpUpdateV1   => state.enc.writeByte(KeyFieldCustomImpUpdateV1  ); state.pickle(b)
+          case b: FieldCustomNumberCreate  => state.enc.writeByte(KeyFieldCustomNumberCreate ); state.pickle(b)
+          case b: FieldCustomNumberUpdate  => state.enc.writeByte(KeyFieldCustomNumberUpdate ); state.pickle(b)
+          case b: FieldCustomRestore       => state.enc.writeByte(KeyFieldCustomRestore      ); state.pickle(b)
+          case b: FieldCustomTagCreate     => state.enc.writeByte(KeyFieldCustomTagCreateV2  ); state.pickle(b)
+          case b: FieldCustomTagCreateV1   => state.enc.writeByte(KeyFieldCustomTagCreateV1  ); state.pickle(b)
+          case b: FieldCustomTagUpdate     => state.enc.writeByte(KeyFieldCustomTagUpdateV2  ); state.pickle(b)
+          case b: FieldCustomTagUpdateV1   => state.enc.writeByte(KeyFieldCustomTagUpdateV1  ); state.pickle(b)
+          case b: FieldCustomTextCreate    => state.enc.writeByte(KeyFieldCustomTextCreateV2 ); state.pickle(b)
+          case b: FieldCustomTextCreateV1  => state.enc.writeByte(KeyFieldCustomTextCreateV1 ); state.pickle(b)
+          case b: FieldCustomTextUpdate    => state.enc.writeByte(KeyFieldCustomTextUpdateV2 ); state.pickle(b)
+          case b: FieldCustomTextUpdateV1  => state.enc.writeByte(KeyFieldCustomTextUpdateV1 ); state.pickle(b)
+          case b: FieldReposition          => state.enc.writeByte(KeyFieldReposition         ); state.pickle(b)
+          case b: FieldStaticAdd           => state.enc.writeByte(KeyFieldStaticAdd          ); state.pickle(b)
+          case b: FieldStaticRemove        => state.enc.writeByte(KeyFieldStaticRemove       ); state.pickle(b)
+          case b: GenericReqCreate         => state.enc.writeByte(KeyGenericReqCreate        ); state.pickle(b)
+          case b: GenericReqTitleSet       => state.enc.writeByte(KeyGenericReqTitleSet      ); state.pickle(b)
+          case b: GenericReqTypeSet        => state.enc.writeByte(KeyGenericReqTypeSet       ); state.pickle(b)
+          case b: ManualIssueCreate        => state.enc.writeByte(KeyManualIssueCreate       ); state.pickle(b)
+          case b: ManualIssueDelete        => state.enc.writeByte(KeyManualIssueDelete       ); state.pickle(b)
+          case b: ManualIssueUpdate        => state.enc.writeByte(KeyManualIssueUpdate       ); state.pickle(b)
+          case b: ProjectDelete            => state.enc.writeByte(KeyProjectDelete           ); state.pickle(b)
+          case b: ProjectNameSet           => state.enc.writeByte(KeyProjectNameSet          ); state.pickle(b)
+          case b: ProjectRestore.type      => state.enc.writeByte(KeyProjectRestore          ); state.pickle(b)
+          case b: ProjectTemplateApply     => state.enc.writeByte(KeyProjectTemplateApply    ); state.pickle(b)
+          case b: ReqCodesPatch            => state.enc.writeByte(KeyReqCodesPatch           ); state.pickle(b)
+          case b: ReqFieldCustomNumberSet  => state.enc.writeByte(KeyReqFieldCustomNumberSet ); state.pickle(b)
+          case b: ReqFieldCustomTextSet    => state.enc.writeByte(KeyReqFieldCustomTextSet   ); state.pickle(b)
+          case b: ReqImplicationsPatch     => state.enc.writeByte(KeyReqImplicationsPatch    ); state.pickle(b)
+          case b: ReqsDelete               => state.enc.writeByte(KeyReqsDelete              ); state.pickle(b)
+          case b: ReqTagsPatch             => state.enc.writeByte(KeyReqTagsPatch            ); state.pickle(b)
+          case b: SavedViewCreate          => state.enc.writeByte(KeySavedViewCreateV2       ); state.pickle(b)
+          case b: SavedViewCreateV1        => state.enc.writeByte(KeySavedViewCreateV1       ); state.pickle(b)
+          case b: SavedViewDefaultSet      => state.enc.writeByte(KeySavedViewDefaultSet     ); state.pickle(b)
+          case b: SavedViewDelete          => state.enc.writeByte(KeySavedViewDelete         ); state.pickle(b)
+          case b: SavedViewUpdate          => state.enc.writeByte(KeySavedViewUpdateV2       ); state.pickle(b)
+          case b: SavedViewUpdateV1        => state.enc.writeByte(KeySavedViewUpdateV1       ); state.pickle(b)
+          case b: TagDelete                => state.enc.writeByte(KeyTagDelete               ); state.pickle(b)
+          case b: TagGroupCreate           => state.enc.writeByte(KeyTagGroupCreate          ); state.pickle(b)
+          case b: TagGroupUpdate           => state.enc.writeByte(KeyTagGroupUpdate          ); state.pickle(b)
+          case b: TagRestore               => state.enc.writeByte(KeyTagRestore              ); state.pickle(b)
+          case b: UseCaseCreate            => state.enc.writeByte(KeyUseCaseCreate           ); state.pickle(b)
+          case b: UseCaseStepCreate        => state.enc.writeByte(KeyUseCaseStepCreate       ); state.pickle(b)
+          case b: UseCaseStepDelete        => state.enc.writeByte(KeyUseCaseStepDelete       ); state.pickle(b)
+          case b: UseCaseStepRestore       => state.enc.writeByte(KeyUseCaseStepRestore      ); state.pickle(b)
+          case b: UseCaseStepShiftLeft     => state.enc.writeByte(KeyUseCaseStepShiftLeft    ); state.pickle(b)
+          case b: UseCaseStepShiftRight    => state.enc.writeByte(KeyUseCaseStepShiftRight   ); state.pickle(b)
+          case b: UseCaseStepUpdate        => state.enc.writeByte(KeyUseCaseStepUpdate       ); state.pickle(b)
+          case b: UseCaseTitleSet          => state.enc.writeByte(KeyUseCaseTitleSet         ); state.pickle(b)
         }
 
       override def unpickle(implicit state: UnpickleState): Event =
         state.dec.readByte match {
-          case KeyAccessUpdate            => state.unpickle[AccessUpdate]
-          case KeyApplicableTagCreateV1   => state.unpickle[ApplicableTagCreateV1]
-          case KeyApplicableTagCreateV2   => state.unpickle[ApplicableTagCreate]
-          case KeyApplicableTagUpdateV1   => state.unpickle[ApplicableTagUpdateV1]
-          case KeyApplicableTagUpdateV2   => state.unpickle[ApplicableTagUpdate]
-          case KeyCodeGroupCreate         => state.unpickle[CodeGroupCreate]
-          case KeyCodeGroupsDelete        => state.unpickle[CodeGroupsDelete]
-          case KeyCodeGroupUpdate         => state.unpickle[CodeGroupUpdate]
-          case KeyContentRestore          => state.unpickle[ContentRestore]
-          case KeyCustomIssueTypeCreate   => state.unpickle[CustomIssueTypeCreate]
-          case KeyCustomIssueTypeDelete   => state.unpickle[CustomIssueTypeDelete]
-          case KeyCustomIssueTypeRestore  => state.unpickle[CustomIssueTypeRestore]
-          case KeyCustomIssueTypeUpdate   => state.unpickle[CustomIssueTypeUpdate]
-          case KeyCustomReqTypeCreateV1   => state.unpickle[CustomReqTypeCreateV1]
-          case KeyCustomReqTypeCreateV2   => state.unpickle[CustomReqTypeCreate]
-          case KeyCustomReqTypeDelete     => state.unpickle[CustomReqTypeDelete]
-          case KeyCustomReqTypeDeleteHard => state.unpickle[CustomReqTypeDeleteHard]
-          case KeyCustomReqTypeDeleteSoft => state.unpickle[CustomReqTypeDeleteSoft]
-          case KeyCustomReqTypeRestore    => state.unpickle[CustomReqTypeRestore]
-          case KeyCustomReqTypeUpdateV1   => state.unpickle[CustomReqTypeUpdateV1]
-          case KeyCustomReqTypeUpdateV2   => state.unpickle[CustomReqTypeUpdate]
-          case KeyFieldCustomDelete       => state.unpickle[FieldCustomDelete]
-          case KeyFieldCustomImpCreateV1  => state.unpickle[FieldCustomImpCreateV1]
-          case KeyFieldCustomImpCreateV2  => state.unpickle[FieldCustomImpCreate]
-          case KeyFieldCustomImpUpdateV1  => state.unpickle[FieldCustomImpUpdateV1]
-          case KeyFieldCustomImpUpdateV2  => state.unpickle[FieldCustomImpUpdate]
-          case KeyFieldCustomNumberCreate => state.unpickle[FieldCustomNumberCreate]
-          case KeyFieldCustomNumberUpdate => state.unpickle[FieldCustomNumberUpdate]
-          case KeyFieldCustomRestore      => state.unpickle[FieldCustomRestore]
-          case KeyFieldCustomTagCreateV1  => state.unpickle[FieldCustomTagCreateV1]
-          case KeyFieldCustomTagCreateV2  => state.unpickle[FieldCustomTagCreate]
-          case KeyFieldCustomTagUpdateV1  => state.unpickle[FieldCustomTagUpdateV1]
-          case KeyFieldCustomTagUpdateV2  => state.unpickle[FieldCustomTagUpdate]
-          case KeyFieldCustomTextCreateV1 => state.unpickle[FieldCustomTextCreateV1]
-          case KeyFieldCustomTextCreateV2 => state.unpickle[FieldCustomTextCreate]
-          case KeyFieldCustomTextUpdateV1 => state.unpickle[FieldCustomTextUpdateV1]
-          case KeyFieldCustomTextUpdateV2 => state.unpickle[FieldCustomTextUpdate]
-          case KeyFieldReposition         => state.unpickle[FieldReposition]
-          case KeyFieldStaticAdd          => state.unpickle[FieldStaticAdd]
-          case KeyFieldStaticRemove       => state.unpickle[FieldStaticRemove]
-          case KeyGenericReqCreate        => state.unpickle[GenericReqCreate]
-          case KeyGenericReqTitleSet      => state.unpickle[GenericReqTitleSet]
-          case KeyGenericReqTypeSet       => state.unpickle[GenericReqTypeSet]
-          case KeyManualIssueCreate       => state.unpickle[ManualIssueCreate]
-          case KeyManualIssueDelete       => state.unpickle[ManualIssueDelete]
-          case KeyManualIssueUpdate       => state.unpickle[ManualIssueUpdate]
-          case KeyProjectDelete           => state.unpickle[ProjectDelete]
-          case KeyProjectNameSet          => state.unpickle[ProjectNameSet]
-          case KeyProjectRestore          => state.unpickle[ProjectRestore.type]
-          case KeyProjectTemplateApply    => state.unpickle[ProjectTemplateApply]
-          case KeyReqCodesPatch           => state.unpickle[ReqCodesPatch]
-          case KeyReqFieldCustomNumberSet => state.unpickle[ReqFieldCustomNumberSet]
-          case KeyReqFieldCustomTextSet   => state.unpickle[ReqFieldCustomTextSet]
-          case KeyReqImplicationsPatch    => state.unpickle[ReqImplicationsPatch]
-          case KeyReqsDelete              => state.unpickle[ReqsDelete]
-          case KeyReqTagsPatch            => state.unpickle[ReqTagsPatch]
-          case KeySavedViewCreateV1       => state.unpickle[SavedViewCreateV1]
-          case KeySavedViewCreateV2       => state.unpickle[SavedViewCreate]
-          case KeySavedViewDefaultSet     => state.unpickle[SavedViewDefaultSet]
-          case KeySavedViewDelete         => state.unpickle[SavedViewDelete]
-          case KeySavedViewUpdateV1       => state.unpickle[SavedViewUpdateV1]
-          case KeySavedViewUpdateV2       => state.unpickle[SavedViewUpdate]
-          case KeyTagDelete               => state.unpickle[TagDelete]
-          case KeyTagGroupCreate          => state.unpickle[TagGroupCreate]
-          case KeyTagGroupUpdate          => state.unpickle[TagGroupUpdate]
-          case KeyTagRestore              => state.unpickle[TagRestore]
-          case KeyUseCaseCreate           => state.unpickle[UseCaseCreate]
-          case KeyUseCaseStepCreate       => state.unpickle[UseCaseStepCreate]
-          case KeyUseCaseStepDelete       => state.unpickle[UseCaseStepDelete]
-          case KeyUseCaseStepRestore      => state.unpickle[UseCaseStepRestore]
-          case KeyUseCaseStepShiftLeft    => state.unpickle[UseCaseStepShiftLeft]
-          case KeyUseCaseStepShiftRight   => state.unpickle[UseCaseStepShiftRight]
-          case KeyUseCaseStepUpdate       => state.unpickle[UseCaseStepUpdate]
-          case KeyUseCaseTitleSet         => state.unpickle[UseCaseTitleSet]
+          case KeyAccessUpdate             => state.unpickle[AccessUpdate]
+          case KeyApplicableTagCreateV1    => state.unpickle[ApplicableTagCreateV1]
+          case KeyApplicableTagCreateV2    => state.unpickle[ApplicableTagCreate]
+          case KeyApplicableTagUpdateV1    => state.unpickle[ApplicableTagUpdateV1]
+          case KeyApplicableTagUpdateV2    => state.unpickle[ApplicableTagUpdate]
+          case KeyCodeGroupCreate          => state.unpickle[CodeGroupCreate]
+          case KeyCodeGroupsDelete         => state.unpickle[CodeGroupsDelete]
+          case KeyCodeGroupUpdate          => state.unpickle[CodeGroupUpdate]
+          case KeyContentRestore           => state.unpickle[ContentRestore]
+          case KeyCustomIssueTypeCreate    => state.unpickle[CustomIssueTypeCreate]
+          case KeyCustomIssueTypeDelete    => state.unpickle[CustomIssueTypeDelete]
+          case KeyCustomIssueTypeRestore   => state.unpickle[CustomIssueTypeRestore]
+          case KeyCustomIssueTypeUpdate    => state.unpickle[CustomIssueTypeUpdate]
+          case KeyCustomReqTypeCreateV1    => state.unpickle[CustomReqTypeCreateV1]
+          case KeyCustomReqTypeCreateV2    => state.unpickle[CustomReqTypeCreate]
+          case KeyCustomReqTypeDelete      => state.unpickle[CustomReqTypeDelete]
+          case KeyCustomReqTypeDeleteHard  => state.unpickle[CustomReqTypeDeleteHard]
+          case KeyCustomReqTypeDeleteSoft  => state.unpickle[CustomReqTypeDeleteSoft]
+          case KeyCustomReqTypeRestore     => state.unpickle[CustomReqTypeRestore]
+          case KeyCustomReqTypeUpdateV1    => state.unpickle[CustomReqTypeUpdateV1]
+          case KeyCustomReqTypeUpdateV2    => state.unpickle[CustomReqTypeUpdate]
+          case KeyFieldCustomDelete        => state.unpickle[FieldCustomDelete]
+          case KeyFieldCustomFormulaCreate => state.unpickle[FieldCustomFormulaCreate]
+          case KeyFieldCustomFormulaUpdate => state.unpickle[FieldCustomFormulaUpdate]
+          case KeyFieldCustomImpCreateV1   => state.unpickle[FieldCustomImpCreateV1]
+          case KeyFieldCustomImpCreateV2   => state.unpickle[FieldCustomImpCreate]
+          case KeyFieldCustomImpUpdateV1   => state.unpickle[FieldCustomImpUpdateV1]
+          case KeyFieldCustomImpUpdateV2   => state.unpickle[FieldCustomImpUpdate]
+          case KeyFieldCustomNumberCreate  => state.unpickle[FieldCustomNumberCreate]
+          case KeyFieldCustomNumberUpdate  => state.unpickle[FieldCustomNumberUpdate]
+          case KeyFieldCustomRestore       => state.unpickle[FieldCustomRestore]
+          case KeyFieldCustomTagCreateV1   => state.unpickle[FieldCustomTagCreateV1]
+          case KeyFieldCustomTagCreateV2   => state.unpickle[FieldCustomTagCreate]
+          case KeyFieldCustomTagUpdateV1   => state.unpickle[FieldCustomTagUpdateV1]
+          case KeyFieldCustomTagUpdateV2   => state.unpickle[FieldCustomTagUpdate]
+          case KeyFieldCustomTextCreateV1  => state.unpickle[FieldCustomTextCreateV1]
+          case KeyFieldCustomTextCreateV2  => state.unpickle[FieldCustomTextCreate]
+          case KeyFieldCustomTextUpdateV1  => state.unpickle[FieldCustomTextUpdateV1]
+          case KeyFieldCustomTextUpdateV2  => state.unpickle[FieldCustomTextUpdate]
+          case KeyFieldReposition          => state.unpickle[FieldReposition]
+          case KeyFieldStaticAdd           => state.unpickle[FieldStaticAdd]
+          case KeyFieldStaticRemove        => state.unpickle[FieldStaticRemove]
+          case KeyGenericReqCreate         => state.unpickle[GenericReqCreate]
+          case KeyGenericReqTitleSet       => state.unpickle[GenericReqTitleSet]
+          case KeyGenericReqTypeSet        => state.unpickle[GenericReqTypeSet]
+          case KeyManualIssueCreate        => state.unpickle[ManualIssueCreate]
+          case KeyManualIssueDelete        => state.unpickle[ManualIssueDelete]
+          case KeyManualIssueUpdate        => state.unpickle[ManualIssueUpdate]
+          case KeyProjectDelete            => state.unpickle[ProjectDelete]
+          case KeyProjectNameSet           => state.unpickle[ProjectNameSet]
+          case KeyProjectRestore           => state.unpickle[ProjectRestore.type]
+          case KeyProjectTemplateApply     => state.unpickle[ProjectTemplateApply]
+          case KeyReqCodesPatch            => state.unpickle[ReqCodesPatch]
+          case KeyReqFieldCustomNumberSet  => state.unpickle[ReqFieldCustomNumberSet]
+          case KeyReqFieldCustomTextSet    => state.unpickle[ReqFieldCustomTextSet]
+          case KeyReqImplicationsPatch     => state.unpickle[ReqImplicationsPatch]
+          case KeyReqsDelete               => state.unpickle[ReqsDelete]
+          case KeyReqTagsPatch             => state.unpickle[ReqTagsPatch]
+          case KeySavedViewCreateV1        => state.unpickle[SavedViewCreateV1]
+          case KeySavedViewCreateV2        => state.unpickle[SavedViewCreate]
+          case KeySavedViewDefaultSet      => state.unpickle[SavedViewDefaultSet]
+          case KeySavedViewDelete          => state.unpickle[SavedViewDelete]
+          case KeySavedViewUpdateV1        => state.unpickle[SavedViewUpdateV1]
+          case KeySavedViewUpdateV2        => state.unpickle[SavedViewUpdate]
+          case KeyTagDelete                => state.unpickle[TagDelete]
+          case KeyTagGroupCreate           => state.unpickle[TagGroupCreate]
+          case KeyTagGroupUpdate           => state.unpickle[TagGroupUpdate]
+          case KeyTagRestore               => state.unpickle[TagRestore]
+          case KeyUseCaseCreate            => state.unpickle[UseCaseCreate]
+          case KeyUseCaseStepCreate        => state.unpickle[UseCaseStepCreate]
+          case KeyUseCaseStepDelete        => state.unpickle[UseCaseStepDelete]
+          case KeyUseCaseStepRestore       => state.unpickle[UseCaseStepRestore]
+          case KeyUseCaseStepShiftLeft     => state.unpickle[UseCaseStepShiftLeft]
+          case KeyUseCaseStepShiftRight    => state.unpickle[UseCaseStepShiftRight]
+          case KeyUseCaseStepUpdate        => state.unpickle[UseCaseStepUpdate]
+          case KeyUseCaseTitleSet          => state.unpickle[UseCaseTitleSet]
         }
     }
 

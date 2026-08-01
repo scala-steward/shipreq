@@ -17,30 +17,33 @@ final case class Issues(vector: Vector[Issue]) {
 
   def filter(f: CompiledFilter): Issues =
     Issues(vector.filter {
-      case i: Issue.BlankCustomField             => f.req(i.req)
-      case i: Issue.BlankTitle                   => f.req(i.req)
-      case i: Issue.BlankUseCaseStep             => f.req(i.step.uc)
-      case i: Issue.ConflictingTags              => f.req(i.req)
-      case i: Issue.DeadIssueTagInRcg            => f.codeGroup(i.rcg)
-      case i: Issue.DeadIssueTagInReq            => f.req(i.req)
-      case i: Issue.DeadRefInRcg                 => f.codeGroup(i.rcg)
-      case i: Issue.DeadRefInReq                 => f.req(i.req)
-      case i: Issue.DeadTag                      => f.req(i.req)
-      case _: Issue.DerivativeTagResultDead      => false
-      case _: Issue.DerivativeTagResultUnrelated => false
-      case i: Issue.DuplicateTitle               => f.req(i.req)
-      case i: Issue.EmptyCodeGroup               => f.codeGroup(i.rcg)
-      case _: Issue.FieldDefaultTagDead          => false
-      case _: Issue.FieldDefaultTagNotApplicable => false
-      case _: Issue.FieldDefaultTagUnrelated     => false
-      case i: Issue.ImplicationRequired          => f.req(i.req)
-      case i: Issue.IssueTagInRcg                => f.codeGroup(i.rcg)
-      case i: Issue.IssueTagInReq                => f.req(i.req)
-      case i: Issue.ManualIssue                  => f.manualIssue(i.issue)
-      case _: Issue.NonApplicableField           => false
-      case i: Issue.NonApplicableTag             => f.req(i.req)
-      case i: Issue.NumberOutOfRange             => f.req(i.req)
-      case _: Issue.UninhabitableTagField        => false
+      case i: Issue.BlankCustomField                => f.req(i.req)
+      case i: Issue.BlankTitle                      => f.req(i.req)
+      case i: Issue.BlankUseCaseStep                => f.req(i.step.uc)
+      case i: Issue.ConflictingTags                 => f.req(i.req)
+      case i: Issue.DeadIssueTagInRcg               => f.codeGroup(i.rcg)
+      case i: Issue.DeadIssueTagInReq               => f.req(i.req)
+      case i: Issue.DeadRefInRcg                    => f.codeGroup(i.rcg)
+      case i: Issue.DeadRefInReq                    => f.req(i.req)
+      case i: Issue.DeadTag                         => f.req(i.req)
+      case _: Issue.DerivativeTagResultDead         => false
+      case _: Issue.DerivativeTagResultUnrelated    => false
+      case i: Issue.DuplicateTitle                  => f.req(i.req)
+      case i: Issue.EmptyCodeGroup                  => f.codeGroup(i.rcg)
+      case _: Issue.FieldDefaultTagDead             => false
+      case _: Issue.FieldDefaultTagNotApplicable    => false
+      case _: Issue.FieldDefaultTagUnrelated        => false
+      case _: Issue.FieldFormulaRefsDeadNumberField => false
+      case i: Issue.FormulaEvalErrBadData           => f.req(i.req)
+      case i: Issue.FormulaEvalErrUserDefined       => f.req(i.req)
+      case i: Issue.ImplicationRequired             => f.req(i.req)
+      case i: Issue.IssueTagInRcg                   => f.codeGroup(i.rcg)
+      case i: Issue.IssueTagInReq                   => f.req(i.req)
+      case i: Issue.ManualIssue                     => f.manualIssue(i.issue)
+      case _: Issue.NonApplicableField              => false
+      case i: Issue.NonApplicableTag                => f.req(i.req)
+      case i: Issue.NumberOutOfRange                => f.req(i.req)
+      case _: Issue.UninhabitableTagField           => false
     })
 
   lazy val bySource: BySource = {
@@ -52,30 +55,33 @@ final case class Issues(vector: Vector[Issue]) {
     def addRcg(i: Issue, id: ReqCodeGroupId): Unit = byRcg = byRcg.initAndModifyValue(id, ForSource.empty, _.add(i))
 
     vector.foreach {
-      case i: Issue.BlankCustomField             => addReq(i, i.req.id)
-      case i: Issue.BlankTitle                   => addReq(i, i.req.id)
-      case i: Issue.BlankUseCaseStep             => addReq(i, i.step.useCaseId)
-      case i: Issue.ConflictingTags              => addReq(i, i.req.id)
-      case i: Issue.DeadIssueTagInRcg            => addRcg(i, i.rcg.id)
-      case i: Issue.DeadIssueTagInReq            => addReq(i, i.req.id)
-      case i: Issue.DeadRefInRcg                 => addRcg(i, i.rcg.id)
-      case i: Issue.DeadRefInReq                 => addReq(i, i.req.id)
-      case i: Issue.DeadTag                      => addReq(i, i.req.id)
-      case i: Issue.DerivativeTagResultDead      => config = config.add(i)
-      case i: Issue.DerivativeTagResultUnrelated => config = config.add(i)
-      case i: Issue.DuplicateTitle               => addReq(i, i.req.id)
-      case i: Issue.EmptyCodeGroup               => addRcg(i, i.rcg.id)
-      case i: Issue.FieldDefaultTagNotApplicable => config = config.add(i)
-      case i: Issue.FieldDefaultTagUnrelated     => config = config.add(i)
-      case i: Issue.FieldDefaultTagDead          => config = config.add(i)
-      case i: Issue.ImplicationRequired          => addReq(i, i.req.id)
-      case i: Issue.IssueTagInRcg                => addRcg(i, i.rcg.id)
-      case i: Issue.IssueTagInReq                => addReq(i, i.req.id)
-      case _: Issue.ManualIssue                  => ()
-      case i: Issue.NonApplicableField           => config = config.add(i)
-      case i: Issue.NonApplicableTag             => addReq(i, i.req.id)
-      case i: Issue.NumberOutOfRange             => addReq(i, i.req.id)
-      case i: Issue.UninhabitableTagField        => config = config.add(i)
+      case i: Issue.BlankCustomField                => addReq(i, i.req.id)
+      case i: Issue.BlankTitle                      => addReq(i, i.req.id)
+      case i: Issue.BlankUseCaseStep                => addReq(i, i.step.useCaseId)
+      case i: Issue.ConflictingTags                 => addReq(i, i.req.id)
+      case i: Issue.DeadIssueTagInRcg               => addRcg(i, i.rcg.id)
+      case i: Issue.DeadIssueTagInReq               => addReq(i, i.req.id)
+      case i: Issue.DeadRefInRcg                    => addRcg(i, i.rcg.id)
+      case i: Issue.DeadRefInReq                    => addReq(i, i.req.id)
+      case i: Issue.DeadTag                         => addReq(i, i.req.id)
+      case i: Issue.DerivativeTagResultDead         => config = config.add(i)
+      case i: Issue.DerivativeTagResultUnrelated    => config = config.add(i)
+      case i: Issue.DuplicateTitle                  => addReq(i, i.req.id)
+      case i: Issue.EmptyCodeGroup                  => addRcg(i, i.rcg.id)
+      case i: Issue.FieldDefaultTagNotApplicable    => config = config.add(i)
+      case i: Issue.FieldDefaultTagUnrelated        => config = config.add(i)
+      case i: Issue.FieldDefaultTagDead             => config = config.add(i)
+      case i: Issue.FieldFormulaRefsDeadNumberField => config = config.add(i)
+      case i: Issue.FormulaEvalErrBadData           => addReq(i, i.req.id)
+      case i: Issue.FormulaEvalErrUserDefined       => addReq(i, i.req.id)
+      case i: Issue.ImplicationRequired             => addReq(i, i.req.id)
+      case i: Issue.IssueTagInRcg                   => addRcg(i, i.rcg.id)
+      case i: Issue.IssueTagInReq                   => addReq(i, i.req.id)
+      case _: Issue.ManualIssue                     => ()
+      case i: Issue.NonApplicableField              => config = config.add(i)
+      case i: Issue.NonApplicableTag                => addReq(i, i.req.id)
+      case i: Issue.NumberOutOfRange                => addReq(i, i.req.id)
+      case i: Issue.UninhabitableTagField           => config = config.add(i)
     }
 
     BySource(byReq, byRcg, config)
@@ -83,6 +89,9 @@ final case class Issues(vector: Vector[Issue]) {
 }
 
 object Issues {
+
+  def empty: Issues =
+    Issues(Vector.empty)
 
   final case class BySource(byReq : Map[ReqId, ForSource],
                             byRcg : Map[ReqCodeGroupId, ForSource],

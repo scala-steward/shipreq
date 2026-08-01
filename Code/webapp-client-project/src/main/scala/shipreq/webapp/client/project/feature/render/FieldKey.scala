@@ -23,15 +23,16 @@ object FieldKey {
   /** Fields apply to all types of reqs */
   sealed trait ForAllReqs extends ForGenericReq with ForUseCase
 
-  case object Codes                                                extends ForAllReqs
-  case object ReqType                                              extends ForAllReqs
-  case object Title                                                extends ForAllReqs
-  case object OtherTags                                            extends ForAllReqs
-  case object AllTags                                              extends ForAllReqs
-  final case class CustomNumberField(field: CustomField.Number.Id) extends ForAllReqs
-  final case class CustomTextField  (field: CustomField.Text.Id)   extends ForAllReqs
-  final case class Implications     (scope: ImplicationScope)      extends ForAllReqs
-  final case class CustomFieldTags  (field: CustomField.Tag.Id)    extends ForAllReqs
+  case object Codes                                                  extends ForAllReqs
+  case object ReqType                                                extends ForAllReqs
+  case object Title                                                  extends ForAllReqs
+  case object OtherTags                                              extends ForAllReqs
+  case object AllTags                                                extends ForAllReqs
+  final case class CustomFormulaField(field: CustomField.Formula.Id) extends ForAllReqs
+  final case class CustomNumberField (field: CustomField.Number.Id)  extends ForAllReqs
+  final case class CustomTextField   (field: CustomField.Text.Id)    extends ForAllReqs
+  final case class Implications      (scope: ImplicationScope)       extends ForAllReqs
+  final case class CustomFieldTags   (field: CustomField.Tag.Id)     extends ForAllReqs
 
   sealed trait ForCodeGroup extends FieldKey
   case object Code           extends ForCodeGroup
@@ -52,13 +53,13 @@ object FieldKey {
   implicit val reusability: Reusability[FieldKey] =
     Reusability.byUnivEq
 
-  def customField(id: CustomFieldId): FieldKey =
-    id match {
-      case i: CustomField.Number.Id      => CustomNumberField(i)
-      case i: CustomField.Text.Id        => CustomTextField(i)
-      case i: CustomField.Tag.Id         => CustomFieldTags(i)
-      case i: CustomField.Implication.Id => Implications(-\/(i))
-    }
+  // def customField(id: CustomFieldId): FieldKey =
+  //   id match {
+  //     case i: CustomField.Number.Id      => CustomNumberField(i)
+  //     case i: CustomField.Text.Id        => CustomTextField(i)
+  //     case i: CustomField.Tag.Id         => CustomFieldTags(i)
+  //     case i: CustomField.Implication.Id => Implications(-\/(i))
+  //   }
 
   def impliedBy = Implications(\/-(Backwards))
 

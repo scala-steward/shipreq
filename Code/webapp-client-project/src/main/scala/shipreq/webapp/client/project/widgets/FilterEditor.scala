@@ -248,7 +248,7 @@ object FilterEditor {
       ^.onClick          ==> autoCompleteOnClick,
       ^.onKeyDown        ==> autoCompleteOnKeyDown,
       ^.onKeyDownCapture ==> autoCompleteOnKeyDownCapture,
-      ^.placeholder       := "Filter...",
+      ^.placeholder       := "Filter…",
       ^.minWidth          := "32ex",
     )
 

@@ -109,7 +109,7 @@ object ImpFieldEditor {
       })
 
     def initCreate: ForCreate =
-      ForCreate(None, ReqTypeRulesEditor.State.empty)
+      ForCreate(None, ReqTypeRulesEditor.NoDefault.emptyState)
 
     def initUpdate(id: CustomField.Implication.Id, cfg: ProjectConfig): ForUpdate = {
       val f = cfg.fields.custom(id)

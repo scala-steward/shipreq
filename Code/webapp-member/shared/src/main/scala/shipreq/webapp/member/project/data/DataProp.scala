@@ -146,11 +146,20 @@ object DataProp {
           s"Defaults for ${n.name} field are out of range [${n.min}, ${n.max}]: ${bad.mkString(", ")}")
       }).forall(filteredFields { case n: CustomField.Number => n })
 
+    def formulaFieldsNeverOptionalOrMandatory =
+      Prop.atom[CustomField.Formula]("Never Optional or Mandatory", f => {
+        val bad = f.fieldReqTypeRules.resolutionIterator().filter(r =>
+          (r ==* FieldReqTypeRules.Resolution.Optional) || (r ==* FieldReqTypeRules.Resolution.Mandatory)
+        ).toList
+        Option.when(bad.nonEmpty)(
+          s"Formula field ${f.name} contains invalid rule resolutions (cannot be Optional or Mandatory): ${bad.mkString(", ")}")
+      }).forall(filteredFields { case f: CustomField.Formula => f })
+
     def fieldSet = "FieldSet" rename_: (
       ids ∧ fields ∧
       orderNoDups ∧ orderCustomFieldsIso ∧ orderHasAllMandatoryStaticFields ∧
       tagFieldsUnique ∧ implicationFieldsUnique ∧ noDuplicateTagFieldReqTypeResolutions ∧
-      numFieldDefaultsInRange
+      numFieldDefaultsInRange ∧ formulaFieldsNeverOptionalOrMandatory
     )
 
     val all =
@@ -727,8 +736,8 @@ object DataProp {
       ∧ validReqIds    ("ReqCode ReqIds (inactive)",  _.content.reqCodes.inactiveIdsByReqId.keys)
       ∧ validFieldIds  ("ReqData.text TextField ids", _.content.reqText.data.keys)
       ∧ validReqIds    ("ReqData.text.*.reqIds",      _.content.reqText.data.valuesIterator.flatMap(_.keysIterator))
-      ∧ validFieldIds  ("ReqData.nums NumField ids",  _.content.reqNums.keys)
-      ∧ validReqIds    ("ReqData.nums.*.reqIds",      _.content.reqNums.valuesIterator.flatMap(_.keysIterator))
+      ∧ validFieldIds  ("ReqData.nums NumField ids",  _.content.reqNums.data.keys)
+      ∧ validReqIds    ("ReqData.nums.*.reqIds",      _.content.reqNums.data.valuesIterator.flatMap(_.keysIterator))
       ∧ validReqIds    ("ReqData.config.tags keys",   _.content.reqTags.keys)
       ∧ validTagIds    ("ReqData.config.tags values", _.content.reqTags.valueIterator)
       ∧ validReqIds    ("ReqData.implications",       _.content.implications.members)

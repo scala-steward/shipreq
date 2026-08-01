@@ -47,6 +47,8 @@ object EventPermission {
          | _: CustomReqTypeUpdate
          | _: CustomReqTypeUpdateV1
          | _: FieldCustomDelete
+         | _: FieldCustomFormulaCreate
+         | _: FieldCustomFormulaUpdate
          | _: FieldCustomImpCreate
          | _: FieldCustomImpCreateV1
          | _: FieldCustomImpUpdate

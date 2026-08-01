@@ -155,6 +155,7 @@ object Actions {
          | _: Issue.BlankUseCaseStep
          | _: Issue.ConflictingTags
          | _: Issue.DuplicateTitle
+         | _: Issue.FormulaEvalErrUserDefined
          | _: Issue.ImplicationRequired
          | _: Issue.IssueTagInRcg
          | _: Issue.IssueTagInReq
@@ -163,6 +164,8 @@ object Actions {
       case _: Issue.FieldDefaultTagDead
          | _: Issue.FieldDefaultTagNotApplicable
          | _: Issue.FieldDefaultTagUnrelated
+         | _: Issue.FieldFormulaRefsDeadNumberField
+         | _: Issue.FormulaEvalErrBadData
          | _: Issue.NonApplicableField
          | _: Issue.NumberOutOfRange
             => linkTo(Routes.Page.CfgFields)

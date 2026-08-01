@@ -6,6 +6,7 @@ import monocle.Traversal
 import shipreq.base.util.{Applicability, Applicable, Impossible, NotApplicable => NA}
 import shipreq.webapp.member.project.data
 import shipreq.webapp.member.project.data.FieldReqTypeRules._
+import shipreq.webapp.member.project.formula.ValidFormula
 
 /** Rules for fields settings per req type.
  *
@@ -127,10 +128,11 @@ object FieldReqTypeRules {
   def only[D](reqTypeId: ReqTypeId, resolution: Resolution[D]): FieldReqTypeRules[D] =
     FieldReqTypeRules(Map(reqTypeId -> resolution), Resolution.NotApplicable)
 
-  type ForImpField  = FieldReqTypeRules[Impossible]
-  type ForNumField  = FieldReqTypeRules[Double]
-  type ForTagField  = FieldReqTypeRules[ApplicableTagId]
-  type ForTextField = FieldReqTypeRules[Impossible]
+  type ForImpField     = FieldReqTypeRules[Impossible]
+  type ForFormulaField = FieldReqTypeRules[ValidFormula]
+  type ForNumField     = FieldReqTypeRules[Double]
+  type ForTagField     = FieldReqTypeRules[ApplicableTagId]
+  type ForTextField    = FieldReqTypeRules[Impossible]
 
   sealed abstract class Resolution[+Default](final val applicability: Applicability) {
     final def isNA = applicability is NA
@@ -156,10 +158,11 @@ object FieldReqTypeRules {
 
     @inline def default = Optional
 
-    type ForImpField  = Resolution[Impossible]
-    type ForNumField  = Resolution[Double]
-    type ForTagField  = Resolution[ApplicableTagId]
-    type ForTextField = Resolution[Impossible]
+    type ForImpField     = Resolution[Impossible]
+    type ForFormulaField = Resolution[ValidFormula]
+    type ForNumField     = Resolution[Double]
+    type ForTagField     = Resolution[ApplicableTagId]
+    type ForTextField    = Resolution[Impossible]
 
     def v1(mandatory: data.Mandatory) =
       mandatory match {
