@@ -1,5 +1,3 @@
-* changelog
-
 # Formulas referencing formulas
 
 * Add `FormulaFieldRef.FormulaField`
