@@ -1,6 +1,3 @@
-* Issue detection
-  * Formula field reqType rules are all dead or N/A *(rule already in-place, confirm works)*
-
 * changelog
 
 # Formulas referencing formulas
