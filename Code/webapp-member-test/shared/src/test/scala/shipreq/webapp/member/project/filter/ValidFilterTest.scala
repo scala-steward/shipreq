@@ -49,6 +49,7 @@ object ValidFilterTest extends TestSuite {
         import shipreq.webapp.member.test.project.UnsafeTypes.{autoHashRefKey => _, _}
         def posNA =   "You can't specify values"
         "exact"      - assertTranslation(PF.fieldProp("Description", Attr("blank")))(VF.fieldProp(\/-(descField), Blank))
+        "notBlank"   - assertTranslation(PF.fieldProp("Description", Attr("notBlank")))(VF.fieldProp(\/-(descField), NotBlank))
         "caseWrong"  - assertTranslation(PF.fieldProp("descriPTION", Attr("blank")))(VF.fieldProp(\/-(descField), Blank))
         "title"      - assertTranslation(PF.fieldProp("TITLE", Attr("BLANK")))(VF.fieldProp(-\/(Title), Blank))
         "impField"   - assertTranslation(PF.fieldProp("MF", Attr("BLANK")))(VF.fieldProp(\/-(mfField), Blank))

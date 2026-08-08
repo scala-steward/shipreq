@@ -60,7 +60,7 @@ object FilterAst {                                                              
       values.whole.map(namesFor(_).next()).mkString(", ")
 
     final lazy val names: Map[String, A] =
-      values.iterator.flatMap(a => namesFor(a).map((_, a))).toMap
+      values.iterator.flatMap(a => namesFor(a).map(s => (s.toLowerCase, a))).toMap
 
     final def apply(n: String): Option[A] =
       names.get(n.toLowerCase)

@@ -13,6 +13,7 @@
 
 * Automatically update the Issues page filter when the project changes
 * Bugfix: preview buttons weren't working from editors in the Issues page
+* Bugfix: `field:Detail=notBlank` filter now works again
 * Links in rich text now open in new tabs
 
 
