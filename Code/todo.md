@@ -1,7 +1,7 @@
 # Formulas referencing formulas
 
 * Update to include formula fields:
-  * RandomData
+  * RandomEventStream
 
 * scalafix
 * changelog
