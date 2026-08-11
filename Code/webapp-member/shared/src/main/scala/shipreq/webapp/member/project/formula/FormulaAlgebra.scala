@@ -147,14 +147,14 @@ object FormulaAlgebra {
   private val typeMismatch = FormulaValue.Err("Type mismatch.")
   private val invalidNumberOfFnArgs = FormulaValue.Err("Arg count mismatch.") // this should be caught at the validation stage
   private val divisionByZero = FormulaValue.Err("Division by zero.")
-  private val notApplicable = FormulaValue.Err("N/A")
+  private val refNotApplicable = FormulaValue.Err("Referenced formula is N/A.")
 
   private val nonUserDefinedErrors: Set[FormulaValue.Err] =
     Set(
       typeMismatch,
       invalidNumberOfFnArgs,
       divisionByZero,
-      notApplicable,
+      refNotApplicable,
     )
 
   def isErrorUserDefined(err: FormulaValue.Err): Boolean =
@@ -272,7 +272,7 @@ object FormulaAlgebra {
         case FormulaFieldRef.FormulaField(fid) =>
           fec(fid)(req) match {
             case \/-(FormulaEvalCache.Eval(value, _, _)) => value
-            case -\/(NotApplicable)                      => notApplicable
+            case -\/(NotApplicable)                      => refNotApplicable
           }
 
         case FormulaFieldRef.NumberField(fid) =>
