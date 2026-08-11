@@ -29,7 +29,8 @@ object FormulaEditor {
 
   def autoCompleteStrategies(cfg: ProjectConfig): AutoComplete.Strategies = {
     val fieldSuggestions =
-      cfg.liveCustomNumberFields.map(f => "field:" + FormulaAlgebra.quoteFieldName(f.name))
+      (cfg.liveCustomFormulaFields.map(_.name) ++ cfg.liveCustomNumberFields.map(_.name))
+        .map(name => "field:" + FormulaAlgebra.quoteFieldName(name))
 
     val functionSuggestions =
       FormulaFunction.all.map(_.name + "(")
