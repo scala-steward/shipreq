@@ -355,6 +355,12 @@ object Row {
         val desc = UI.descFieldDefaultTagNotApplicable(field = fieldName, tag = i.tag.name, reqType = i.reqType.mnemonic.value)
         forConfig(i, desc)
 
+      case i: Issue.FieldFormulaRefsDeadFormulaField =>
+        val src = cfg.fieldName(i.src.id)
+        val tgt = cfg.fieldName(i.tgt.id)
+        val desc = UI.descFieldFormulaRefsDeadFormulaField(src = src, tgt = tgt)
+        forConfig(i, desc)
+
       case i: Issue.FieldFormulaRefsDeadNumberField =>
         val src = cfg.fieldName(i.src.id)
         val tgt = cfg.fieldName(i.tgt.id)

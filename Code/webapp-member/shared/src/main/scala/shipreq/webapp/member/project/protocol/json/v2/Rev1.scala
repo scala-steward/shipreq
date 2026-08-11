@@ -620,6 +620,12 @@ object Rev1 {
     import shipreq.webapp.member.project.formula._
     import Formula.ValidF
 
+    implicit val decoderFormulaFieldRefFormulaField: Decoder[FormulaFieldRef.FormulaField] =
+      Decoder[CustomField.Formula.Id].map(FormulaFieldRef.FormulaField.apply)
+
+    implicit val encoderFormulaFieldRefFormulaField: Encoder[FormulaFieldRef.FormulaField] =
+      Encoder[CustomField.Formula.Id].contramap(_.id)
+
     implicit val decoderFormulaFieldRefNumberField: Decoder[FormulaFieldRef.NumberField] =
       Decoder[CustomField.Number.Id].map(FormulaFieldRef.NumberField.apply)
 
@@ -627,10 +633,12 @@ object Rev1 {
       Encoder[CustomField.Number.Id].contramap(_.id)
 
     implicit val decoderFormulaFieldRef: Decoder[FormulaFieldRef] = decodeSumBySoleKey {
+      case ("formula", c) => c.as[FormulaFieldRef.FormulaField]
       case ("number", c) => c.as[FormulaFieldRef.NumberField]
     }
 
     implicit val encoderFormulaFieldRef: Encoder[FormulaFieldRef] = Encoder.instance {
+      case a: FormulaFieldRef.FormulaField => Json.obj("formula" -> a.asJson)
       case a: FormulaFieldRef.NumberField => Json.obj("number" -> a.asJson)
     }
 

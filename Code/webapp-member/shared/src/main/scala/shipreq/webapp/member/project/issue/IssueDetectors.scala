@@ -339,6 +339,11 @@ object IssueDetectors {
           case FieldReqTypeRules.Resolution.DefaultTo(formula) =>
             formula.fieldRefs.foreach {
 
+              case FormulaFieldRef.FormulaField(tgtId) =>
+                val tgt = cfg.fields.custom(tgtId)
+                if (tgt.live(cfg) is Dead)
+                  issues += Issue.FieldFormulaRefsDeadFormulaField(src, tgt)
+
               case FormulaFieldRef.NumberField(tgtId) =>
                 val tgt = cfg.fields.custom(tgtId)
                 if (tgt.live(cfg) is Dead)
@@ -376,6 +381,9 @@ object IssueDetectors {
 
             case FormulaEvalCache.Issue.UserDefinedEvalError(err) =>
               ctx.add(Issue.FormulaEvalErrUserDefined(req, field, err))
+
+            case FormulaEvalCache.Issue.ReliesOnDeadFormulaField =>
+              // Do nothing — this is covered by FieldFormulaRefsDeadField
 
             case FormulaEvalCache.Issue.ReliesOnDeadNumberField =>
               // Do nothing — this is covered by FieldFormulaRefsDeadField

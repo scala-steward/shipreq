@@ -10,9 +10,9 @@ object FormulaEvalCache {
 
   sealed trait Issue
   object Issue {
+    case object ReliesOnDeadFormulaField extends Issue
     case object ReliesOnDeadNumberField  extends Issue
     case object ReliesOnOutOfRangeNumber extends Issue
-
     final case class BadDataEvalError    (err: FormulaValue.Err) extends Issue
     final case class UserDefinedEvalError(err: FormulaValue.Err) extends Issue
   }
@@ -65,7 +65,7 @@ final class FormulaEvalCache(cfg          : ProjectConfig,
           case FieldReqTypeRules.Resolution.DefaultTo(formula) =>
 
             // Eval
-            val algebra = FormulaAlgebra.eval(cfg.fields, reqNums, req)
+            val algebra = FormulaAlgebra.eval(this, cfg.fields, reqNums, req)
             val value   = Recursion.cata(algebra)(formula.formula)
 
             // Issue detection
@@ -73,6 +73,10 @@ final class FormulaEvalCache(cfg          : ProjectConfig,
             val live = liveField & req.live(cfg.reqTypes)
             if (live is Live) {
               formula.fieldRefs.foreach {
+                case FormulaFieldRef.FormulaField(id) =>
+                  val f = cfg.fields.custom(id)
+                  if (f.live(cfg) is Dead)
+                    issues += Issue.ReliesOnDeadFormulaField
                 case FormulaFieldRef.NumberField(id) =>
                   val f = cfg.fields.custom(id)
                   if (f.live(cfg) is Dead)
