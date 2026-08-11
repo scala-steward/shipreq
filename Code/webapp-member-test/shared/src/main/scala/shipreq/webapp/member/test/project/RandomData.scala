@@ -2530,13 +2530,13 @@ object RandomData {
       def gen(fieldSet: FieldSet): Gen[Valid] = {
         val numberFields = fieldSet.customNumberFields.iterator.map(f => FormulaFieldRef.NumberField(f.id): FormulaFieldRef).toVector
         val formulaFields = fieldSet.customFormulaFields.iterator.map(f => FormulaFieldRef.FormulaField(f.id): FormulaFieldRef).toVector
-        val refs = numberFields ++ formulaFields
-        val ogFieldRef = NonEmptyVector.option(refs).map(Gen.chooseNE(_))
-        gen(ogFieldRef)
+        gen(numberFields ++ formulaFields)
       }
 
-      // def gen(ogNumberField: Option[Gen[CustomField.Number.Id]]): Gen[Valid] =
-      //   gen(ogNumberField.map(_.map(FormulaFieldRef.NumberField.apply)))
+      def gen(validRefs: Vector[FormulaFieldRef]): Gen[Valid] = {
+        val ogFieldRef = NonEmptyVector.option(validRefs).map(Gen.chooseNE(_))
+        gen(ogFieldRef)
+      }
 
       def gen(ogFieldRef: Option[Gen[FormulaFieldRef]]): Gen[Valid] = {
 
