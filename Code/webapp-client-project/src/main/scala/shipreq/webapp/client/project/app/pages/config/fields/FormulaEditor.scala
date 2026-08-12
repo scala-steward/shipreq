@@ -55,9 +55,12 @@ object FormulaEditor {
     Vector(main)
   }
 
-  private val helpButton: VdomTag =
+  private def helpButton(enabled: Enabled): VdomTag =
     Button(tipe = Button.Type.IconOnly(Icon.HelpCircle))
-      .tag(^.onClick --> FormulaHelp.modal.show)
+      .tag(
+        ^.disabled := (enabled is Disabled),
+        ^.onClick  --> FormulaHelp.modal.show,
+      )
 
   final class Backend($: BackendScope[Props, Unit]) extends AutoComplete.BackendI {
 
@@ -96,7 +99,7 @@ object FormulaEditor {
             ^.value             := p.state,
           ).withRef(inputDomRef),
 
-          helpButton,
+          helpButton(p.enabled),
         ),
 
         p.error.map(err =>
