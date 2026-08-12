@@ -6,6 +6,7 @@ import shipreq.webapp.base.test.TestState._
 import shipreq.webapp.base.ui.semantic.Input
 import shipreq.webapp.client.project.app.Style
 import shipreq.webapp.client.project.app.pages.config.Buttons
+import shipreq.webapp.client.project.widgets.ReqTypeRulesEditor
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.test.CommonObs
 
@@ -16,6 +17,7 @@ object FieldConfigObs {
   lazy val selEmptyRight        = Style.widgets.splitScreenCrud.emptyRight.selector
   lazy val selEditorButtons     = Style.tagConfig.editorButtons           .selector
   lazy val selRulesDeadReqTypes = Style.fieldConfig.rulesDeadReqTypesInner.selector
+  lazy val selARTError          = Style.widgets.applicableReqTypesErrMsg  .selector
 
   final class FieldList($: DomZipperJs) {
     val rows: Vector[FieldListRow] =
@@ -80,22 +82,33 @@ object FieldConfigObs {
   }
 
   final class Rules($: DomZipperJs) {
-    val rows = $.child("tbody").children1n.map(new RuleRowObs(_))
+    val rows: Vector[RuleRowObs] = {
+      val it = $.child("tbody").children1n.zippers.iterator
+      var acc = Vector.empty[RuleRowObs]
+      while (it.hasNext) {
+        val trZipper      = it.next()
+        val nextIsDefault = trZipper.domAsHtml.classList.contains(ReqTypeRulesEditor.ClsNextIsDefault)
+        val defaultCont   = Option.when(nextIsDefault)(it.next().child("td", 1 of 2))
+        acc :+= new RuleRowObs(trZipper, defaultCont)
+      }
+      acc
+    }
   }
 
-  final class RuleRowObs($: DomZipperJs) {
-    private val reqTypes = $.child("td", 1 of 3)
-    private val rule     = $.child("td", 2 of 3)
-    private val button   = $.child("td", 3 of 3)
+  final class RuleRowObs($: DomZipperJs, defaultContOpt: Option[DomZipperJs]) {
+    private val reqTypes    = $.child("td", 1 of 3)
+    private val rule        = $.child("td", 2 of 3)
+    private val button      = $.child("td", 3 of 3)
+    private val defaultCont = defaultContOpt.getOrElse(rule)
 
     val reqTypesDom       = reqTypes.collect01("input").domsAs[html.Input]
     val reqTypesError     = reqTypes.collect01(s"[${Input.errorAttr.attrName}]").zippers.map(_.domAsHtml.textContent.trim)
     val deadReqTypes      = reqTypes.collect01(selRulesDeadReqTypes).zippers.map(_.domAsHtml.textContent.trim)
     val res               = new CommonObs.Dropdown(rule(".ui.dropdown.selection:first-child"))
-    val default           = rule.collect01(".ui.dropdown.selection:not(:first-child)").map(new CommonObs.Dropdown(_))
-    val defaultInputDom   = rule.collect01(".ui.input input").domsAs[html.Input]
+    val default           = defaultCont.collect01(".ui.dropdown.selection:not(:first-child)").map(new CommonObs.Dropdown(_))
+    val defaultInputDom   = defaultCont.collect01(".ui.input input").domsAs[html.Input]
     val defaultInputValue = defaultInputDom.map(_.value)
-    val defaultInputError = rule.collect01(".ui.input div").zippers.map(_.domAsHtml.textContent.trim)
+    val defaultInputError = defaultCont.collect01(s".ui.input div, $selARTError").zippers.map(_.domAsHtml.textContent.trim)
     val dead              = button.collect01("button").isEmpty
 
     val reqTypesDesc: String =

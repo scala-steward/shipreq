@@ -8,6 +8,7 @@ import shipreq.webapp.client.project.app.pages.root.Routes.Page
 import shipreq.webapp.client.project.test.PrepareEnv
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.event._
+import shipreq.webapp.member.project.formula._
 import shipreq.webapp.member.test.WebappTestUtil._
 import shipreq.webapp.member.test.project.UnsafeTypes._
 import shipreq.webapp.member.test.project.{SampleProject6, SampleProject7}
@@ -732,6 +733,160 @@ object FieldConfigTest extends TestSuite {
     )
   }
 
+  private def validFml(txt: String, fs: FieldSet = FieldSet.empty): ValidFormula =
+    ValidFormula(Formula.Potential.validate(FormulaParser.parse(txt).toOption.get, fs).toOption.get)
+
+  private def testFormulaFieldCreate()(implicit tp: TestPath) =
+    runActions(SampleProject7.project)(
+
+      clickNew("Formula field")
+        +> filterDead.assert(HideDead)
+        +> editorName.assert("")
+        +> editorDesc.assert("")
+        +> editorDecPlaces.assert("0")
+        +> editorRules.assert(RuleRow.all("Apply formula…", default = ""))
+        +> buttonsEnabled.assert(Buttons(cancel = Enabled, save = Disabled))
+
+        >> setEditorName("")
+        +> editorNameError.assert("Cannot be blank.")
+
+        >> setEditorName("Component")
+        +> editorNameError.assert("Already in use.")
+
+        >> setEditorName("Total Points")
+        +> editorNameError.assert.empty
+
+        >> setEditorDesc("Custom Formula Field")
+        +> editorDesc.assert("Custom Formula Field")
+
+        >> setEditorDecimalPlaces("2")
+        +> editorDecPlaces.assert("2")
+        +> editorDecPlacesError.assert.empty
+
+        >> setRuleDefault(0, "10 + 20")
+        +> editorRules.assert(RuleRow.all("Apply formula…", default = "10 + 20", defaultError = false))
+        +> buttonsEnabled.assert(Buttons(cancel = Enabled, save = Enabled))
+
+        >> clickSaveButton
+        +> fieldList.valueBy(_.last).assert("Total Points")
+        +> fieldDetail("Total Points").assert("All—10 + 20")
+        +> buttonsEnabled.assert(Buttons(delete = Enabled, close = Enabled, save = Disabled))
+    )
+
+  private def testFormulaFieldUpdate()(implicit tp: TestPath) = {
+    val fmlField = CustomField.Formula.Id(98)
+    val p = applyEventsSuccessfully(
+      SampleProject7.project,
+      Event.FieldCustomFormulaCreate(fmlField, CustomFormulaFieldGD.nev(
+        CustomFormulaFieldGD.Name("Total Points"),
+        CustomFormulaFieldGD.Desc(None),
+        CustomFormulaFieldGD.DecimalPlaces(1),
+        CustomFormulaFieldGD.FieldReqTypeRules(FieldReqTypeRules.const(
+          FieldReqTypeRules.Resolution.DefaultTo(validFml("10"))
+        ))
+      ))
+    )
+
+    runActions(p)(
+      selectField("Total Points")
+        +> filterDead.assert(HideDead)
+        +> editorName.assert("Total Points")
+        +> editorDesc.assert("")
+        +> editorDecPlaces.assert("1")
+        +> editorRules.assert(RuleRow.all("Apply formula…", default = "10"))
+        +> buttonsEnabled.assert(Buttons(delete = Enabled, close = Enabled, save = Disabled))
+
+        >> setEditorName("Total Points Updated")
+        >> setEditorDesc("New formula desc")
+        >> setEditorDecimalPlaces("2")
+        >> setRuleDefault(0, "50 + 50")
+        +> buttonsEnabled.assert(Buttons(delete = Enabled, cancel = Enabled, save = Enabled))
+
+        >> clickSaveButton
+        +> fieldList.valueBy(_.last).assert("Total Points Updated")
+        +> fieldDetail("Total Points Updated").assert("All—50 + 50")
+        +> editorName.assert("Total Points Updated")
+        +> editorDesc.assert("New formula desc")
+        +> editorDecPlaces.assert("2")
+        +> buttonsEnabled.assert(Buttons(delete = Enabled, close = Enabled, save = Disabled))
+    )
+  }
+
+  private def testFormulaFieldCycle()(implicit tp: TestPath) = {
+    import DataImplicits._
+    val fmlA = CustomField.Formula.Id(96)
+    val fmlB = CustomField.Formula.Id(97)
+
+    val fmlADummy = CustomField.Formula(fmlA, "FmlA", None, 0, FieldReqTypeRules.const(FieldReqTypeRules.Resolution.DefaultTo(validFml("100"))), Live)
+    val fsWithA = FieldSet(emptyDataMap(CustomField).add(fmlADummy), Vector(fmlA))
+
+    val p1 = applyEventsSuccessfully(
+      SampleProject7.project,
+      Event.FieldCustomFormulaCreate(fmlA, CustomFormulaFieldGD.nev(
+        CustomFormulaFieldGD.Name("FmlA"),
+        CustomFormulaFieldGD.Desc(None),
+        CustomFormulaFieldGD.DecimalPlaces(0),
+        CustomFormulaFieldGD.FieldReqTypeRules(FieldReqTypeRules.const(
+          FieldReqTypeRules.Resolution.DefaultTo(validFml("100"))
+        ))
+      )),
+      Event.FieldCustomFormulaCreate(fmlB, CustomFormulaFieldGD.nev(
+        CustomFormulaFieldGD.Name("FmlB"),
+        CustomFormulaFieldGD.Desc(None),
+        CustomFormulaFieldGD.DecimalPlaces(0),
+        CustomFormulaFieldGD.FieldReqTypeRules(FieldReqTypeRules.const(
+          FieldReqTypeRules.Resolution.DefaultTo(validFml("field:FmlA + 10", fsWithA))
+        ))
+      ))
+    )
+
+    runActions(p1)(
+      selectField("FmlA")
+        +> filterDead.assert(HideDead)
+        +> editorName.assert("FmlA")
+        +> editorRules.assert(RuleRow.all("Apply formula…", default = "100"))
+        +> buttonsEnabled.assert(Buttons(delete = Enabled, close = Enabled, save = Disabled))
+
+        >> setRuleDefault(0, "field:FmlB + 1")
+        +> editorRules.assert(RuleRow.all("Apply formula…", default = "field:FmlB + 1", defaultError = true))
+        +> buttonsEnabled.assert(Buttons(delete = Enabled, cancel = Enabled, save = Disabled))
+
+        >> setRuleDefault(0, "field:FmlA + 5")
+        +> editorRules.assert(RuleRow.all("Apply formula…", default = "field:FmlA + 5", defaultError = true))
+        +> buttonsEnabled.assert(Buttons(delete = Enabled, cancel = Enabled, save = Disabled))
+
+        >> setRuleDefault(0, "200")
+        +> editorRules.assert(RuleRow.all("Apply formula…", default = "200", defaultError = false))
+        +> buttonsEnabled.assert(Buttons(delete = Enabled, cancel = Enabled, save = Enabled))
+    )
+  }
+
+  private def testFormulaFieldDead()(implicit tp: TestPath) = {
+    val fmlField = CustomField.Formula.Id(98)
+    val p = applyEventsSuccessfully(
+      SampleProject7.project,
+      Event.FieldCustomFormulaCreate(fmlField, CustomFormulaFieldGD.nev(
+        CustomFormulaFieldGD.Name("Total Points"),
+        CustomFormulaFieldGD.Desc(None),
+        CustomFormulaFieldGD.DecimalPlaces(1),
+        CustomFormulaFieldGD.FieldReqTypeRules(FieldReqTypeRules.const(
+          FieldReqTypeRules.Resolution.DefaultTo(validFml("10"))
+        ))
+      ))
+    )
+
+    runActions(p)(
+      selectField("Total Points")
+        +> filterDead.assert(HideDead)
+
+        >> clickDeleteButton
+        +> filterDead.assert(ShowDead)
+        +> editorName.assert("Total Points")
+        +> buttonsEnabled.assert(Buttons(restore = Enabled, close = Enabled))
+        +> editorEditables.assert(1)
+    )
+  }
+
   override def tests = Tests {
 
     "fieldList" - {
@@ -770,6 +925,13 @@ object FieldConfigTest extends TestSuite {
       "create" - testNumFieldCreate()
       "update" - testNumFieldUpdate()
       "dead"   - testNumFieldDead()
+    }
+
+    "formulaField" - {
+      "create" - testFormulaFieldCreate()
+      "update" - testFormulaFieldUpdate()
+      "cycle"  - testFormulaFieldCycle()
+      "dead"   - testFormulaFieldDead()
     }
 
   }
