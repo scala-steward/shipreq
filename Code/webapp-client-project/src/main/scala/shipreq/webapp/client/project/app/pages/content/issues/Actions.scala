@@ -164,6 +164,7 @@ object Actions {
       case _: Issue.FieldDefaultTagDead
          | _: Issue.FieldDefaultTagNotApplicable
          | _: Issue.FieldDefaultTagUnrelated
+         | _: Issue.FieldFormulaRefsDeadFormulaField
          | _: Issue.FieldFormulaRefsDeadNumberField
          | _: Issue.FormulaEvalErrBadData
          | _: Issue.NonApplicableField

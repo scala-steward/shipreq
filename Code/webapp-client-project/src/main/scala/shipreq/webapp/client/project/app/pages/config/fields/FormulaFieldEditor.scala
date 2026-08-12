@@ -14,7 +14,7 @@ import shipreq.webapp.client.project.util.DataReusability._
 import shipreq.webapp.client.project.widgets.ReqTypeRulesEditor
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.event.CustomFormulaFieldGD
-import shipreq.webapp.member.project.formula.{Formula, FormulaParser, ValidFormula}
+import shipreq.webapp.member.project.formula.{Formula, FormulaFieldRef, FormulaParser, ValidFormula}
 import shipreq.webapp.member.project.protocol.websocket.UpdateConfigCmd
 import shipreq.webapp.member.ui.AutosizeTextarea
 
@@ -128,10 +128,49 @@ object FormulaFieldEditor {
         .withValidator(DataValidators.formulaField.desc.unnamed)
         .withEnabled(p.enabled)
 
-    def parseAndValidateFormula(txt: String): ErrorMsg \/ ValidFormula =
-      FormulaParser.parse(txt).leftMap(_ => ErrorMsg("Invalid formula."))
-        .flatMap(Formula.Potential.validate(_, p.cfg.fields))
-        .map(ValidFormula(_))
+    def parseAndValidateFormula(txt: String): ErrorMsg \/ ValidFormula = {
+
+      def validFormulaRefs(vf: ValidFormula): Set[CustomField.Formula.Id] =
+        vf.fieldRefs.flatMap {
+          case FormulaFieldRef.FormulaField(targetId) => Set(targetId)
+          case FormulaFieldRef.NumberField(_)         => Set.empty[CustomField.Formula.Id]
+        }
+
+      def formulaFieldRefs(f: CustomField.Formula): Set[CustomField.Formula.Id] =
+        f.fieldReqTypeRules.resolutionIterator().flatMap {
+          case FieldReqTypeRules.Resolution.DefaultTo(validFormula) =>
+            validFormulaRefs(validFormula)
+          case FieldReqTypeRules.Resolution.Optional
+             | FieldReqTypeRules.Resolution.Mandatory
+             | FieldReqTypeRules.Resolution.NotApplicable =>
+            Set.empty[CustomField.Formula.Id]
+        }.toSet
+
+      def checkForCycles(validFormula: ValidFormula): Either[ErrorMsg, Unit] = {
+        val thisId = p.state.value.idOption.getOrElse(CustomField.Formula.Id(-1))
+        val newRefs = validFormulaRefs(validFormula)
+
+        val graph: Map[CustomField.Formula.Id, Set[CustomField.Formula.Id]] =
+          p.cfg.fields.customFormulaFields.map { f =>
+            if (p.state.value.idOption.contains(f.id))
+              (f.id, newRefs)
+            else
+              (f.id, formulaFieldRefs(f))
+          }.toMap + (thisId -> newRefs)
+
+        if (Digraph.cycleDetector[CustomField.Formula.Id].findCycle(graph).isEmpty)
+          \/-(())
+        else
+          -\/(ErrorMsg("This would create a cycle in formula field references."))
+      }
+
+      for {
+        potential     <- FormulaParser.parse(txt).leftMap(_ => ErrorMsg("Invalid formula."))
+        validFormula0 <- Formula.Potential.validate(potential, p.cfg.fields)
+        validFormula   = ValidFormula(validFormula0)
+        _             <- checkForCycles(validFormula)
+      } yield validFormula
+    }
 
     val decimalPlacesField =
       Form.Field.text

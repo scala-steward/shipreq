@@ -22,7 +22,7 @@ import shipreq.webapp.member.project.data.savedview.SavedView
 import shipreq.webapp.member.project.event.Event._
 import shipreq.webapp.member.project.event.RetiredGenericData._
 import shipreq.webapp.member.project.event._
-import shipreq.webapp.member.project.formula.ValidFormula
+import shipreq.webapp.member.project.formula.{FormulaFieldRef, ValidFormula}
 import shipreq.webapp.member.project.text.Text
 import shipreq.webapp.member.test.WebappBaseGen._
 import shipreq.webapp.member.test.WebappTestUtil
@@ -320,8 +320,45 @@ final class ApplicableEventGen(emptyState: State, curState: State, config: Rando
   lazy val fieldReqTypeRules_ : Gen[FieldReqTypeRules[Impossible]] =
     RandomData.fieldReqTypeRules(existingReqTypeId, None)
 
-  def fieldReqTypeRulesFormula: Gen[FieldReqTypeRules[ValidFormula]] = {
-    val genDefault = RandomData.formula.valid.gen(p.config.fields).map(ValidFormula.apply)
+  def fieldReqTypeRulesFormula: Gen[FieldReqTypeRules[ValidFormula]] =
+    fieldReqTypeRulesFormula(None)
+
+  def fieldReqTypeRulesFormula(targetId: Option[CustomField.Formula.Id]): Gen[FieldReqTypeRules[ValidFormula]] = {
+    val graph: Map[CustomField.Formula.Id, Set[CustomField.Formula.Id]] =
+      p.config.fields.customFormulaFields.map { f =>
+        val refs = f.fieldReqTypeRules.resolutionIterator().flatMap {
+          case FieldReqTypeRules.Resolution.DefaultTo(v) =>
+            v.fieldRefs.flatMap {
+              case FormulaFieldRef.FormulaField(id) => Set(id)
+              case FormulaFieldRef.NumberField(_)   => Set.empty[CustomField.Formula.Id]
+            }
+          case FieldReqTypeRules.Resolution.Optional
+             | FieldReqTypeRules.Resolution.Mandatory
+             | FieldReqTypeRules.Resolution.NotApplicable =>
+            Set.empty[CustomField.Formula.Id]
+        }.toSet
+        (f.id, refs)
+      }.toMap
+
+    def reaches(from: CustomField.Formula.Id, target: CustomField.Formula.Id): Boolean = {
+      @tailrec def loop(queue: List[CustomField.Formula.Id], visited: Set[CustomField.Formula.Id]): Boolean =
+        queue match {
+          case Nil => false
+          case h :: t =>
+            if (h ==* target) true
+            else if (visited.contains(h)) loop(t, visited)
+            else loop(t ++ graph.getOrElse(h, Set.empty), visited + h)
+        }
+      loop(graph.getOrElse(from, Set.empty).toList, Set.empty)
+    }
+
+    val safeNumberFields = p.config.fields.customNumberFields.iterator.map(f => FormulaFieldRef.NumberField(f.id): FormulaFieldRef).toVector
+    val safeFormulaFields = p.config.fields.customFormulaFields.iterator.filter { f =>
+      targetId.forall(tid => (f.id !=* tid) && !reaches(f.id, tid))
+    }.map(f => FormulaFieldRef.FormulaField(f.id): FormulaFieldRef).toVector
+
+    val safeRefs = safeNumberFields ++ safeFormulaFields
+    val genDefault = RandomData.formula.valid.gen(safeRefs).map(ValidFormula.apply)
     RandomData.fieldReqTypeRules(existingReqTypeId, Some(genDefault), allowOptional = false, allowMandatory = false)
   }
 
@@ -499,14 +536,14 @@ final class ApplicableEventGen(emptyState: State, curState: State, config: Rando
     }
   }
 
-  object customFormulaFieldGD extends GenericDataGen(CustomFormulaFieldGD) {
+  case class customFormulaFieldGD(targetId: Option[CustomField.Formula.Id]) extends GenericDataGen(CustomFormulaFieldGD) {
     import gd._
     private def mdp = DataValidators.numberField.maxDecimalPlaces
     override def valueFor(a: Attr) = a match {
-      case Name              => fieldName                map Name             .apply
-      case Desc              => desc                     map Desc             .apply
-      case DecimalPlaces     => Gen.chooseInt(mdp)       map DecimalPlaces    .apply
-      case FieldReqTypeRules => fieldReqTypeRulesFormula map FieldReqTypeRules.apply
+      case Name              => fieldName                          map Name             .apply
+      case Desc              => desc                               map Desc             .apply
+      case DecimalPlaces     => Gen.chooseInt(mdp)                 map DecimalPlaces    .apply
+      case FieldReqTypeRules => fieldReqTypeRulesFormula(targetId) map FieldReqTypeRules.apply
     }
   }
 
@@ -1219,11 +1256,11 @@ final class ApplicableEventGen(emptyState: State, curState: State, config: Rando
       }
 
   def genFieldCustomFormulaCreate: Gen[FieldCustomFormulaCreate] =
-    Gen.apply2(FieldCustomFormulaCreate)(nextCustomFieldFormulaId, customFormulaFieldGD.allValues)
+    Gen.apply2(FieldCustomFormulaCreate)(nextCustomFieldFormulaId, customFormulaFieldGD(None).allValues)
 
   def genFieldCustomFormulaUpdate: Option[Gen[FieldCustomFormulaUpdate]] =
-    customFieldFormulaId(Live).map(id =>
-      Gen.apply2(FieldCustomFormulaUpdate)(id, customFormulaFieldGD.nonEmptyValues))
+    customFieldFormulaId(Live).map(_.flatMap(id =>
+      Gen.apply2(FieldCustomFormulaUpdate)(Gen.pure(id), customFormulaFieldGD(Some(id)).nonEmptyValues)))
 
   private val possibleActiveEventGensWithNames: NonEmptyVector[(EventName, Option[Gen[ActiveEvent]])] =
     valuesForAdt[ActiveEvent, (EventName, Option[Gen[ActiveEvent]])] {

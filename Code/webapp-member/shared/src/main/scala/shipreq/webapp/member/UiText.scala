@@ -208,6 +208,9 @@ object UiText {
     def descFieldDefaultTagUnrelated(field: String, tag: String): String =
       s"$field field using unrelated tag $tag as a default"
 
+    def descFieldFormulaRefsDeadFormulaField(src: String, tgt: String): String =
+      descFieldFormulaRefsDeadNumberField(src = src, tgt = tgt)
+
     def descFieldFormulaRefsDeadNumberField(src: String, tgt: String): String =
       s"$src field references $tgt field which is deleted"
 

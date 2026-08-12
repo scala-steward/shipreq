@@ -11,6 +11,7 @@ import shipreq.base.util._
 import shipreq.webapp.base.config.WebappConfig
 import shipreq.webapp.member.project.filter.Filter.Implicits._
 import shipreq.webapp.member.project.filter._
+import shipreq.webapp.member.project.formula.FormulaFieldRef
 import shipreq.webapp.member.project.text.{Atom, Text}
 
 object DataProp {
@@ -155,11 +156,31 @@ object DataProp {
           s"Formula field ${f.name} contains invalid rule resolutions (cannot be Optional or Mandatory): ${bad.mkString(", ")}")
       }).forall(filteredFields { case f: CustomField.Formula => f })
 
+    def noFormulaFieldCycles =
+      Digraph.cycleDetector[CustomField.Formula.Id]
+        .noCycleProp("formula field references")
+        .contramap[FieldSet](fs =>
+          filteredFields { case f: CustomField.Formula => f }(fs)
+            .map(f => (f.id, f.fieldReqTypeRules.resolutionIterator().flatMap {
+              case FieldReqTypeRules.Resolution.DefaultTo(validFormula) =>
+                validFormula.fieldRefs.flatMap {
+                  case FormulaFieldRef.FormulaField(targetId) => Set(targetId)
+                  case FormulaFieldRef.NumberField(_)         => Set.empty[CustomField.Formula.Id]
+                }
+              case FieldReqTypeRules.Resolution.Optional
+                 | FieldReqTypeRules.Resolution.Mandatory
+                 | FieldReqTypeRules.Resolution.NotApplicable =>
+                Set.empty[CustomField.Formula.Id]
+            }.toSet))
+            .toMap
+        )
+
     def fieldSet = "FieldSet" rename_: (
       ids ∧ fields ∧
       orderNoDups ∧ orderCustomFieldsIso ∧ orderHasAllMandatoryStaticFields ∧
       tagFieldsUnique ∧ implicationFieldsUnique ∧ noDuplicateTagFieldReqTypeResolutions ∧
-      numFieldDefaultsInRange ∧ formulaFieldsNeverOptionalOrMandatory
+      numFieldDefaultsInRange ∧ formulaFieldsNeverOptionalOrMandatory ∧
+      noFormulaFieldCycles
     )
 
     val all =

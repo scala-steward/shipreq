@@ -268,5 +268,73 @@ object FormulaEvalTest extends TestSuite {
         }
       }
     }
+
+    "formulaRefs" - {
+      val dblScoreFieldId = CustomField.Formula.Id(100)
+      val dblScoreFormula = parseAndValidate("field:score * 2", fieldSet)
+      val dblScoreField = CustomField.Formula(
+        id = dblScoreFieldId,
+        name = "double_score",
+        desc = None,
+        decimalPlaces = 2,
+        fieldReqTypeRules = FieldReqTypeRules.const(FieldReqTypeRules.Resolution.DefaultTo(ValidFormula(dblScoreFormula))),
+        liveExplicitly = Live
+      )
+
+      val fieldSetWithFormula = fieldSet.copy(
+        customFields = fieldSet.customFields.add(dblScoreField),
+        order = fieldSet.order :+ dblScoreFieldId
+      )
+
+      val bonusScoreFieldId = CustomField.Formula.Id(101)
+      val bonusScoreFormula = parseAndValidate("field:double_score + field:bonus", fieldSetWithFormula)
+      val bonusScoreField = CustomField.Formula(
+        id = bonusScoreFieldId,
+        name = "bonus_score",
+        desc = None,
+        decimalPlaces = 2,
+        fieldReqTypeRules = FieldReqTypeRules.const(FieldReqTypeRules.Resolution.DefaultTo(ValidFormula(bonusScoreFormula))),
+        liveExplicitly = Live
+      )
+
+      val fieldSetWithFormulaChain = fieldSetWithFormula.copy(
+        customFields = fieldSetWithFormula.customFields.add(bonusScoreField),
+        order = fieldSetWithFormula.order :+ bonusScoreFieldId
+      )
+
+      val errFormulaFieldId = CustomField.Formula.Id(102)
+      val errFormula = parseAndValidate("1 / 0", fieldSet)
+      val errFormulaField = CustomField.Formula(
+        id = errFormulaFieldId,
+        name = "err_formula",
+        desc = None,
+        decimalPlaces = 2,
+        fieldReqTypeRules = FieldReqTypeRules.const(FieldReqTypeRules.Resolution.DefaultTo(ValidFormula(errFormula))),
+        liveExplicitly = Live
+      )
+
+      val fieldSetWithErrFormula = fieldSet.copy(
+        customFields = fieldSet.customFields.add(errFormulaField),
+        order = fieldSet.order :+ errFormulaFieldId
+      )
+
+      "singleRef" - {
+        val reqNums = ReqData.Numbers(Map(scoreFieldId -> Map(reqId -> 25)))
+        assertEval("field:double_score + 10", Dbl(60), fieldSetWithFormula, reqNums, req)
+      }
+
+      "chainRef" - {
+        val reqNums = ReqData.Numbers(Map(scoreFieldId -> Map(reqId -> 20)))
+        assertEval("field:bonus_score * 2", Dbl(100), fieldSetWithFormulaChain, reqNums, req)
+      }
+
+      "emptyRef" - {
+        assertEval("field:double_score + 10", Empty, fieldSetWithFormula, ReqData.Numbers.empty, req)
+      }
+
+      "errorRef" - {
+        assertEvalError("field:err_formula + 5", "Division by zero.", fieldSetWithErrFormula, ReqData.Numbers.empty, req)
+      }
+    }
   }
 }

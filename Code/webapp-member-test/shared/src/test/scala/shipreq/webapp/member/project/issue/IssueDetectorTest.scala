@@ -528,6 +528,65 @@ object IssueDetectorTest extends TestSuite {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+  private object FieldFormulaRefsDeadFormulaFieldTests {
+    private implicit val filter = IssueFilter[Issue.FieldFormulaRefsDeadFormulaField]
+
+    import P7._
+    import shipreq.webapp.member.project.formula.{Formula, FormulaParser, ValidFormula}
+
+    private val targetFormulaFieldId = CustomField.Formula.Id(210)
+    private val sourceFormulaFieldId = CustomField.Formula.Id(211)
+
+    private val potentialTargetFormula = FormulaParser.parse("10").toOption.get
+    private val validTargetFormula = Formula.Potential.validate(potentialTargetFormula, p7.config.fields).toOption.get
+    private val targetFormulaWrapper = ValidFormula(validTargetFormula)
+
+    private val projectWithTarget = applyEventsSuccessfully(
+      p7,
+      Event.FieldCustomFormulaCreate(targetFormulaFieldId, CustomFormulaFieldGD(
+        name = "TargetFormulaField",
+        desc = None,
+        decimalPlaces = 2,
+        fieldReqTypeRules = FieldReqTypeRules.notApplicable.defaultTo(targetFormulaWrapper)(br, mf)
+      ))
+    )
+
+    private val potentialSourceFormula = FormulaParser.parse("field:TargetFormulaField * 2").toOption.get
+    private val validSourceFormula = Formula.Potential.validate(potentialSourceFormula, projectWithTarget.config.fields).toOption.get
+    private val sourceFormulaWrapper = ValidFormula(validSourceFormula)
+
+    private val baseProject = applyEventsSuccessfully(
+      projectWithTarget,
+      Event.FieldCustomFormulaCreate(sourceFormulaFieldId, CustomFormulaFieldGD(
+        name = "SourceFormulaField",
+        desc = None,
+        decimalPlaces = 2,
+        fieldReqTypeRules = FieldReqTypeRules.notApplicable.defaultTo(sourceFormulaWrapper)(br, mf)
+      ))
+    )
+
+    def ok() = test(baseProject)()()
+
+    def deadTargetFormulaField() = test(baseProject)(
+      Event.FieldCustomDelete(targetFormulaFieldId),
+    )(
+      IssueLite.FieldFormulaRefsDeadFormulaField(sourceFormulaFieldId, targetFormulaFieldId),
+    )
+
+    def deadSourceFormulaField() = test(baseProject)(
+      Event.FieldCustomDelete(targetFormulaFieldId),
+      Event.FieldCustomDelete(sourceFormulaFieldId),
+    )()
+
+    def deadReqTypes() = test(baseProject)(
+      Event.FieldCustomDelete(targetFormulaFieldId),
+      Event.CustomReqTypeDeleteSoft(br),
+      Event.CustomReqTypeDeleteSoft(mf),
+    )()
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
   private object FormulaEvalErrTests {
     private implicit val filter = IssueFilter.collect {
       case _: Issue.FormulaEvalErrBadData     => ()
@@ -874,6 +933,14 @@ object IssueDetectorTest extends TestSuite {
       "deadTag"         - deadTag()
       "liveFieldOnly"   - liveFieldOnly()
       "liveReqTypeOnly" - liveReqTypeOnly()
+    }
+
+    "FieldFormulaRefsDeadFormulaField" - {
+      import FieldFormulaRefsDeadFormulaFieldTests._
+      "ok"                     - ok()
+      "deadTargetFormulaField" - deadTargetFormulaField()
+      "deadSourceFormulaField" - deadSourceFormulaField()
+      "deadReqTypes"           - deadReqTypes()
     }
 
     "FieldFormulaRefsDeadNumberField" - {

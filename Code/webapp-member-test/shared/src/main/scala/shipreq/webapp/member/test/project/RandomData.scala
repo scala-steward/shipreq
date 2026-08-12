@@ -26,7 +26,7 @@ import shipreq.webapp.base.test._
 import shipreq.webapp.base.util._
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.event.ProjectEvents
-import shipreq.webapp.member.project.formula.ValidFormula
+import shipreq.webapp.member.project.formula._
 import shipreq.webapp.member.project.issue.IssueCategory
 import shipreq.webapp.member.project.sort.SortMethod
 import shipreq.webapp.member.project.text
@@ -505,6 +505,42 @@ object RandomData {
     }
   }
 
+  @tailrec
+  def preventFormulaCycles(fields: FieldSet.CustomFields): FieldSet.CustomFields = {
+    val formulaFields = fields.valuesIterator.collect { case f: CustomField.Formula => f }.toList
+    val graph: Map[CustomField.Formula.Id, Set[CustomField.Formula.Id]] = formulaFields.map { f =>
+      val refs = f.fieldReqTypeRules.resolutionIterator().flatMap {
+        case FieldReqTypeRules.Resolution.DefaultTo(validFormula) =>
+          validFormula.fieldRefs.flatMap {
+            case FormulaFieldRef.FormulaField(targetId) => Set(targetId)
+            case FormulaFieldRef.NumberField(_)         => Set.empty[CustomField.Formula.Id]
+          }
+        case FieldReqTypeRules.Resolution.Optional
+           | FieldReqTypeRules.Resolution.Mandatory
+           | FieldReqTypeRules.Resolution.NotApplicable =>
+          Set.empty[CustomField.Formula.Id]
+      }.toSet
+      (f.id, refs)
+    }.toMap
+
+    Digraph.cycleDetector[CustomField.Formula.Id].findCycle(graph) match {
+      case None => fields
+      case Some((cycleHead, _)) =>
+        fields.get(cycleHead) match {
+          case Some(f: CustomField.Formula) =>
+            val safeFormula = ValidFormula(Fix[Formula.ValidF](FormulaAst.Value(FormulaValue.Dbl(0))))
+            val fixedRules = f.fieldReqTypeRules.modResolutions((r: FieldReqTypeRules.Resolution[ValidFormula]) => r match {
+              case FieldReqTypeRules.Resolution.DefaultTo(_) => FieldReqTypeRules.Resolution.DefaultTo(safeFormula)
+              case res                                       => res
+            })
+            val fixedField = f.copy(fieldReqTypeRules = fixedRules)
+            preventFormulaCycles(fields.add(fixedField))
+          case _ =>
+            fields
+        }
+    }
+  }
+
   def customFields(reqTypeIds: Set[ReqTypeId],
                    tagIds    : Set[TagGroupId],
                    appTagIds : Set[ApplicableTagId]): Gen[IMap[CustomFieldId, CustomField]] = {
@@ -521,7 +557,7 @@ object RandomData {
     def id   = distinctId(CustomField.IdAccess, CustomFieldId_T)
     def name = Distinct.str.at(CustomField.independentName)
     val dist = (id * name).lift[List]
-    cf.map(fs => emptyDataMap(CustomField) ++ dist.run(fs))
+    cf.map(fs => preventFormulaCycles(emptyDataMap(CustomField) ++ dist.run(fs)))
   }
 
   def fieldSet(reqTypeIds: Set[ReqTypeId], tagIds: Set[TagId]): Gen[FieldSet] = {
@@ -2492,19 +2528,20 @@ object RandomData {
       import Formula.{ValidF, Valid}
 
       def gen(fieldSet: FieldSet): Gen[Valid] = {
-        val ogNumberField: Option[Gen[CustomField.Number.Id]] =
-          Gen.tryGenChoose(fieldSet.customNumberFields.iterator.map(_.id))
-
-        gen(ogNumberField)
+        val numberFields = fieldSet.customNumberFields.iterator.map(f => FormulaFieldRef.NumberField(f.id): FormulaFieldRef).toVector
+        val formulaFields = fieldSet.customFormulaFields.iterator.map(f => FormulaFieldRef.FormulaField(f.id): FormulaFieldRef).toVector
+        gen(numberFields ++ formulaFields)
       }
 
-      def gen(ogNumberField: Option[Gen[CustomField.Number.Id]]): Gen[Valid] = {
+      def gen(validRefs: Vector[FormulaFieldRef]): Gen[Valid] = {
+        val ogFieldRef = NonEmptyVector.option(validRefs).map(Gen.chooseNE(_))
+        gen(ogFieldRef)
+      }
+
+      def gen(ogFieldRef: Option[Gen[FormulaFieldRef]]): Gen[Valid] = {
 
         var flatGens: NonEmptyVector[Gen[ValidF[Nothing]]] =
           NonEmptyVector(genFormulaValue.map(FormulaAst.Value(_)))
-
-        val ogFieldRef: Option[Gen[FormulaFieldRef]] =
-          ogNumberField.map(_.map(FormulaFieldRef.NumberField.apply))
 
         for (gFieldRef <- ogFieldRef)
           flatGens :+= gFieldRef.map(FormulaAst.Field(_))

@@ -45,6 +45,70 @@ object DataTest extends TestSuite {
           test("ABC", Invalid, subjT = 3.AT)
         }
       }
+
+      "noFormulaFieldCycles" - {
+        import DataImplicits._
+        import shipreq.webapp.member.project.formula.{Formula, FormulaParser, ValidFormula}
+
+        val fmlAId = CustomField.Formula.Id(100)
+        val fmlBId = CustomField.Formula.Id(101)
+        val fmlCId = CustomField.Formula.Id(102)
+
+        def dummyFormulaField(id: CustomField.Formula.Id, name: String): CustomField.Formula =
+          CustomField.Formula(
+            id = id,
+            name = name,
+            desc = None,
+            decimalPlaces = 2,
+            fieldReqTypeRules = FieldReqTypeRules.const(FieldReqTypeRules.Resolution.DefaultTo(
+              ValidFormula(Formula.Potential.validate(FormulaParser.parse("10").toOption.get, FieldSet.empty).toOption.get)
+            )),
+            liveExplicitly = Live
+          )
+
+        val dummySet = FieldSet(
+          emptyDataMap(CustomField).add(dummyFormulaField(fmlAId, "FmlA")).add(dummyFormulaField(fmlBId, "FmlB")).add(dummyFormulaField(fmlCId, "FmlC")),
+          Vector(fmlAId, fmlBId, fmlCId)
+        )
+
+        def mkField(id: CustomField.Formula.Id, name: String, refExpr: String): CustomField.Formula = {
+          val potential = FormulaParser.parse(refExpr).toOption.get
+          val valid = Formula.Potential.validate(potential, dummySet).toOption.get
+          CustomField.Formula(
+            id = id,
+            name = name,
+            desc = None,
+            decimalPlaces = 2,
+            fieldReqTypeRules = FieldReqTypeRules.const(FieldReqTypeRules.Resolution.DefaultTo(ValidFormula(valid))),
+            liveExplicitly = Live
+          )
+        }
+
+        "acyclic" - {
+          val fA = mkField(fmlAId, "FmlA", "field:FmlB + 1")
+          val fB = mkField(fmlBId, "FmlB", "field:FmlC * 2")
+          val fC = mkField(fmlCId, "FmlC", "100")
+          val fs = FieldSet(emptyDataMap(CustomField).add(fA).add(fB).add(fC), Vector(fmlAId, fmlBId, fmlCId))
+
+          assert(DataProp.fields.noFormulaFieldCycles(fs).success)
+        }
+
+        "cyclic" - {
+          val fA = mkField(fmlAId, "FmlA", "field:FmlB + 1")
+          val fB = mkField(fmlBId, "FmlB", "field:FmlC * 2")
+          val fC = mkField(fmlCId, "FmlC", "field:FmlA + 5")
+          val fs = FieldSet(emptyDataMap(CustomField).add(fA).add(fB).add(fC), Vector(fmlAId, fmlBId, fmlCId))
+
+          assert(!DataProp.fields.noFormulaFieldCycles(fs).success)
+        }
+
+        "selfRef" - {
+          val fA = mkField(fmlAId, "FmlA", "field:FmlA + 1")
+          val fs = FieldSet(emptyDataMap(CustomField).add(fA), Vector(fmlAId))
+
+          assert(!DataProp.fields.noFormulaFieldCycles(fs).success)
+        }
+      }
     }
   }
 }

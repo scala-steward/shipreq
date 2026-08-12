@@ -29,7 +29,8 @@ object FormulaEditor {
 
   def autoCompleteStrategies(cfg: ProjectConfig): AutoComplete.Strategies = {
     val fieldSuggestions =
-      cfg.liveCustomNumberFields.map(f => "field:" + FormulaAlgebra.quoteFieldName(f.name))
+      (cfg.liveCustomFormulaFields.map(_.name) ++ cfg.liveCustomNumberFields.map(_.name))
+        .map(name => "field:" + FormulaAlgebra.quoteFieldName(name))
 
     val functionSuggestions =
       FormulaFunction.all.map(_.name + "(")
@@ -54,9 +55,12 @@ object FormulaEditor {
     Vector(main)
   }
 
-  private val helpButton: VdomTag =
+  private def helpButton(enabled: Enabled): VdomTag =
     Button(tipe = Button.Type.IconOnly(Icon.HelpCircle))
-      .tag(^.onClick --> FormulaHelp.modal.show)
+      .tag(
+        ^.disabled := (enabled is Disabled),
+        ^.onClick  --> FormulaHelp.modal.show,
+      )
 
   final class Backend($: BackendScope[Props, Unit]) extends AutoComplete.BackendI {
 
@@ -95,7 +99,7 @@ object FormulaEditor {
             ^.value             := p.state,
           ).withRef(inputDomRef),
 
-          helpButton,
+          helpButton(p.enabled),
         ),
 
         p.error.map(err =>

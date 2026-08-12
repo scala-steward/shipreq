@@ -28,6 +28,9 @@ import shipreq.webapp.member.project.formula.ValidFormula
 
 object ReqTypeRulesEditor {
 
+  // for testing
+  val ClsNextIsDefault = "__nid"
+
   val NoDefault = new ReqTypeRulesEditor[Impossible](
     allowOptional = true,
     allowMandatory = true,
@@ -441,6 +444,7 @@ final class ReqTypeRulesEditor[D: Reusability: UnivEq](allowOptional: Boolean,
           React.Fragment.withKey(rowKey)(
             <.tr(
               ^.key := rowKey,
+              (^.cls := ReqTypeRulesEditor.ClsNextIsDefault).when(showDefault),
               <.td(tdTypes),
               <.td(*.rulesEditorRule, resSelect),
               <.td(*.rulesEditorButton, tdButton)),

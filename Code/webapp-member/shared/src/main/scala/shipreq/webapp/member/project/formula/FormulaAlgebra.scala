@@ -3,7 +3,7 @@ package shipreq.webapp.member.project.formula
 import cats.instances.list._
 import cats.syntax.traverse._
 import japgolly.microlibs.recursion._
-import shipreq.base.util.{ErrorMsg, Util}
+import shipreq.base.util.{ErrorMsg, NotApplicable, Util}
 import shipreq.webapp.member.project.data.DataImplicits._
 import shipreq.webapp.member.project.data.{FieldSet, Req, ReqData}
 import shipreq.webapp.member.project.filter.FilterAlgebra
@@ -106,7 +106,12 @@ object FormulaAlgebra {
     case Field(name) =>
       fields.customNumberFields.find(_.name ==* name) match {
         case Some(f) => \/-(Valid.field(FormulaFieldRef.NumberField(f.id)))
-        case None    => fail("Invalid field: " + name)
+        case None    =>
+          fields.customFormulaFields.find(_.name ==* name) match {
+            case Some(f) => \/-(Valid.field(FormulaFieldRef.FormulaField(f.id)))
+            case None    =>
+              fail("Invalid field: " + name)
+          }
       }
 
     case x: Value            => \/-(Valid(x))
@@ -131,7 +136,8 @@ object FormulaAlgebra {
     case Field(ref) =>
       val name: String =
         ref match {
-          case FormulaFieldRef.NumberField(fid) => fieldSet.custom(fid).name
+          case FormulaFieldRef.FormulaField(fid) => fieldSet.custom(fid).name
+          case FormulaFieldRef.NumberField(fid)  => fieldSet.custom(fid).name
         }
       Potential(Field(name))
   }
@@ -141,18 +147,20 @@ object FormulaAlgebra {
   private val typeMismatch = FormulaValue.Err("Type mismatch.")
   private val invalidNumberOfFnArgs = FormulaValue.Err("Arg count mismatch.") // this should be caught at the validation stage
   private val divisionByZero = FormulaValue.Err("Division by zero.")
+  private val refNotApplicable = FormulaValue.Err("Referenced formula is N/A.")
 
   private val nonUserDefinedErrors: Set[FormulaValue.Err] =
     Set(
       typeMismatch,
       invalidNumberOfFnArgs,
       divisionByZero,
+      refNotApplicable,
     )
 
   def isErrorUserDefined(err: FormulaValue.Err): Boolean =
     !nonUserDefinedErrors.contains(err)
 
-  def eval(fieldSet: FieldSet, reqNums: ReqData.Numbers, req: Req): FAlgebra[ValidF, FormulaValue] = {
+  def eval(fec: FormulaEvalCache, fieldSet: FieldSet, reqNums: ReqData.Numbers, req: Req): FAlgebra[ValidF, FormulaValue] = {
     import FormulaValue._
 
     {
@@ -260,6 +268,12 @@ object FormulaAlgebra {
         }
 
       case Field(ref) => ref match {
+
+        case FormulaFieldRef.FormulaField(fid) =>
+          fec(fid)(req) match {
+            case \/-(FormulaEvalCache.Eval(value, _, _)) => value
+            case -\/(NotApplicable)                      => refNotApplicable
+          }
 
         case FormulaFieldRef.NumberField(fid) =>
           val f = fieldSet.custom(fid)

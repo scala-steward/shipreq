@@ -1209,18 +1209,24 @@ object Rev1 {
         }
       }
 
+    implicit val picklerFormulaFieldRefFormulaField: Pickler[FormulaFieldRef.FormulaField] =
+      transformPickler(FormulaFieldRef.FormulaField.apply)(_.id)
+
     implicit val picklerFormulaFieldRefNumberField: Pickler[FormulaFieldRef.NumberField] =
       transformPickler(FormulaFieldRef.NumberField.apply)(_.id)
 
     implicit val picklerFormulaFieldRef: Pickler[FormulaFieldRef] =
       new Pickler[FormulaFieldRef] {
+        private[this] final val KeyFormulaField = 'f'
         private[this] final val KeyNumberField = 'n'
         override def pickle(a: FormulaFieldRef)(implicit state: PickleState): Unit =
           a match {
+            case b: FormulaFieldRef.FormulaField => state.enc.writeByte(KeyFormulaField); state.pickle(b)
             case b: FormulaFieldRef.NumberField => state.enc.writeByte(KeyNumberField); state.pickle(b)
           }
         override def unpickle(implicit state: UnpickleState): FormulaFieldRef =
           state.dec.readByte match {
+            case KeyFormulaField => state.unpickle[FormulaFieldRef.FormulaField]
             case KeyNumberField => state.unpickle[FormulaFieldRef.NumberField]
           }
       }

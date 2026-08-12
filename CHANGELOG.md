@@ -5,7 +5,6 @@
 * Projects can now be (soft) deleted — they will be hidden by default, and read-only when viewed
 
 * Numeric fields — you can now create fields whose values are numbers
-  * You can also filter reqs by values in numeric fields — see the filter help dialog
 
 * Formula fields — you can now create fields whose values are formulas like Excel
 

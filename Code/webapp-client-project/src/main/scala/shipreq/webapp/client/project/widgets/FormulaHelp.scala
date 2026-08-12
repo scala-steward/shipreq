@@ -35,7 +35,7 @@ object FormulaHelp {
     Group("Fields")(
 
       Row(
-        "To reference the value of a number field, use ",
+        "To reference the value of a number or a formula field, use ",
         code("field:<NAME>"), " and replace ", code("<NAME>"), " with the real field name."
       )("field:Priority"),
 
