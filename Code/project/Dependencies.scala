@@ -18,7 +18,7 @@ object Dependencies {
   }
 
   object CatsEffect {
-    private val mm = MultiModule.jvmAndJs("org.typelevel", "3.7.0")
+    private val mm = MultiModule.jvmAndJs("org.typelevel", "3.7.1")
     val core    = mm("cats-effect")
     // val kernal  = mm("cats-effect-kernel")
     val laws    = mm("cats-effect-laws")
