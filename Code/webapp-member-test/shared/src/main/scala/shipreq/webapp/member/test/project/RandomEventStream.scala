@@ -1,6 +1,5 @@
 package shipreq.webapp.member.test.project
 
-import cats.Monad
 import cats.instances.vector._
 import cats.syntax.traverse._
 import japgolly.microlibs.adt_macros.AdtMacros._
@@ -26,7 +25,6 @@ import shipreq.webapp.member.project.formula.{FormulaFieldRef, ValidFormula}
 import shipreq.webapp.member.project.text.Text
 import shipreq.webapp.member.test.WebappBaseGen._
 import shipreq.webapp.member.test.WebappTestUtil
-import shipreq.webapp.member.test.project.ApplicableEventGen.ObserveFn
 import shipreq.webapp.member.test.project.DataTestExt._
 import shipreq.webapp.member.test.project.RandomData
 import shipreq.webapp.member.test.project.RandomData.{TextGen, TextGenExt, customReqTypeName, desc, exclusivity, fieldName, fieldRefKey, filter, filterDead, genColour, hashRefKey, implicationRequired, mandatory, minMax, reqCode, reqTypeMnemonic, tagGroupName}
