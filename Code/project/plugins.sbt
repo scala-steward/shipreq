@@ -1,6 +1,6 @@
 addSbtPlugin("ch.epfl.scala"      % "sbt-scalafix"             % "0.14.9")
 addSbtPlugin("com.earldouglas"    % "xsbt-web-plugin"          % "4.2.5")
-addSbtPlugin("com.timushev.sbt"   % "sbt-updates"              % "0.7.0")
+addSbtPlugin("com.timushev.sbt"   % "sbt-updates"              % "0.7.1")
 addSbtPlugin("com.github.sbt"     % "sbt-git"                  % "2.2.0")
 addSbtPlugin("com.typesafe.sbt"   % "sbt-native-packager"      % "1.8.1")
 addSbtPlugin("org.portable-scala" % "sbt-scalajs-crossproject" % "1.4.0")
