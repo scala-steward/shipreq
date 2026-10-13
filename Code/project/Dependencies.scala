@@ -27,7 +27,7 @@ object Dependencies {
   }
 
   object Circe {
-    private val mm = MultiModule.jvmAndJs("io.circe", "0.14.16")
+    private val mm = MultiModule.jvmAndJs("io.circe", "0.14.17")
     val core    = mm("circe-core")
     val parser  = mm("circe-parser")
     val testing = mm("circe-testing")
@@ -44,7 +44,7 @@ object Dependencies {
   }
 
   object Flyway {
-    private val mm = MultiModule.java("org.flywaydb", "13.6.0")
+    private val mm = MultiModule.java("org.flywaydb", "13.10.0")
     val core     = mm("flyway-core")
     val postgres = mm("flyway-database-postgresql")
     val all      = core ++ postgres
@@ -235,7 +235,7 @@ object Dependencies {
   val jaegerClient = jvmOnly("io.jaegertracing"            % "jaeger-client"         % "1.8.1")
   val javaMail     = jvmOnly("com.sun.mail"                % "javax.mail"            % "1.6.2")
   val postgresql   = jvmOnly("org.postgresql"              % "postgresql"            % "42.7.13")
-  val redisson     = jvmOnly("org.redisson"                % "redisson"              % "4.7.0")
+  val redisson     = jvmOnly("org.redisson"                % "redisson"              % "4.8.0")
   val scaffeine    = jvmOnly("com.github.blemale"         %% "scaffeine"             % "5.3.0")
   val scalaCheck   = jvmOnly("org.scalacheck"             %% "scalacheck"            % "1.20.0")
   val scalaLogging = jvmOnly("com.typesafe.scala-logging" %% "scala-logging"         % "3.9.6")
