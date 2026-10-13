@@ -9,7 +9,7 @@ import utest._
 object ApplyEventTest extends TestSuite {
 
   def verifyEvent(p1: Project, e1: Event) = {
-    val p2 = ApplyEvent.untrusted.partialApplyUnverified(e1)(p1) match {
+    val p2 = ApplyEvent.untrusted.partialApplyUnverified(e1, p1.history.nextOrd)(p1) match {
       case \/-(p) => p
       case -\/(x) => fail(s"Init failed: $x")
     }

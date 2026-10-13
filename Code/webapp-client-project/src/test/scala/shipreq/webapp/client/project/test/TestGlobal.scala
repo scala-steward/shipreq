@@ -224,7 +224,7 @@ final class TestGlobal(initialProjectLibrary: ProjectLibrary.WithMetaData,
             e           <- mkEvent(input, p1)
             requiredRole = EventPermission.requiredRole(userId, e)
             _           <- p1.access.requirePC(requiredRole, userId)
-            u           <- ApplyNewEvent(e, p1)
+            u           <- ApplyNewEvent(e, p1.history.nextOrd, p1)
           } yield u
 
         result match {

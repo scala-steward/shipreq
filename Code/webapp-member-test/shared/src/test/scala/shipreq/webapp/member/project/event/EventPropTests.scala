@@ -32,7 +32,8 @@ object EventPropTests extends TestSuite {
             val a = UseCaseStepDelete (id)
             val b = UseCaseStepRestore(id)
             E.equal("DeleteUseCaseStep + RestoreUseCaseStep = id",
-              actual = AE.partialApplyUnverified(a)(p).flatMap(AE.partialApplyUnverified(b)),
+              actual = AE.partialApplyUnverified(a, p.history.nextOrd)(p)
+                         .flatMap(p2 => AE.partialApplyUnverified(b, p2.history.nextOrd)(p2)),
               expect = \/-(p))
 
           case DeletionMethod.Hard =>
@@ -41,7 +42,7 @@ object EventPropTests extends TestSuite {
             val allIds  = f.subtree.locAndValueIterator(f.loc, (_, a) => a.id).toSet + id
             val e       = UseCaseStepDelete(id)
             E.equal("DeleteUseCaseStep hard delete",
-              actual = AE.partialApplyUnverified(e)(p).map(_.content.reqs.useCases.stepIdSet),
+              actual = AE.partialApplyUnverified(e, p.history.nextOrd)(p).map(_.content.reqs.useCases.stepIdSet),
               expect = \/-(stepIds -- allIds))
         }
       }
@@ -53,7 +54,7 @@ object EventPropTests extends TestSuite {
     private def customReqTypeDeletion =
       E.forall(p.config.reqTypes.liveCustomReqTypes) { rt =>
         val event = CustomReqTypeDelete(rt.id)
-        val error = ApplyEvent.untrusted.partialApplyUnverified(event)(p).swap.toOption
+        val error = ApplyEvent.untrusted.partialApplyUnverified(event, p.history.nextOrd)(p).swap.toOption
         E.equal(s"$event must succeed", error, None)
       }
 
