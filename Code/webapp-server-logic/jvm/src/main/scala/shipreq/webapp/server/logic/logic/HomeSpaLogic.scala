@@ -33,14 +33,15 @@ object HomeSpaLogic {
 
     val e2          = ProjectNameSet(name)
     val creator     = ProjectCreator(userId)
-    val initProject = ApplyNewEvent.mustApply(InitProjectEvent, Project.init(creator))
+    val initProject = ApplyNewEvent.mustApply(InitProjectEvent, EventOrd.first, Project.init(creator))
     val events      = Vector.empty[ActiveEvent] :+ initProject.event :+ e2
 
     // It's ok to use projectPartial and not worry about updating history here because:
     //
     // 1. History never affects subsequent event application
     // 2. db.createProject only needs a Project instance to extract a few stats for the header record
-    val p2 = ApplyNewEvent.mustApply(e2, initProject.projectPartial).projectPartial
+    val ord2 = initProject.projectPartial.history.nextOrd
+    val p2 = ApplyNewEvent.mustApply(e2, ord2, initProject.projectPartial).projectPartial
 
     for {
       key <- crypto.generateKey256

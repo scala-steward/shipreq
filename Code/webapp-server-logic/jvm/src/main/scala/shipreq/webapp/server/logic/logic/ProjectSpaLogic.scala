@@ -807,18 +807,19 @@ object ProjectSpaLogic extends StrictLogging {
 
           case WriteDb =>
             val project = s.local
+            val ord = s.local.history.nextOrd
 
             val result: PotentialChange[ErrorMsg, ApplyNewEvent.Updated] =
               for {
                 e           <- mkEvent(project)
                 requiredRole = EventPermission.requiredRole(userId, e)
                 _           <- project.access.requirePC(requiredRole, userId)
-                u           <- ApplyNewEvent(e, project)
+                u           <- ApplyNewEvent(e, ord, project)
               } yield u
 
             result match {
               case PotentialChange.Success(updated) =>
-                val f = db.saveProjectEvent(pid, s.local.history.nextOrd, updated.event, updated.projectPartial, userId)
+                val f = db.saveProjectEvent(pid, ord, updated.event, updated.projectPartial, userId)
                 val run = updated.event match {
                   case _: Event.AccessUpdate =>
                     // updateProjectAccess in DbInterpreter has assertTransactionLevelSerializable

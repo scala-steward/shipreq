@@ -21,8 +21,8 @@ object ApplyNewEvent {
 
   type Result = PotentialChange[ErrorMsg, Updated]
 
-  def apply(e: ActiveEvent, p1: Project): Result =
-    ApplyEvent.untrusted.partialApplyUnverified(e)(p1) match {
+  def apply(e: ActiveEvent, ord: EventOrd, p1: Project): Result =
+    ApplyEvent.untrusted.partialApplyUnverified(e, ord)(p1) match {
       case \/-(p2) =>
         import Project.Equality.IgnoringHistory._
         if (p1 === p2)
@@ -33,8 +33,8 @@ object ApplyNewEvent {
         Failure(err)
     }
 
-  def mustApply(e: ActiveEvent, p1: Project): Updated =
-    apply(e, p1) match {
+  def mustApply(e: ActiveEvent, ord: EventOrd, p1: Project): Updated =
+    apply(e, ord, p1) match {
       case Success(a) => a
       case x          => ErrorMsg(s"Success expected. Got: $x.").throwException()
     }

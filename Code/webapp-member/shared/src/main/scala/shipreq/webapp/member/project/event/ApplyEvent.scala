@@ -7,7 +7,7 @@ import shipreq.webapp.member.project.event.ApplyEventLib._
 
 object ApplyEvent {
   type Result = ErrorMsg \/ Project
-  type Events = IterableOnce[Event]
+  type Events = IterableOnce[(Event, EventOrd)]
 
   /**
    * Applies trusted events (i.e. events that have been verified previously and usually stored in the DB already).
@@ -44,8 +44,8 @@ final class ApplyEvent(implicit val trust: Trust)
       case -\/(e) => Some(e)
     }
 
-  def validate(event: Event)(p: Project): Option[ErrorMsg] =
-    validateResult(partialApplyUnverified(event)(p))
+  def validate(event: Event, ord: EventOrd)(p: Project): Option[ErrorMsg] =
+    validateResult(partialApplyUnverified(event, ord)(p))
 
   def validate(events: Events)(p: Project): Option[ErrorMsg] =
     validateResult(partialApplyUnverified(events)(p))
@@ -55,8 +55,8 @@ final class ApplyEvent(implicit val trust: Trust)
     safelyApplyUnverified(events).exec(p)
 
   /** Partial because it doesn't update the project's [[ProjectEvents]]. */
-  def partialApplyUnverified(event: Event)(p: Project): Result =
-    safelyApplyUnverified1(event).exec(p)
+  def partialApplyUnverified(event: Event, ord: EventOrd)(p: Project): Result =
+    safelyApplyUnverified1(event, ord).exec(p)
 
   def apply(ves: VerifiedEvent.Seq)(p: Project): Result =
     if (ves.isEmpty)
@@ -66,7 +66,7 @@ final class ApplyEvent(implicit val trust: Trust)
 
   def apply(events: VerifiedEvent.NonEmptySeq)(p: Project): Result =
     ensureEventFollows(p, events.head) {
-      safelyApplyUnverified(events.iterator.map(_.event)).exec(p) match {
+      safelyApplyUnverified(events.iterator.map(ve => (ve.event, ve.ord))).exec(p) match {
         case \/-(p) =>
           \/-(Project.history.modify(_ ++ events)(p))
 
@@ -117,13 +117,13 @@ final class ApplyEvent(implicit val trust: Trust)
   private def safelyApplyUnverified(events: Events): Eval[Unit] =
     safely(unsafelyApply(events))
 
-  private def safelyApplyUnverified1(event: Event): Eval[Unit] =
-    safely(unsafelyApply1(event))
+  private def safelyApplyUnverified1(event: Event, ord: EventOrd): Eval[Unit] =
+    safely(unsafelyApply1(event, ord))
 
   private def safelyApply1(ve: VerifiedEvent): Eval[Unit] = {
     val onFailure: ErrorMsg => Eval[Unit] =
       err => Eval.fail(err.withPrefix(s"[#${ve.ord.value}] "))
-    safelyApplyUnverified1(ve.event).handleFailure(onFailure)
+    safelyApplyUnverified1(ve.event, ve.ord).handleFailure(onFailure)
   }
 
   // ===================================================================================================================
@@ -131,9 +131,9 @@ final class ApplyEvent(implicit val trust: Trust)
 
   private def unsafelyApply(events: Events): Eval[Unit] =
     // events.iterator.foldLeft(Eval.unit)((q, e) => q >> Eval.restack(unsafelyApply1(e)))
-    Eval.foldMapRun(events)(unsafelyApply1)
+    Eval.foldMapRun(events)(t => unsafelyApply1(t._1, t._2))
 
-  private def unsafelyApply1(event: Event): Eval[Unit] = {
+  private def unsafelyApply1(event: Event, ord: EventOrd): Eval[Unit] = {
     import Event._
     event match {
       case e: AccessUpdate             => OtherEvents              applyAccessUpdate            e
@@ -211,7 +211,7 @@ final class ApplyEvent(implicit val trust: Trust)
       case e: UseCaseStepShiftRight    => UseCaseEvents            applyStepShiftRight          e
       case e: UseCaseStepUpdate        => UseCaseEvents            applyStepUpdate              e
       case e: UseCaseTitleSet          => UseCaseEvents            applyTitleSet                e
-      case e: ProjectTemplateApply     => safelyApplyUnverified(e.template.events)
+      case e: ProjectTemplateApply     => safelyApplyUnverified(e.template.events.map((_, ord)))
     }
   }
 }

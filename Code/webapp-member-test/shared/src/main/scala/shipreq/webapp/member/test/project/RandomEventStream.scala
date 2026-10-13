@@ -1,6 +1,5 @@
 package shipreq.webapp.member.test.project
 
-import cats.Monad
 import cats.instances.vector._
 import cats.syntax.traverse._
 import japgolly.microlibs.adt_macros.AdtMacros._
@@ -26,7 +25,6 @@ import shipreq.webapp.member.project.formula.{FormulaFieldRef, ValidFormula}
 import shipreq.webapp.member.project.text.Text
 import shipreq.webapp.member.test.WebappBaseGen._
 import shipreq.webapp.member.test.WebappTestUtil
-import shipreq.webapp.member.test.project.ApplicableEventGen.ObserveFn
 import shipreq.webapp.member.test.project.DataTestExt._
 import shipreq.webapp.member.test.project.RandomData
 import shipreq.webapp.member.test.project.RandomData.{TextGen, TextGenExt, customReqTypeName, desc, exclusivity, fieldName, fieldRefKey, filter, filterDead, genColour, hashRefKey, implicationRequired, mandatory, minMax, reqCode, reqTypeMnemonic, tagGroupName}
@@ -79,7 +77,7 @@ object RandomEventStream extends RandomEventStreamDsl(RandomEventStreamConfig.de
   def liftPGE(eventGen: State => Gen[Event], maxAttempts: Int = 60): ProjectDepGen[VerifiedEvent] =
     StateGen(p1 =>
       eventGen(p1).flatMap(e =>
-        ApplyEvent.untrusted.partialApplyUnverified(e)(p1) match {
+        ApplyEvent.untrusted.partialApplyUnverified(e, p1.history.nextOrd)(p1) match {
           case \/-(p2) =>
             def userIds = p2.access.asMap.iterator.flatMap { case (userId, userRole) =>
               val requiredRole = EventPermission.requiredRole(userId, e)
@@ -1388,17 +1386,17 @@ final class ApplicableEventGen(emptyState: State, curState: State, config: Rando
 //      }
 //    )
 
-  def applicableEventS[S](init: S)(observe: ObserveFn[S]): Gen[((S, Project), Event)] = {
-    import Project.Equality.WithHistoryByOrd._
-    Monad[Gen].tailRecM(init)(s =>
-      eventGen.map { e =>
-        var r = ApplyEvent.untrusted.partialApplyUnverified(e)(p)
-        r foreach { p2 => if (p === p2) r = -\/(ErrorMsg("No change")) }
-        val s2 = observe(s, e, r)
-        r.bimap(_ => s2, p2 => ((s2, p2), e))
-      }
-    )
-  }
+//  def applicableEventS[S](init: S)(observe: ObserveFn[S]): Gen[((S, Project), Event)] = {
+//    import Project.Equality.WithHistoryByOrd._
+//    Monad[Gen].tailRecM(init)(s =>
+//      eventGen.map { e =>
+//        var r = ApplyEvent.untrusted.partialApplyUnverified(e)(p)
+//        r foreach { p2 => if (p === p2) r = -\/(ErrorMsg("No change")) }
+//        val s2 = observe(s, e, r)
+//        r.bimap(_ => s2, p2 => ((s2, p2), e))
+//      }
+//    )
+//  }
 
   def verifiedEvent: Gen[(State, VerifiedEvent)] =
     RandomEventStream.liftGE(eventGen).run(curState)

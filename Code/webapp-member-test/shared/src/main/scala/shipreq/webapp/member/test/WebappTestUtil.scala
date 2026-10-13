@@ -110,13 +110,25 @@ trait WebappTestUtil extends BaseTestUtil {
     es.foldLeft(p)(applyVerifiedEventSuccessfully)
 
   def assertEventFails(p: Project, e: Event, errFrag: String = "")(implicit l: Line): Unit =
-    ApplyEvent.untrusted.partialApplyUnverified(e)(p) match {
+    ApplyEvent.untrusted.partialApplyUnverified(e, p.history.nextOrd)(p) match {
       case -\/(f) => assertContainsCI(f.value, errFrag)
       case \/-(_) => fail(s"Failure expected but didn't occur applying $e")
     }
 
   def restoreProject(es: VerifiedEvent.Seq): Project =
     emptyProject1.updateOrThrow(es)
+
+  def addOrds(es: Iterable[Event], p: Project): Iterable[(Event, EventOrd)] =
+    addOrds(es, p.history.nextOrd)
+
+  def addOrds(es: Iterable[Event], firstOrd: EventOrd): Iterable[(Event, EventOrd)] = {
+    var next = firstOrd
+    es.map { e =>
+      val ord = next
+      next = firstOrd.next
+      (e, ord)
+    }
+  }
 
   def setOrd(p: Project, ord: EventOrd): Project = {
     val now = Instant.now().minusSeconds(ord.value + 1)
