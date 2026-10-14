@@ -4,7 +4,7 @@ import japgolly.microlibs.stdlib_ext.StdlibExt._
 import shipreq.base.util.VectorTree
 import shipreq.base.util.VectorTree.{Location => Loc}
 import shipreq.webapp.member.project.data._
-import shipreq.webapp.member.project.event.Event
+import shipreq.webapp.member.project.event.{Event, EventOrd}
 import shipreq.webapp.member.project.text._
 import shipreq.webapp.member.test.WebappTestUtil._
 import shipreq.webapp.member.test.project.UnsafeTypes._
@@ -50,14 +50,15 @@ object SampleProject4 {
                    title: Text.UseCaseTitle.OptionalText ,// = Text.empty,
                    ncac : UseCaseSteps.Tree              ,// = rootOnlyStepTree(),
                    ec   : UseCaseSteps.Tree              = VectorTree.empty,
-                   live : Live                           = Live): UseCaseId = {
+                   live : Live                           = Live,
+                   ord  : EventOrd                       = EventOrd.first): UseCaseId = {
 
       val ucId = UseCaseId(if (id > 0) id else (ic.req + 1))
       ic = ic.copy(req = ic.req max ucId.value)
 
       val pos = pr.allocUC(ucId).consume1(pr = _).pos
 
-      val uc = UseCase(ucId, pos, title, UseCaseSteps(ncac), UseCaseSteps(ec), live)
+      val uc = UseCase(ucId, pos, title, UseCaseSteps(ncac), UseCaseSteps(ec), live, ord)
       ucs += uc
 
       ucId

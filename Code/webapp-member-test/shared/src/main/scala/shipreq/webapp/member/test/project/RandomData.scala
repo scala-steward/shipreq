@@ -25,7 +25,7 @@ import shipreq.webapp.base.data.{ProjectCreator, ProjectId, ProjectRole, Rolodex
 import shipreq.webapp.base.test._
 import shipreq.webapp.base.util._
 import shipreq.webapp.member.project.data._
-import shipreq.webapp.member.project.event.ProjectEvents
+import shipreq.webapp.member.project.event.{EventOrd, ProjectEvents}
 import shipreq.webapp.member.project.formula._
 import shipreq.webapp.member.project.issue.IssueCategory
 import shipreq.webapp.member.project.sort.SortMethod
@@ -1427,7 +1427,7 @@ object RandomData {
           pr.value(rt).iterator.zipWithIndex.foldLeft(m0) { (m, x) =>
             val id    = x._1.asInstanceOf[GenericReqId]
             val pubid = PubidT(rt, ReqTypePos(x._2 + 1))
-            val grG   = live map (GenericReq(id, pubid, Text.empty, _))
+            val grG   = live map (GenericReq(id, pubid, Text.empty, _, EventOrd.first))
             m + grG.run(ctx)
           }
         )
@@ -1452,7 +1452,7 @@ object RandomData {
             l       <- live
           } yield
             // Root existence guaranteed in useCaseSteps()
-            UseCase(id, pos, Text.empty, stepsNA, stepsE, l)
+            UseCase(id, pos, Text.empty, stepsNA, stepsE, l, EventOrd.first)
           m + ucG.run(ctx)
         }
       }

@@ -35,11 +35,14 @@ object UseCaseEventTest extends TestSuite {
 
   implicit val init = testHelpInit
 
+  val nextOrd = EventOrd(init.es.size + 1)
+
   def expect(id    : UseCaseId        = emptyUC1.id,
              pos   : ReqTypePos       = 1,
              title : UCT.OptionalText = ∅,
-             stepId: UseCaseStepId    = emptyUC1.stepId): UseCase =
-    UseCase.empty(id, pos, title, stepId)
+             stepId: UseCaseStepId    = emptyUC1.stepId,
+             ord   : EventOrd         = nextOrd): UseCase =
+    UseCase.empty(id, pos, title, stepId, ord)
 
   val UC1 = expect()
   def V0 = Vector1(0)
@@ -83,14 +86,14 @@ object UseCaseEventTest extends TestSuite {
       "impSrc" - {
         val v = NonEmptySet[ReqId](emptyUC1.id)
         val p = _assertPass(emptyUC1, UseCaseCreate(5, 7, nev(ImpSrcs(v))))
-        assertUC(p, 5)(expect(5, 2, stepId = 7), impliedBy = v.whole)
+        assertUC(p, 5)(expect(5, 2, stepId = 7, ord = nextOrd.next), impliedBy = v.whole)
         assertUC(p, 1)(UC1, implies = Set(5.UC))
       }
 
       "impTgt" - {
         val v = NonEmptySet[ReqId](emptyUC1.id)
         val p = _assertPass(emptyUC1, UseCaseCreate(5, 7, nev(ImpTgts(v))))
-        assertUC(p, 5)(expect(5, 2, stepId = 7), implies = v.whole)
+        assertUC(p, 5)(expect(5, 2, stepId = 7, ord = nextOrd.next), implies = v.whole)
         assertUC(p, 1)(UC1, impliedBy = Set(5.UC))
       }
 

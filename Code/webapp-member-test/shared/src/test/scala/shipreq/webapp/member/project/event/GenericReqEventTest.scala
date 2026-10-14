@@ -21,44 +21,46 @@ object GenericReqEventTest extends TestSuite {
 
   implicit val init = testHelpInit
 
+  val nextOrd = EventOrd(init.es.size + 1)
+
   override def tests = Tests {
 
     "createGenericReq" - {
       "empty" - {
         val p = _assertPass(emptyGR1)
-        assertGR(p, 1)(GenericReq(1, PubidT(mf, 1), ∅, Live))
+        assertGR(p, 1)(GenericReq(1, PubidT(mf, 1), ∅, Live, nextOrd))
       }
 
       "title" - {
         val t = GRT.nonEmpty(GRT.Literal("cool"))
         val p = _assertPass(emptyGR1.copy(vs = nev(Title(t))))
-        assertGR(p, 1)(GenericReq(1, PubidT(mf, 1), t.whole, Live))
+        assertGR(p, 1)(GenericReq(1, PubidT(mf, 1), t.whole, Live, nextOrd))
       }
 
       "tags" - {
         val t = NonEmptySet(at1)
         val p = _assertPass(emptyGR1.copy(vs = nev(Tags(t))))
-        assertGR(p, 1)(GenericReq(1, PubidT(mf, 1), ∅, Live), tags = t.whole)
+        assertGR(p, 1)(GenericReq(1, PubidT(mf, 1), ∅, Live, nextOrd), tags = t.whole)
       }
 
       "impSrc" - {
         val v = NonEmptySet[ReqId](emptyGR1.id)
         val p = _assertPass(emptyGR1, GenericReqCreate(5, mf, nev(ImpSrcs(v))))
-        assertGR(p, 5)(GenericReq(5, PubidT(mf, 2), ∅, Live), impliedBy = v.whole)
-        assertGR(p, 1)(GenericReq(1, PubidT(mf, 1), ∅, Live), implies = Set(5))
+        assertGR(p, 5)(GenericReq(5, PubidT(mf, 2), ∅, Live, nextOrd.next), impliedBy = v.whole)
+        assertGR(p, 1)(GenericReq(1, PubidT(mf, 1), ∅, Live, nextOrd), implies = Set(5))
       }
 
       "impTgt" - {
         val v = NonEmptySet[ReqId](emptyGR1.id)
         val p = _assertPass(emptyGR1, GenericReqCreate(5, mf, nev(ImpTgts(v))))
-        assertGR(p, 5)(GenericReq(5, PubidT(mf, 2), ∅, Live), implies = v.whole)
-        assertGR(p, 1)(GenericReq(1, PubidT(mf, 1), ∅, Live), impliedBy = Set(5))
+        assertGR(p, 5)(GenericReq(5, PubidT(mf, 2), ∅, Live, nextOrd.next), implies = v.whole)
+        assertGR(p, 1)(GenericReq(1, PubidT(mf, 1), ∅, Live, nextOrd), impliedBy = Set(5))
       }
 
       "reqCodes" - {
         val rcs = NonEmptySet[ApReqCodeId.AndValue](7 -> "a.b.c", 8 -> "d")
         val p = _assertPass(emptyGR1.copy(vs = nev(Codes(rcs))))
-        assertGR(p, 1)(GenericReq(1, PubidT(mf, 1), ∅, Live), reqCodes = rcs.whole.map(_.value))
+        assertGR(p, 1)(GenericReq(1, PubidT(mf, 1), ∅, Live, nextOrd), reqCodes = rcs.whole.map(_.value))
         assertEq(p.content.reqCodes.apReqCodesById, rcs.whole.map(_.toTupleIV).toMap)
       }
 
@@ -66,7 +68,7 @@ object GenericReqEventTest extends TestSuite {
       def createReqWithCustomText = emptyGR1.copy(vs = CustomText(customText))
       "customText" - {
         val p = _assertPass(createReqWithCustomText)
-        assertGR(p, 1)(GenericReq(1, PubidT(mf, 1), ∅, Live), customText = customText)
+        assertGR(p, 1)(GenericReq(1, PubidT(mf, 1), ∅, Live, nextOrd), customText = customText)
       }
 
       "customTextOnDeadField" - {

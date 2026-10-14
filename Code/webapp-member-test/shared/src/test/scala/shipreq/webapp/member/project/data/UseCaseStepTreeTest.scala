@@ -34,7 +34,7 @@ object UseCaseStepTreeTest extends TestSuite {
       na <- genUseCaseSteps(SF.NormalAltStepTree)
       e  <- genUseCaseSteps(SF.ExceptionStepTree)
     } yield
-      UseCase(UseCaseId(1), ReqTypePos(1), Text.empty, na, e, Live)
+      UseCase(UseCaseId(1), ReqTypePos(1), Text.empty, na, e, Live, EventOrd.first)
 
   val genProject: Gen[Project] =
     genUseCase.map { uc =>

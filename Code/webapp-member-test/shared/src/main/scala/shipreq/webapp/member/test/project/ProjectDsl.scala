@@ -8,6 +8,7 @@ import shipreq.base.util.MTrie.Ops
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util._
 import shipreq.webapp.member.project.data._
+import shipreq.webapp.member.project.event.EventOrd
 import shipreq.webapp.member.project.text.{Atom, Text}
 
 object ProjectDslInternals {
@@ -157,7 +158,7 @@ object ProjectDsl {
 
         val reqTypeId   = this.reqType.getOrElse(p.defaultReqType.get)
         val (pr, pubid) = p.pubids.allocGR(reqTypeId)(id)
-        val req         = GenericReq(id, pubid, title, live)
+        val req         = GenericReq(id, pubid, title, live, EventOrd.first)
         val text        = cftexts.mapValuesNow(t => Map.empty[ReqId, CFTextValue].updated(id, t))
         val tags        = p.tags.addvs(id, this.tags)
         val imps        = p.imps.addks(impSrcs, id).addvs(id, impTgts)
