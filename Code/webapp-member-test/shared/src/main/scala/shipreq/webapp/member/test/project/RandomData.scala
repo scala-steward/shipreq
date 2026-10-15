@@ -1639,10 +1639,16 @@ object RandomData {
           }
 
         val gLiveCodeGroup: Gen[LiveCodeGroup] =
-          Gen.apply2(LiveCodeGroup.apply)(groupId, gGroupText)
+          for {
+            id <- groupId
+            text <- gGroupText
+          } yield LiveCodeGroup(id, text, EventOrd.first)
 
         val gDeadCodeGroup: Gen[DeadCodeGroup] =
-          Gen.apply2(DeadCodeGroup.apply)(groupId, gGroupText)
+          for {
+            id <- groupId
+            text <- gGroupText
+          } yield DeadCodeGroup(id, text, EventOrd.first)
 
         val gDeadGroup: Gen[DeadGroup] =
           gDeadCodeGroup.option

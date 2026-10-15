@@ -141,7 +141,7 @@ final class ApplyEvent(implicit val trust: Trust)
       case e: ApplicableTagCreateV1    => ApplicableTagEventsV1    applyCreate                  e
       case e: ApplicableTagUpdate      => ApplicableTagEvents      applyUpdate                  e
       case e: ApplicableTagUpdateV1    => ApplicableTagEventsV1    applyUpdate                  e
-      case e: CodeGroupCreate          => CodeGroupEvents          applyCreate                  e
+      case e: CodeGroupCreate          => CodeGroupEvents         .applyCreate                 (e, ord)
       case e: CodeGroupsDelete         => CodeGroupEvents          applyDelete                  e
       case e: CodeGroupUpdate          => CodeGroupEvents          applyUpdate                  e
       case e: ContentRestore           => ContentCommon            applyRestoreContent          e

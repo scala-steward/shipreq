@@ -474,12 +474,12 @@ trait ApplyContentEvent {
     val ^ = CodeGroupGD
     val GD = GenericDataApp[ReqCodes](^)
 
-    def applyCreate(e: CodeGroupCreate): Eval[Unit] = {
+    def applyCreate(e: CodeGroupCreate, ord: EventOrd): Eval[Unit] = {
       implicit val vs = e.vs
       for {
         c <- GD.need(^.Code)
         t = GD.want(^.Title)(Text.empty)
-        g = LiveCodeGroup(e.id, t)
+        g = LiveCodeGroup(e.id, t, ord)
         _ <- addOne(AddGroup(c, Unvalidated, g))
       } yield ()
     }

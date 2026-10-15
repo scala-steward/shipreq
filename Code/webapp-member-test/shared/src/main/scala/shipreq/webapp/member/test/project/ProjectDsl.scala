@@ -45,7 +45,7 @@ object ProjectDslInternals {
 
     def newActiveGroup(id: Option[ReqCodeGroupId], t: Text.CodeGroupTitle.OptionalText) =
       ReqCode.ActiveGroup(
-        LiveCodeGroup(id getOrElse nextReqCodeGroupId(), t),
+        LiveCodeGroup(id getOrElse nextReqCodeGroupId(), t, EventOrd.first),
         ReqCode.emptyReqInactive)
 
     def assignReqCodeToReq(t: ReqCode.Trie, c: ReqCode.Value, id: Option[ApReqCodeId], reqId: ReqId, reqLive: Live): ReqCode.Trie = {
@@ -204,7 +204,7 @@ object ProjectDsl {
           oldReqId match {
             case None =>
               val id = this.id.fold(p.nextReqCodeGroupId())(_.asInstanceOf[ReqCodeGroupId])
-              TestOptics.reqCodeDataDeadGroup.replace(Some(DeadCodeGroup(id, title)))(d)
+              TestOptics.reqCodeDataDeadGroup.replace(Some(DeadCodeGroup(id, title, EventOrd.first)))(d)
             case Some(r) =>
               val id = this.id.fold(p.nextApReqCodeId())(_.asInstanceOf[ApReqCodeId])
               TestOptics.reqCodeDataReqInactive.modify(_.add(r, id))(d)
