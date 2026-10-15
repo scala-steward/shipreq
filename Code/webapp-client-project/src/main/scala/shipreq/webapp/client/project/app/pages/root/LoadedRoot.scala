@@ -633,6 +633,7 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitDataWithoutE
         case Page.ReqDetail(pubid) =>
           val props = ReqDetail.DynamicProps(
             extPubid    = pubid,
+            rolodex     = rolodex,
             filterDead  = filterDeadSS,
             reqProps    = reqDetailReqPropsFn(s),
             editorUCS   = editRW.forUseCaseSteps,

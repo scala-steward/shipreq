@@ -77,6 +77,7 @@ object UiText {
     def useCaseStepTreeA     = "Alternative Courses"
     def pastPubids           = "Past IDs"
     def pastMnemonics        = "Past Mnemonics"
+    def created              = "Created"
     def savedViewName        = "Name"
     def impFieldSource       = "Req Type"
     def tagFieldSource       = "Tag Group"
