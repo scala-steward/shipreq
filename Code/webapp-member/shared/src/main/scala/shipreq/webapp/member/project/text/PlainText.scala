@@ -8,6 +8,7 @@ import shipreq.base.util.SafeStringOps._
 import shipreq.base.util._
 import shipreq.webapp.member.project.data.DataImplicits._
 import shipreq.webapp.member.project.data._
+import shipreq.webapp.member.project.event.EventOrd
 import shipreq.webapp.member.project.formula.{FormulaEvalCache, FormulaValue}
 import shipreq.webapp.member.project.text.Atom.{AnyAtom, DisplayReqRef}
 import shipreq.webapp.member.project.text.GrammarSpec.Surrounds
@@ -477,6 +478,9 @@ object PlainText {
 
     override def reqCodeTreeItem(item: ReqCodeTreeItem): String =
       PlainText.reqCodeTreeItem(item)
+
+    override def eventTimestamp(ord: EventOrd): String =
+      p.history.need(ord).createdAt.toString
 
     override def reqTypeShort(id: ReqTypeId): String =
       p.config.reqTypes.get(id).fold("?")(PlainText.reqTypeShort)

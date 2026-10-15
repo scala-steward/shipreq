@@ -292,17 +292,17 @@ object ReqTableTest2 extends TestSuite {
   def testSavedViewsBasic()(implicit path: TestPath) = {
 
     val assertViewBasic =
-      tableColumns.size.assert(7) &
-      tableColumns.assert("ID", "Req Type", "Implied By", "Title", "Code", "Deletion Reason", "Implies") &
+      tableColumns.size.assert(8) &
+      tableColumns.assert("ID", "Req Type", "Implied By", "Title", "Code", "Deletion Reason", "Created At", "Implies") &
       filterText.assert("")
 
     val assertViewA =
-      tableColumns.size.assert(18) &
+      tableColumns.size.assert(19) &
       filterText.assert("MF") &
       filterDead.assert(HideDead)
 
     val assertViewD =
-      tableColumns.size.assert(20) &
+      tableColumns.size.assert(21) &
       filterText.assert("UC") &
       filterDead.assert(ShowDead)
 

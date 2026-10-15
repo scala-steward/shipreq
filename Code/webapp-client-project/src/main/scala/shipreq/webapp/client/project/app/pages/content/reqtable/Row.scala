@@ -7,14 +7,16 @@ import shipreq.webapp.client.project.feature.EditorFeature.RowKey
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.data.derivation._
 import shipreq.webapp.member.project.data.savedview._
+import shipreq.webapp.member.project.event.EventOrd
 import shipreq.webapp.member.project.util.DataReusability._
 import shipreq.webapp.member.project.util.ReqCodeTreeItem
 
 sealed trait Row {
-  val id        : Row.Id
-  def sourceId  : Row.SourceId
-  def live      : Live
-  def fieldRules: FieldSetRules
+  val id          : Row.Id
+  def sourceId    : Row.SourceId
+  def live        : Live
+  def fieldRules  : FieldSetRules
+  def createdAtOrd: EventOrd
 }
 
 object Row {
@@ -29,20 +31,22 @@ object Row {
                           fieldRules: FieldSetRules,
                           instanceId: Int) extends Row {
 
-    override val id       = Row.Id.ForReq(req.id, instanceId)
-    override def sourceId = Row.SourceId.ForReq(req.id)
-    override def toString = s"$id\n$req\n$exp\n"
+    override val id           = Row.Id.ForReq(req.id, instanceId)
+    override def sourceId     = Row.SourceId.ForReq(req.id)
+    override def createdAtOrd = req.createdAtOrd
+    override def toString     = s"$id\n$req\n$exp\n"
   }
 
   final case class ForCodeGroup(group: CodeGroup,
                                 reqCode: ReqCode.Value,
                                 reqCodeTreeItem: Option[ReqCodeTreeItem]) extends Row {
 
-    override val id         = Row.Id.ForCodeGroup(reqCodeId)
-    override def sourceId   = Row.SourceId.ForCodeGroup(reqCodeId)
-    override def live       = group.live
-    override def fieldRules = FieldSetRules.optional
-    def reqCodeId           = group.id
+    override val id           = Row.Id.ForCodeGroup(reqCodeId)
+    override def sourceId     = Row.SourceId.ForCodeGroup(reqCodeId)
+    override def live         = group.live
+    override def fieldRules   = FieldSetRules.optional
+    override def createdAtOrd = group.createdAtOrd
+    def reqCodeId             = group.id
   }
 
   implicit def equalityR   : UnivEq[ForReq]            = UnivEq.derive

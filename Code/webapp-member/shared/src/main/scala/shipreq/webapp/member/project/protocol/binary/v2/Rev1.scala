@@ -36,6 +36,7 @@ import shipreq.webapp.member.project.text.Text
   * - Added UseCase.createdAtOrd
   * - Added LiveCodeGroup.createdAtOrd
   * - Added DeadCodeGroup.createdAtOrd
+  * - Added Column.CreatedAt
   */
 object Rev1 {
   import boopickle.ConstPickler
@@ -76,6 +77,7 @@ object Rev1 {
         private[this] final val KeyOtherTags      = 6
         private[this] final val KeyTitle          = 7
         private[this] final val KeyAllTags        = 8
+        private[this] final val KeyCreatedAt      = 9
         override def pickle(a: Column)(implicit state: PickleState): Unit =
           a match {
             case Code              => state.enc.writeByte(KeyCode          )
@@ -87,6 +89,7 @@ object Rev1 {
             case OtherTags         => state.enc.writeByte(KeyOtherTags     )
             case AllTags           => state.enc.writeByte(KeyAllTags       )
             case Title             => state.enc.writeByte(KeyTitle         )
+            case CreatedAt         => state.enc.writeByte(KeyCreatedAt     )
           }
         override def unpickle(implicit state: UnpickleState): Column =
           state.dec.readByte match {
@@ -99,6 +102,7 @@ object Rev1 {
             case KeyOtherTags      => OtherTags
             case KeyAllTags        => AllTags
             case KeyTitle          => Title
+            case KeyCreatedAt      => CreatedAt
           }
       }
 
@@ -112,6 +116,7 @@ object Rev1 {
         private[this] final val KeyOtherTags      = 5
         private[this] final val KeyTitle          = 6
         private[this] final val KeyAllTags        = 7
+        private[this] final val KeyCreatedAt      = 8
         override def pickle(a: Column.SortInconclusive)(implicit state: PickleState): Unit =
           a match {
             case Column.Code              => state.enc.writeByte(KeyCode          )
@@ -122,6 +127,7 @@ object Rev1 {
             case Column.OtherTags         => state.enc.writeByte(KeyOtherTags     )
             case Column.AllTags           => state.enc.writeByte(KeyAllTags       )
             case Column.Title             => state.enc.writeByte(KeyTitle         )
+            case Column.CreatedAt         => state.enc.writeByte(KeyCreatedAt     )
           }
         override def unpickle(implicit state: UnpickleState): Column.SortInconclusive =
           state.dec.readByte match {
@@ -133,7 +139,72 @@ object Rev1 {
             case KeyOtherTags      => Column.OtherTags
             case KeyAllTags        => Column.AllTags
             case KeyTitle          => Column.Title
+            case KeyCreatedAt      => Column.CreatedAt
           }
+      }
+
+    implicit val picklerColumnSortInconclusiveNoBlanks: Pickler[Column.SortInconclusiveNoBlanks] =
+      new Pickler[Column.SortInconclusiveNoBlanks] {
+        private[this] final val KeyReqType   = 0
+        private[this] final val KeyCreatedAt = 1
+        override def pickle(a: Column.SortInconclusiveNoBlanks)(implicit state: PickleState): Unit =
+          a match {
+            case Column.ReqType   => state.enc.writeByte(KeyReqType  )
+            case Column.CreatedAt => state.enc.writeByte(KeyCreatedAt)
+          }
+        override def unpickle(implicit state: UnpickleState): Column.SortInconclusiveNoBlanks =
+          state.dec.readByte match {
+            case KeyReqType   => Column.ReqType
+            case KeyCreatedAt => Column.CreatedAt
+          }
+      }
+
+    implicit val picklerSortMethodConsiderBlanks: Pickler[SortMethod.ConsiderBlanks] =
+      new Pickler[SortMethod.ConsiderBlanks] {
+        private[this] final val KeyAscThenBlanks  = 0
+        private[this] final val KeyBlanksThenAsc  = 1
+        private[this] final val KeyBlanksThenDesc = 2
+        private[this] final val KeyDescThenBlanks = 3
+        override def pickle(a: SortMethod.ConsiderBlanks)(implicit state: PickleState): Unit =
+          a match {
+            case SortMethod.AscThenBlanks  => state.enc.writeByte(KeyAscThenBlanks )
+            case SortMethod.BlanksThenAsc  => state.enc.writeByte(KeyBlanksThenAsc )
+            case SortMethod.BlanksThenDesc => state.enc.writeByte(KeyBlanksThenDesc)
+            case SortMethod.DescThenBlanks => state.enc.writeByte(KeyDescThenBlanks)
+          }
+        override def unpickle(implicit state: UnpickleState): SortMethod.ConsiderBlanks =
+          state.dec.readByte match {
+            case KeyAscThenBlanks  => SortMethod.AscThenBlanks
+            case KeyBlanksThenAsc  => SortMethod.BlanksThenAsc
+            case KeyBlanksThenDesc => SortMethod.BlanksThenDesc
+            case KeyDescThenBlanks => SortMethod.DescThenBlanks
+          }
+      }
+
+    implicit val picklerSortCriterionInconclusiveIB: Pickler[SortCriterion.InconclusiveIB] =
+      new Pickler[SortCriterion.InconclusiveIB] {
+        override def pickle(a: SortCriterion.InconclusiveIB)(implicit state: PickleState): Unit = {
+          state.pickle(a.column)
+          state.pickle(a.method)
+        }
+        override def unpickle(implicit state: UnpickleState): SortCriterion.InconclusiveIB = {
+          val column = state.unpickle[Column.SortInconclusiveNoBlanks]
+          val method = state.unpickle[SortMethod.IgnoreBlanks]
+          SortCriterion.InconclusiveIB(column, method)
+        }
+      }
+
+    implicit val picklerSortCriterionConclusive: Pickler[SortCriterion.Conclusive] =
+      new Pickler[SortCriterion.Conclusive] {
+        override def pickle(a: SortCriterion.Conclusive)(implicit state: PickleState): Unit = {
+          state.pickle(a.column)
+          state.pickle(a.method)
+        }
+        override def unpickle(implicit state: UnpickleState): SortCriterion.Conclusive = {
+          val column = state.unpickle[Column.SortConclusive]
+          val method = state.unpickle[SortMethod.IgnoreBlanks]
+          SortCriterion.Conclusive(column, method)
+        }
       }
 
     implicit val picklerColumnSortInconclusiveHasBlanks: Pickler[Column.SortInconclusiveHasBlanks] =

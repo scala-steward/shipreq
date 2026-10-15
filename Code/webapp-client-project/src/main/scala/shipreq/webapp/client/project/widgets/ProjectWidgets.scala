@@ -12,14 +12,16 @@ import shipreq.webapp.base.util.ClientUtil.{renderSeq, renderVector, sepComma, s
 import shipreq.webapp.client.project.app.Style.{widgets => *}
 import shipreq.webapp.client.project.app.WebWorkerClient
 import shipreq.webapp.member.UiText
-import shipreq.webapp.member.jsfacade.KaTeX
+import shipreq.webapp.member.jsfacade.{KaTeX, MomentJs}
 import shipreq.webapp.member.project.data.{Contextualise, Plain, _}
+import shipreq.webapp.member.project.event.EventOrd
 import shipreq.webapp.member.project.formula.FormulaEvalCache
 import shipreq.webapp.member.project.text.Atom.DisplayReqRef
 import shipreq.webapp.member.project.text.ProjectText.SetRenderStyle
 import shipreq.webapp.member.project.text.Text.AnyOptional
 import shipreq.webapp.member.project.text.{Grammar => G, _}
 import shipreq.webapp.member.project.util.ReqCodeTreeItem
+import shipreq.webapp.member.ui.TimeAgo
 
 object ProjectWidgets {
 
@@ -508,6 +510,9 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
       indentation.whenDefined(reqCodeTreeIdentation),
       <.pre(*.reqCodeTreeCode, code))
   }
+
+  override def eventTimestamp(ord: EventOrd): VdomTag =
+    <.span(TimeAgo.Component(MomentJs.fromInstant(project.history.need(ord).createdAt)))
 
   override def reqTypeShort(id: ReqTypeId): VdomTag =
     _reqTypeShort(id)

@@ -72,6 +72,12 @@ object Sorter {
     sort = SortFn.int
   )
 
+  // Sorting by the ord itself is the same as sorting by the event date
+  val createdAtSorter = sorter[Int](
+    prep = _ => _.createdAtOrd.value,
+    sort = SortFn.int
+  )
+
   def reqCodeSorter: SorterForSMCB =
     SorterForSMCB(SorterBase.reqCodeSorter(Row.reqCodesO, _))
 
@@ -168,7 +174,8 @@ object Sorter {
   // Sort criteria
 
   val inconclusiveIB: C.SortInconclusiveNoBlanks => SorterForSMIB = {
-    case C.ReqType => SorterForSMIB(reqTypeSorter)
+    case C.ReqType   => SorterForSMIB(reqTypeSorter)
+    case C.CreatedAt => SorterForSMIB(createdAtSorter)
   }
 
   val inconclusiveCB: C.SortInconclusiveHasBlanks => SorterForSMCB = {

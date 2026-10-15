@@ -118,6 +118,7 @@ object Rev1 {
     private[this] final val KeyDeletionReason = "delReason"
     private[this] final val KeyPubid          = "pubid"
     private[this] final val KeyReqType        = "reqType"
+    private[this] final val KeyCreatedAt      = "createdAt"
     private[this] final val KeyTags           = "tags"
     private[this] final val KeyOtherTags      = "otherTags"
     private[this] final val KeyAllTags        = "allTags"
@@ -128,6 +129,7 @@ object Rev1 {
       KeyDeletionReason -> Column.DeletionReason,
       KeyPubid          -> Column.Pubid,
       KeyReqType        -> Column.ReqType,
+      KeyCreatedAt      -> Column.CreatedAt,
       KeyTags           -> Column.OtherTags,
       KeyOtherTags      -> Column.OtherTags,
       KeyAllTags        -> Column.AllTags,
@@ -142,6 +144,7 @@ object Rev1 {
       case Column.DeletionReason  => Json.fromString(KeyDeletionReason)
       case Column.Pubid           => Json.fromString(KeyPubid)
       case Column.ReqType         => Json.fromString(KeyReqType)
+      case Column.CreatedAt       => Json.fromString(KeyCreatedAt)
       case Column.OtherTags       => Json.fromString(KeyOtherTags)
       case Column.AllTags         => Json.fromString(KeyAllTags)
       case Column.Title           => Json.fromString(KeyTitle)
@@ -154,6 +157,7 @@ object Rev1 {
         KeyCode           -> Column.Code,
         KeyDeletionReason -> Column.DeletionReason,
         KeyReqType        -> Column.ReqType,
+        KeyCreatedAt      -> Column.CreatedAt,
         KeyTags           -> Column.OtherTags,
         KeyOtherTags      -> Column.OtherTags,
         KeyAllTags        -> Column.AllTags,
@@ -167,6 +171,7 @@ object Rev1 {
       case Column.Code            => Json.fromString(KeyCode)
       case Column.DeletionReason  => Json.fromString(KeyDeletionReason)
       case Column.ReqType         => Json.fromString(KeyReqType)
+      case Column.CreatedAt       => Json.fromString(KeyCreatedAt)
       case Column.OtherTags       => Json.fromString(KeyOtherTags)
       case Column.AllTags         => Json.fromString(KeyAllTags)
       case Column.Title           => Json.fromString(KeyTitle)
@@ -202,7 +207,8 @@ object Rev1 {
 
     implicit val codecColumnSortInconclusiveNoBlanks: JsonCodec[Column.SortInconclusiveNoBlanks] =
       JsonCodec.enumAdt(AdtMacros.adtIsoSet[Column.SortInconclusiveNoBlanks, String] {
-        case Column.ReqType => KeyReqType
+        case Column.ReqType   => KeyReqType
+        case Column.CreatedAt => KeyCreatedAt
       })
 
     implicit val decoderSortCriterionInconclusiveCB: Decoder[SortCriterion.InconclusiveCB] =
