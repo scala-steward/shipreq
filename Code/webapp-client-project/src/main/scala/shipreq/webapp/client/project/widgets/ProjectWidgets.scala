@@ -8,6 +8,7 @@ import scala.collection.immutable.SortedSet
 import scalacss.ScalaCssReact._
 import shipreq.base.util.SafeStringOps._
 import shipreq.base.util._
+import shipreq.webapp.base.data.Rolodex
 import shipreq.webapp.base.util.ClientUtil.{renderSeq, renderVector, sepComma, sepSpace}
 import shipreq.webapp.client.project.app.Style.{widgets => *}
 import shipreq.webapp.client.project.app.WebWorkerClient
@@ -29,11 +30,12 @@ object ProjectWidgets {
   type NoCtx  = ProjectWidgets[ProjectText.Context.None]
 
   def apply[Ctx <: ProjectText.Context](project    : Project,
+                                        rolodex    : Rolodex,
                                         plainText  : PlainText.ForProject[Ctx],
                                         viewTags   : ViewTags,
                                         reqDetailRC: RouterCtl[ExternalPubid],
                                         webWorker  : WebWorkerClient.Instance): ProjectWidgets[Ctx] =
-    new ProjectWidgets(project, plainText, viewTags, reqDetailRC, webWorker)
+    new ProjectWidgets(project, rolodex, plainText, viewTags, reqDetailRC, webWorker)
 
   implicit def subst1[F[_], C <: ProjectText.Context](pw: F[ProjectWidgets[C]]): F[ProjectWidgets.AnyCtx] =
     pw.asInstanceOf[F[AnyCtx]]
@@ -81,6 +83,7 @@ object ProjectWidgets {
 // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
 final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
+                                                        rolodex      : Rolodex,
                                                         val plainText: PlainText.ForProject[Ctx],
                                                         val viewTags : ViewTags,
                                                         reqDetailRC  : RouterCtl[ExternalPubid],
@@ -561,10 +564,13 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
     if (newCtx ==* ctx)
       this.asInstanceOf[ProjectWidgets[Ctx2]]
     else
-      ProjectWidgets(project, plainText withCtx newCtx, viewTags, reqDetailRC, webWorker)
+      ProjectWidgets(project, rolodex, plainText withCtx newCtx, viewTags, reqDetailRC, webWorker)
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // Public additions not part of ProjectText
+
+  def eventAuthor(ord: EventOrd): String =
+    rolodex.need(project.history.need(ord).author).with_@
 
   def useCaseStepTextAndMaybeInvalidFlow[C[x] <: Iterable[x]](s: UseCaseStepFlowText.TextAndFlow[AnyOptional, C[String \/ UseCaseStepId]],
                                                               l: Live): VdomTag = {

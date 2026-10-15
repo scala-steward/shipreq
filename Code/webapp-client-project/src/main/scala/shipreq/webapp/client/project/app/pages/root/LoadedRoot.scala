@@ -52,6 +52,7 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitDataWithoutE
   implicit def webStorage = global.localStorage
 
   val pxProject       = global.pxProject
+  val pxRolodex       = global.pxRolodex
   def unsafeProject() = global.unsafeProject()
   def unsafeSupp()    = global.unsafeSupp()
 
@@ -125,7 +126,7 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitDataWithoutE
       }
 
     private val pxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]] =
-      Reusable byRef Px.apply3(pxProject, pxPlainText, pxViewTags)(ProjectWidgets(_, _, _, routerCtlEP, webWorkerClient))
+      Reusable byRef Px.apply4(pxProject, pxRolodex, pxPlainText, pxViewTags)(ProjectWidgets(_, _, _, _, routerCtlEP, webWorkerClient))
 
     /** Whether the user has permission to change the project. */
     private val pxGlobalEditability: Px[Permission] =
@@ -633,7 +634,6 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitDataWithoutE
         case Page.ReqDetail(pubid) =>
           val props = ReqDetail.DynamicProps(
             extPubid    = pubid,
-            rolodex     = rolodex,
             filterDead  = filterDeadSS,
             reqProps    = reqDetailReqPropsFn(s),
             editorUCS   = editRW.forUseCaseSteps,

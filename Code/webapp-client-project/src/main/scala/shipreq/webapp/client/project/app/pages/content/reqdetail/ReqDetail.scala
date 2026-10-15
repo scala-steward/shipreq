@@ -10,7 +10,6 @@ import org.scalajs.dom.ext.KeyCode
 import org.scalajs.dom.html
 import scalacss.ScalaCssReact._
 import shipreq.base.util._
-import shipreq.webapp.base.data.Rolodex
 import shipreq.webapp.base.feature.{AsyncFeature, TableNavigationFeature}
 import shipreq.webapp.base.protocol.ServerSideProcInvoker
 import shipreq.webapp.base.ui.widgets.NoContentMessage
@@ -63,7 +62,6 @@ object ReqDetail {
   }
 
   final case class DynamicProps(extPubid   : ExternalPubid,
-                                rolodex    : Rolodex,
                                 filterDead : StateSnapshot[FilterDead],
                                 reqProps   : ReqId => ReqProps,
                                 editorUCS  : EditorFeature.ReadWrite.ForUseCaseSteps,
@@ -563,12 +561,11 @@ object ReqDetail {
 
           case Row.Created =>
             withoutReusability(UiText.FieldNames.created) { cell =>
-              val event = project.history.need(req.createdAtOrd)
               cell.nonDirectlyEditableNavParent(
                 <.div(
                   pw.eventTimestamp(req.createdAtOrd),
                   " by ",
-                  props.rolodex.need(event.author).with_@
+                  pw.eventAuthor(req.createdAtOrd)
                 )
               )
             }
