@@ -5,6 +5,7 @@ import japgolly.microlibs.utils.Memo
 import scala.collection.immutable.ListMap
 import scala.collection.mutable
 import shipreq.base.util._
+import shipreq.webapp.base.data.Rolodex
 import shipreq.webapp.member.project.data.DataImplicits._
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.text.PlainText
@@ -1020,7 +1021,7 @@ object VirtualProjectTags {
 
     @elidable(elidable.INFO)
     override def prettyPrint = {
-      val pt = PlainText.ForProject.noCtx(p)
+      val pt = PlainText.ForProject.noCtx(p, Rolodex.empty)
       val sep = "=" * 80
 
       def show(id: ApplicableTagId): String = {

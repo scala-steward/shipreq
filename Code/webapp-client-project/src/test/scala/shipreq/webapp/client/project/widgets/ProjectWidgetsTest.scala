@@ -29,7 +29,7 @@ object ProjectWidgetsTest extends TestSuite with WebappTestUtil {
       import SampleProject3.Values._
       val project = SampleProject3.project
       val rolodex = TestGlobal.rolodexForProject(project)
-      val pt = PlainText.ForProject.noCtx(project)
+      val pt = PlainText.ForProject.noCtx(project, rolodex)
       val viewTags = ViewTags(project)
       val reqDetailRC = MockRouterCtl[ExternalPubid]()
       val webWorker = TestWebWorkerClient()

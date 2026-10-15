@@ -98,7 +98,8 @@ object SampleProject4 {
     p2
   }
 
-  lazy val plainText  = PlainText.ForProject.noCtx(project)
+  lazy val rolodex    = SampleProject.rolodex
+  lazy val plainText  = PlainText.ForProject.noCtx(project, rolodex)
   lazy val textSearch = TextSearch(project, plainText)
 
   lazy val projectWithOtherTags =

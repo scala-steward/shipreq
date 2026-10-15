@@ -45,7 +45,7 @@ object AutoCompleteTestData {
       DeadReqCode("dead.group", id = Some(ReqCodeGroupId(91)))) ! p
   }
 
-  lazy val plainText2 = PlainText.ForProject.noCtx(project2)
+  lazy val plainText2 = PlainText.ForProject.noCtx(project2, SampleProject2.rolodex)
   lazy val textSearch2 = TextSearch(project2, plainText2)
 
 }

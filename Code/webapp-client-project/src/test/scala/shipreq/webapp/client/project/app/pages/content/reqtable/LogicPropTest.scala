@@ -5,6 +5,7 @@ import japgolly.microlibs.stdlib_ext.StdlibExt._
 import nyaya.gen.Gen
 import nyaya.prop.{Logic => _, _}
 import shipreq.base.util.ScalaExt._
+import shipreq.webapp.base.data.Rolodex
 import shipreq.webapp.client.project.app.pages.content.reqtable.LogicTestUtil._
 import shipreq.webapp.client.project.test.ClientTestSettings._
 import shipreq.webapp.member.project.data._
@@ -33,7 +34,7 @@ object LogicPropTest extends TestSuite {
       else
         _ => true
 
-    val plainText        = PlainText.ForProject.noCtx(p)
+    val plainText        = PlainText.ForProject.noCtx(p, Rolodex.empty)
     val formulaEvalCache = FormulaEvalCache.fromProject(p)
     val issues           = IssueTracker(p, formulaEvalCache).issues
     val textSearch       = TextSearch(p, plainText)

@@ -517,6 +517,9 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
   override def eventTimestamp(ord: EventOrd): VdomTag =
     <.span(TimeAgo.Component(MomentJs.fromInstant(project.history.need(ord).createdAt)))
 
+  override def eventAuthor(ord: EventOrd): VdomTag =
+    <.span(rolodex.need(project.history.need(ord).author).with_@)
+
   override def reqTypeShort(id: ReqTypeId): VdomTag =
     _reqTypeShort(id)
 
@@ -568,9 +571,6 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // Public additions not part of ProjectText
-
-  def eventAuthor(ord: EventOrd): String =
-    rolodex.need(project.history.need(ord).author).with_@
 
   def useCaseStepTextAndMaybeInvalidFlow[C[x] <: Iterable[x]](s: UseCaseStepFlowText.TextAndFlow[AnyOptional, C[String \/ UseCaseStepId]],
                                                               l: Live): VdomTag = {

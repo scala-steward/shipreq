@@ -112,7 +112,7 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitDataWithoutE
       pxProject.map(_.config).withReuse
 
     private val pxPlainText: Px[PlainText.ForProject.NoCtx] =
-      pxProject.map(PlainText.ForProject.noCtx.apply)
+      Px.apply2(pxProject, pxRolodex)(PlainText.ForProject.noCtx.apply)
 
     private val pxTextSearch: Px[TextSearch] =
       Px.apply2(pxProject, pxPlainText)(TextSearch.apply)
@@ -394,6 +394,7 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitDataWithoutE
         editorEditability <- pxEditorEditability
         reqDetailId       <- pxReqDetailId
         project           <- pxProject
+        rolodex           <- pxRolodex
         vt                <- pxViewTags
         vrdc              <- pxViewReqDataCache
         fec               <- pxFormulaEvalCache
@@ -402,7 +403,7 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitDataWithoutE
         val aw  = editAsyncW(row).mapKey(AsyncKey.ToReqDetail)
         val ew  = editW.forReq(id)
         val ctx = ProjectText.Context.Req(id)
-        val pt  = PlainText.ForProject(project, ctx)
+        val pt  = PlainText.ForProject(project, rolodex, ctx)
         val vrc = ViewReqCache(vrdc, pt, fec, vt.forPlainTextViewReqCache)
         val rff = RenderFeature.ToText.ReqCtx.ApplicableOption.prepare(project, vrc, pt)
 

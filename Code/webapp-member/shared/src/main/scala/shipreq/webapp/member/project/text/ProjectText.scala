@@ -143,6 +143,8 @@ abstract class ProjectText[+Ctx <: Context, Out](project: Project, final val ctx
 
   def whenBlankButMandatory: Out
 
+  def eventAuthor(ord: EventOrd): Out
+
   def eventTimestamp(ord: EventOrd): Out
 
   def formulaEval(eval: FormulaEvalCache.Eval, fid: CustomField.Formula.Id): Out

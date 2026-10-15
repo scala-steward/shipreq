@@ -66,6 +66,14 @@ trait WebappTestUtil extends BaseTestUtil {
   val UserId4 = UserId(4)
   val Username4 = Username("usr4")
 
+  lazy val Rolodex1: Rolodex =
+    Rolodex(Map(
+      UserId1 -> Username1,
+      UserId2 -> Username2,
+      UserId3 -> Username3,
+      UserId4 -> Username4,
+    ))
+
   def looseProjectMetaData(p: Project, eventsTotal: Int = 123, eventsInit: Int = 2, role: ProjectRole = ProjectRole.Admin): ProjectMetaData =
     ProjectMetaData.fromProject(p)(
       id            = Obfuscated("t3sT"),

@@ -108,6 +108,9 @@ final class ViewReq[A](data            : Data,
   def createdAt: A =
     pt.eventTimestamp(data.req.createdAtOrd)
 
+  def createdBy: A =
+    pt.eventAuthor(data.req.createdAtOrd)
+
   val customField: CustomFieldId => IfApplicable[A] = {
     case id: CustomField.Implication.Id => imps(id)
     case id: CustomField.Formula    .Id => customFieldFormula(id)
