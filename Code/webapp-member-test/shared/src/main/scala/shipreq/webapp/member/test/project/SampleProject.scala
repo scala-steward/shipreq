@@ -2,6 +2,7 @@ package shipreq.webapp.member.test.project
 
 import java.time.Instant
 import shipreq.base.util._
+import shipreq.webapp.base.data.Rolodex
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.event._
 import shipreq.webapp.member.test.WebappTestUtil
@@ -134,4 +135,7 @@ object SampleProject {
 
   lazy val projectWithOtherTags =
     applyEventSuccessfully(project, Event.FieldStaticAdd(StaticField.OtherTags))
+
+  lazy val rolodex: Rolodex =
+    Rolodex1
 }

@@ -7,6 +7,7 @@ import shipreq.base.util.ScalaExt._
 import shipreq.base.util.{IMap, Util}
 import shipreq.webapp.client.project.feature.deletion.DeletionRestorationLogic.{Data, GroupRow}
 import shipreq.webapp.member.project.data._
+import shipreq.webapp.member.project.event.EventOrd
 import shipreq.webapp.member.test.WebappTestUtil._
 import shipreq.webapp.member.test.project.SampleProject
 import shipreq.webapp.member.test.project.UnsafeTypes._
@@ -66,7 +67,7 @@ object DeletionLogicTestData {
     }
 
     def visible = {
-      _expectDeletableRCGs += GroupRow(LiveCodeGroup(id, x.title), codeStr, ∅, ∅)
+      _expectDeletableRCGs += GroupRow(LiveCodeGroup(id, x.title, EventOrd.first), codeStr, ∅, ∅)
       x
     }
 

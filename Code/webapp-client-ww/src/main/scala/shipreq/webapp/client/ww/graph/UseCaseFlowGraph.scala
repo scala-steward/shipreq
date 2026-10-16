@@ -4,6 +4,7 @@ import japgolly.microlibs.stdlib_ext.StdlibExt._
 import scala.collection.mutable
 import shipreq.base.util.VectorTree.PartialLocation
 import shipreq.base.util._
+import shipreq.webapp.base.data.Rolodex
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.data.savedview.ImpGraphConfig.GraphDir
 import shipreq.webapp.member.project.text.{PlainText, ProjectText}
@@ -22,7 +23,7 @@ final class UseCaseFlowGraph(id     : UseCaseId,
   import UseCaseFlowGraph._
 
   override protected def create()(implicit b: GraphViz.Builder): Unit = {
-    val ptext    = PlainText.ForProject(project, ctx)
+    val ptext    = PlainText.ForProject(project, Rolodex.empty, ctx)
     val useCases = project.content.reqs.useCases
     val uc       = useCases.imap.need(id)
     val stepsNA  = NA.useCaseSteps get uc

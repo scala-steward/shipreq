@@ -31,6 +31,8 @@ object Column {
   case object Code                              extends BuiltIn with SortInconclusiveHasBlanks
   case object Title                             extends BuiltIn with SortInconclusiveHasBlanks with Mandatory
   case object ReqType                           extends BuiltIn with SortInconclusiveNoBlanks
+  case object CreatedAt                         extends BuiltIn with SortInconclusiveNoBlanks
+  case object CreatedBy                         extends BuiltIn with SortInconclusiveNoBlanks
   case object DeletionReason                    extends BuiltIn with SortInconclusiveHasBlanks
   final case class Implications(dir: Direction) extends BuiltIn with SortInconclusiveHasBlanks
 
@@ -64,6 +66,8 @@ object Column {
       Code,
       Title,
       ReqType,
+      CreatedAt,
+      CreatedBy,
       Implications(Forwards), Implications(Backwards),
       DeletionReason)
 
@@ -78,6 +82,8 @@ object Column {
   def applicabilityForReq[Data](a: ProjectApplicability[FieldId, Data]): ProjectApplicability[Column, Data] =
     ProjectApplicability {
       case ReqType
+         | CreatedAt
+         | CreatedBy
          | Pubid
          | Code
          | Title
@@ -91,7 +97,9 @@ object Column {
   val applicabilityForCodeGroup: ProjectApplicability[Column, Any] =
     ProjectApplicability {
       case Code
-         | Title           => Applicability.always
+         | Title
+         | CreatedAt
+         | CreatedBy       => Applicability.always
       case ReqType
          | Pubid
          | OtherTags

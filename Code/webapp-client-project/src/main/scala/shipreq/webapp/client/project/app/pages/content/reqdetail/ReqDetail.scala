@@ -558,6 +558,17 @@ object ReqDetail {
             withoutReusability(UiText.FieldNames.pastPubids, dataLive = Dead) { cell =>
               cell.nonDirectlyEditableNavParent(view.pastPubids)
             }
+
+          case Row.Created =>
+            withoutReusability(UiText.FieldNames.created) { cell =>
+              cell.nonDirectlyEditableNavParent(
+                <.div(
+                  pw.eventTimestamp(req.createdAtOrd),
+                  " by ",
+                  pw.eventAuthor(req.createdAtOrd)
+                )
+              )
+            }
         }
       }
 

@@ -33,6 +33,8 @@ object ColumnPlus {
       case Column.Code            => Some(apply(c, Live, SpecialBuiltInField.Code.name))
       case Column.Title           => Some(title)
       case Column.ReqType         => Some(apply(c, Live, SpecialBuiltInField.ReqType.name))
+      case Column.CreatedAt       => Some(apply(c, Live, SpecialBuiltInField.CreatedAt.name))
+      case Column.CreatedBy       => Some(apply(c, Live, SpecialBuiltInField.CreatedBy.name))
       case Column.AllTags         => Some(apply(c, Live, StaticField.AllTags.name))
       case Column.OtherTags       => Some(apply(c, Live, StaticField.OtherTags.name))
       case Column.Implications(d) => Some(apply(c, Live, SpecialBuiltInField.implication(d).name))

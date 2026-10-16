@@ -28,12 +28,13 @@ object ProjectWidgetsTest extends TestSuite with WebappTestUtil {
     "nestedLink" - {
       import SampleProject3.Values._
       val project = SampleProject3.project
-      val pt = PlainText.ForProject.noCtx(project)
+      val rolodex = TestGlobal.rolodexForProject(project)
+      val pt = PlainText.ForProject.noCtx(project, rolodex)
       val viewTags = ViewTags(project)
       val reqDetailRC = MockRouterCtl[ExternalPubid]()
       val webWorker = TestWebWorkerClient()
 
-      val pw = ProjectWidgets(project, pt, viewTags, reqDetailRC, webWorker)
+      val pw = ProjectWidgets(project, rolodex, pt, viewTags, reqDetailRC, webWorker)
 
       // frs(2) title contains a reference to MF-28 and MF-26.
       val ids = Vector(project.content.reqs.need(frs(2)).pubid)

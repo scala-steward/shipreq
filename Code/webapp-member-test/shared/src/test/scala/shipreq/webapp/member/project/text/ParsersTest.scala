@@ -12,6 +12,7 @@ import scala.collection.immutable.TreeSet
 import scala.reflect.ClassTag
 import scala.util.{Failure, Success, Try}
 import shipreq.base.util.{NonEmptyArraySeq, Valid}
+import shipreq.webapp.base.data.Rolodex
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.event.{ApplicableTagGD, Event}
 import shipreq.webapp.member.project.text.Atom.{AnyAtom, CodeBlockDetail, DisplayReqRef}
@@ -52,7 +53,7 @@ object ParsersTest extends TestSuite {
 
     val E = EvalOver(this)
 
-    val txt2str = PlainText.ForProject.noCtx(p).text(_: Text.AnyOptional, Live, Optional)
+    val txt2str = PlainText.ForProject.noCtx(p, Rolodex.empty).text(_: Text.AnyOptional, Live, Optional)
 
     val genericReqTitles =
       p.content.reqs.reqIterator()
@@ -271,7 +272,7 @@ object ParsersTest extends TestSuite {
       import shipreq.webapp.member.test.project.UnsafeTypes._
 
       def testT[A <: AnyAtom: ClassTag](p: Project, parse: Project => String => ArraySeq[A], text: String)(as: A*)(implicit l: Line): Unit = {
-        val pt = PlainText.ForProject.noCtx(p)
+        val pt = PlainText.ForProject.noCtx(p, Rolodex.empty)
 
         val actualParsed       = parse(p)(text)
         val actualParsedAsText = pt.text(actualParsed, Live, Optional)

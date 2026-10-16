@@ -140,8 +140,8 @@ trait ApplyReqCodeLogic {
       }
     }
 
-    private def awakenGroup(g: DeadCodeGroup) = LiveCodeGroup(g.id, g.title)
-    private def killGroup  (g: LiveCodeGroup) = DeadCodeGroup(g.id, g.title)
+    private def awakenGroup(g: DeadCodeGroup) = LiveCodeGroup(g.id, g.title, g.createdAtOrd)
+    private def killGroup  (g: LiveCodeGroup) = DeadCodeGroup(g.id, g.title, g.createdAtOrd)
 
     def addOne[A](a: A)(implicit adder: Adder[A]): Eval[Unit] =
       getTrie.flatMap(addOneT(_, a)).flatMap(Project.reqCodeTrie.replace)

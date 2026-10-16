@@ -3,6 +3,7 @@ package shipreq.webapp.member.project.data
 import shipreq.base.util.Invalid
 import shipreq.webapp.member.project.data.DataValidators.{reqCode => V}
 import shipreq.webapp.member.project.data.ReqCode._
+import shipreq.webapp.member.project.event.EventOrd
 import shipreq.webapp.member.project.text.Grammar
 import shipreq.webapp.member.test.WebappTestUtil._
 import shipreq.webapp.member.test.project.UnsafeTypes._
@@ -13,8 +14,8 @@ object ReqCodeTest extends TestSuite {
   val sampleCodeTrie = Trie.empty
       .put("aa",     ActiveReq(1, 100, None, emptyReqInactive))
       .put("aa.b.c", ActiveReq(2, 100, None, emptyReqInactive))
-      .put("aa.b.d", ActiveGroup(LiveCodeGroup(3, ∅), emptyReqInactive))
-      .put("aa.b.e", Inactive(Some(DeadCodeGroup(1, "ah")), emptyReqInactive))
+      .put("aa.b.d", ActiveGroup(LiveCodeGroup(3, ∅, EventOrd.first), emptyReqInactive))
+      .put("aa.b.e", Inactive(Some(DeadCodeGroup(1, "ah", EventOrd.first)), emptyReqInactive))
 
   val vs0 = V.State(sampleCodeTrie, Set.empty)
   val vs2 = V.State(sampleCodeTrie, Set("aa.b.c"))

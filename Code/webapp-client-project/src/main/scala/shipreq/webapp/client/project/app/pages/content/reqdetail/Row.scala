@@ -40,6 +40,7 @@ object Row {
   case object Life                          extends Row(autoKey)
   case object PastPubids                    extends Row(autoKey)
   case object DeletionReason                extends Row(autoKey)
+  case object Created                       extends Row(autoKey)
   case object ReqType                       extends Row(autoKey)
   case object Codes                         extends Row(autoKey)
   case object OtherTags                     extends Row(autoKey)
@@ -80,6 +81,7 @@ object Row {
       Life,
       PastPubids,
       DeletionReason,
+      Created,
       Codes,
       Implications)
 

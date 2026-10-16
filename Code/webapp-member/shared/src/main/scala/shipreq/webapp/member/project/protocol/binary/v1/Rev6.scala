@@ -5,7 +5,6 @@ import japgolly.microlibs.adt_macros.AdtMacros
 import scala.collection.immutable.TreeSet
 import scala.reflect.ClassTag
 import shipreq.base.util.{Enabled, NonEmptyArraySeq}
-import shipreq.webapp.member.project.data.DataImplicits._
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.event._
 import shipreq.webapp.member.project.text.{AtomTC, Text}
@@ -367,35 +366,6 @@ object Rev6 {
 
   // ===================================================================================================================
 
-  implicit lazy val picklerCodeGroup: Pickler[CodeGroup] =
-    new Pickler[CodeGroup] {
-      private[this] final val KeyDeadCodeGroup = 'd'
-      private[this] final val KeyLiveCodeGroup = 'l'
-      override def pickle(a: CodeGroup)(implicit state: PickleState): Unit =
-        a match {
-          case b: DeadCodeGroup => state.enc.writeByte(KeyDeadCodeGroup); state.pickle(b)
-          case b: LiveCodeGroup => state.enc.writeByte(KeyLiveCodeGroup); state.pickle(b)
-        }
-      override def unpickle(implicit state: UnpickleState): CodeGroup =
-        state.dec.readByte match {
-          case KeyDeadCodeGroup => state.unpickle[DeadCodeGroup]
-          case KeyLiveCodeGroup => state.unpickle[LiveCodeGroup]
-        }
-    }
-
-  implicit lazy val picklerDeadCodeGroup: Pickler[DeadCodeGroup] =
-    new Pickler[DeadCodeGroup] {
-      override def pickle(a: DeadCodeGroup)(implicit state: PickleState): Unit = {
-        state.pickle(a.id)
-        state.pickle(a.title)
-      }
-      override def unpickle(implicit state: UnpickleState): DeadCodeGroup = {
-        val id    = state.unpickle[ReqCodeGroupId]
-        val title = state.unpickle[Text.CodeGroupTitle.OptionalText]
-        DeadCodeGroup(id, title)
-      }
-    }
-
   implicit lazy val picklerDeletionReasons: Pickler[DeletionReasons] =
     new Pickler[DeletionReasons] {
       private[this] implicit val picklerRA: Pickler[DeletionReasons.ReqApplication] = pickleMultimap
@@ -407,42 +377,6 @@ object Rev6 {
         val reasons        = state.unpickle[Vector[Text.DeletionReason.NonEmptyText]]
         val reqApplication = state.unpickle[DeletionReasons.ReqApplication]
         DeletionReasons(reasons, reqApplication)
-      }
-    }
-
-  implicit lazy val picklerGenericReq: Pickler[GenericReq] =
-    new Pickler[GenericReq] {
-      override def pickle(a: GenericReq)(implicit state: PickleState): Unit = {
-        state.pickle(a.id)
-        state.pickle(a.pubid)
-        state.pickle(a.title)
-        state.pickle(a.liveExplicitly)
-      }
-      override def unpickle(implicit state: UnpickleState): GenericReq = {
-        val id             = state.unpickle[GenericReqId]
-        val pubid          = state.unpickle[PubidC]
-        val title          = state.unpickle[Text.GenericReqTitle.OptionalText]
-        val liveExplicitly = state.unpickle[Live]
-        GenericReq(id, pubid, title, liveExplicitly)
-      }
-    }
-
-  implicit lazy val picklerGenericReqsById: Pickler[GenericReqIMap] =
-    pickleIMapD
-
-  implicit lazy val picklerGenericReqs: Pickler[GenericReqs] =
-    picklerGenericReqsById.xmap(GenericReqs.apply)(_.imap)
-
-  implicit lazy val picklerLiveCodeGroup: Pickler[LiveCodeGroup] =
-    new Pickler[LiveCodeGroup] {
-      override def pickle(a: LiveCodeGroup)(implicit state: PickleState): Unit = {
-        state.pickle(a.id)
-        state.pickle(a.title)
-      }
-      override def unpickle(implicit state: UnpickleState): LiveCodeGroup = {
-        val id    = state.unpickle[ReqCodeGroupId]
-        val title = state.unpickle[Text.CodeGroupTitle.OptionalText]
-        LiveCodeGroup(id, title)
       }
     }
 
@@ -475,151 +409,9 @@ object Rev6 {
       }
     }
 
-  implicit lazy val picklerReq: Pickler[Req] =
-    new Pickler[Req] {
-      private[this] final val KeyGenericReq = 'g'
-      private[this] final val KeyUseCase    = 'u'
-      override def pickle(a: Req)(implicit state: PickleState): Unit =
-        a match {
-          case b: GenericReq => state.enc.writeByte(KeyGenericReq); state.pickle(b)
-          case b: UseCase    => state.enc.writeByte(KeyUseCase   ); state.pickle(b)
-        }
-      override def unpickle(implicit state: UnpickleState): Req =
-        state.dec.readByte match {
-          case KeyGenericReq => state.unpickle[GenericReq]
-          case KeyUseCase    => state.unpickle[UseCase]
-        }
-    }
-
-  implicit lazy val picklerReqCodeData: Pickler[ReqCode.Data] = {
-    import ReqCode._
-
-    implicit val picklerInactive: Pickler[Inactive] =
-      new Pickler[Inactive] {
-        override def pickle(a: Inactive)(implicit state: PickleState): Unit = {
-          state.pickle(a.deadGroup)
-          state.pickle(a.reqInactive)
-        }
-        override def unpickle(implicit state: UnpickleState): Inactive = {
-          val deadGroup   = state.unpickle[DeadGroup]
-          val reqInactive = state.unpickle[ReqInactive]
-          Inactive(deadGroup, reqInactive)
-        }
-      }
-
-    implicit val picklerActiveReq: Pickler[ActiveReq] =
-      new Pickler[ActiveReq] {
-        override def pickle(a: ActiveReq)(implicit state: PickleState): Unit = {
-          state.pickle(a.id)
-          state.pickle(a.reqId)
-          state.pickle(a.deadGroup)
-          state.pickle(a.reqInactive)
-        }
-        override def unpickle(implicit state: UnpickleState): ActiveReq = {
-          val id          = state.unpickle[ApReqCodeId]
-          val reqId       = state.unpickle[ReqId]
-          val deadGroup   = state.unpickle[DeadGroup]
-          val reqInactive = state.unpickle[ReqInactive]
-          ActiveReq(id, reqId, deadGroup, reqInactive)
-        }
-      }
-
-    implicit val picklerActiveGroup: Pickler[ActiveGroup] =
-      new Pickler[ActiveGroup] {
-        override def pickle(a: ActiveGroup)(implicit state: PickleState): Unit = {
-          state.pickle(a.group)
-          state.pickle(a.reqInactive)
-        }
-        override def unpickle(implicit state: UnpickleState): ActiveGroup = {
-          val group       = state.unpickle[LiveCodeGroup]
-          val reqInactive = state.unpickle[ReqInactive]
-          ActiveGroup(group, reqInactive)
-        }
-      }
-
-    new Pickler[Data] {
-      private[this] final val KeyActiveGroup = 'g'
-      private[this] final val KeyActiveReq   = 'r'
-      private[this] final val KeyInactive    = 'i'
-      override def pickle(a: Data)(implicit state: PickleState): Unit =
-        a match {
-          case b: ActiveGroup => state.enc.writeByte(KeyActiveGroup); state.pickle(b)
-          case b: ActiveReq   => state.enc.writeByte(KeyActiveReq  ); state.pickle(b)
-          case b: Inactive    => state.enc.writeByte(KeyInactive   ); state.pickle(b)
-        }
-      override def unpickle(implicit state: UnpickleState): Data =
-        state.dec.readByte match {
-          case KeyActiveGroup => state.unpickle[ActiveGroup]
-          case KeyActiveReq   => state.unpickle[ActiveReq]
-          case KeyInactive    => state.unpickle[Inactive]
-        }
-    }
-  }
-
-  implicit lazy val picklerReqCodes: Pickler[ReqCodes] =
-    transformPickler(ReqCodes.apply)(_.trie)
-
-  implicit lazy val picklerReqCodeTrie: Pickler[ReqCode.Trie] =
-    pickleTrie
-
   implicit lazy val picklerReqDataText: Pickler[ReqData.Text] =
     pickleMap[CustomField.Text.Id, Map[ReqId, Text.CustomTextField.NonEmptyText]]
       .xmap(ReqData.Text.apply)(_.data)
-
-  implicit lazy val picklerRequirements: Pickler[Requirements] =
-    new Pickler[Requirements] {
-      override def pickle(a: Requirements)(implicit state: PickleState): Unit = {
-        state.pickle(a.genericReqs)
-        state.pickle(a.useCases)
-        state.pickle(a.pubids)
-      }
-      override def unpickle(implicit state: UnpickleState): Requirements = {
-        val genericReqs = state.unpickle[GenericReqs]
-        val useCases    = state.unpickle[UseCases]
-        val pubids      = state.unpickle[PubidRegister]
-        Requirements(genericReqs, useCases, pubids)
-      }
-    }
-
-  implicit lazy val picklerUseCase: Pickler[UseCase] =
-    new Pickler[UseCase] {
-      override def pickle(a: UseCase)(implicit state: PickleState): Unit = {
-        state.pickle(a.id)
-        state.pickle(a.pos)
-        state.pickle(a.title)
-        state.pickle(a.stepsNA)
-        state.pickle(a.stepsE)
-        state.pickle(a.liveExplicitly)
-      }
-      override def unpickle(implicit state: UnpickleState): UseCase = {
-        val id             = state.unpickle[UseCaseId]
-        val pos            = state.unpickle[ReqTypePos]
-        val title          = state.unpickle[Text.UseCaseTitle.OptionalText]
-        val stepsNA        = state.unpickle[UseCaseSteps]
-        val stepsE         = state.unpickle[UseCaseSteps]
-        val liveExplicitly = state.unpickle[Live]
-        UseCase(id, pos, title, stepsNA, stepsE, liveExplicitly)
-      }
-    }
-
-  implicit lazy val picklerUseCases: Pickler[UseCases] =
-    picklerUseCasesStateless imap UseCases.statelessIso
-
-  implicit lazy val picklerUseCasesStateless: Pickler[UseCases.Stateless] =
-    new Pickler[UseCases.Stateless] {
-      override def pickle(a: UseCases.Stateless)(implicit state: PickleState): Unit = {
-        state.pickle(a.imap)
-        state.pickle(a.stepFlow)
-      }
-      override def unpickle(implicit state: UnpickleState): UseCases.Stateless = {
-        val imap     = state.unpickle[UseCaseIMap]
-        val stepFlow = state.unpickle[UseCases.StepFlow]
-        UseCases.Stateless(imap, stepFlow)
-      }
-    }
-
-  implicit lazy val picklerUseCasesById: Pickler[UseCaseIMap] =
-    pickleIMapD
 
   implicit lazy val picklerUseCaseStep: Pickler[UseCaseStep] =
     new Pickler[UseCaseStep] {

@@ -10,6 +10,7 @@ import shipreq.webapp.client.project.test.ClientTestSettings._
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.data.savedview._
 import shipreq.webapp.member.project.data.savedview.{Column => C, SortCriterion => SC}
+import shipreq.webapp.member.test.WebappTestUtil.{Rolodex1, withDummyHistory}
 import shipreq.webapp.member.project.filter.Filter
 import shipreq.webapp.member.project.formula.FormulaEvalCache
 import shipreq.webapp.member.project.issue.IssueTracker
@@ -33,7 +34,7 @@ object LogicPropTest extends TestSuite {
       else
         _ => true
 
-    val plainText        = PlainText.ForProject.noCtx(p)
+    val plainText        = PlainText.ForProject.noCtx(p, Rolodex1)
     val formulaEvalCache = FormulaEvalCache.fromProject(p)
     val issues           = IssueTracker(p, formulaEvalCache).issues
     val textSearch       = TextSearch(p, plainText)
@@ -246,6 +247,8 @@ object LogicPropTest extends TestSuite {
       case C.OtherTags       => nop
       case C.Implications(_) => nop
       case C.DeletionReason  => nop
+      case C.CreatedAt       => nop
+      case C.CreatedBy       => nop
       case C.CustomField(id) =>
         id match {
           case _: CustomField.Implication.Id => nop
@@ -275,7 +278,8 @@ object LogicPropTest extends TestSuite {
 
   def gen: Gen[LogicTests] =
     for {
-      p  <- RandomData.projectNoHistory
+      p0 <- RandomData.projectNoHistory
+      p  = withDummyHistory(p0)
       fd <- RandomData.filterDead
       v  <- RandomSavedView.view(p, fd, allowFilter = false)
     } yield

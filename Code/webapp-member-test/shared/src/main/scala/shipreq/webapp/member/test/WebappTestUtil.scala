@@ -66,6 +66,14 @@ trait WebappTestUtil extends BaseTestUtil {
   val UserId4 = UserId(4)
   val Username4 = Username("usr4")
 
+  lazy val Rolodex1: Rolodex =
+    Rolodex(Map(
+      UserId1 -> Username1,
+      UserId2 -> Username2,
+      UserId3 -> Username3,
+      UserId4 -> Username4,
+    ))
+
   def looseProjectMetaData(p: Project, eventsTotal: Int = 123, eventsInit: Int = 2, role: ProjectRole = ProjectRole.Admin): ProjectMetaData =
     ProjectMetaData.fromProject(p)(
       id            = Obfuscated("t3sT"),
@@ -109,6 +117,22 @@ trait WebappTestUtil extends BaseTestUtil {
   def applyVerifiedEventsSuccessfully(p: Project, es: VerifiedEvent.Seq): Project =
     es.foldLeft(p)(applyVerifiedEventSuccessfully)
 
+  def withDummyHistory(p: Project): Project = {
+    val reqOrds   = p.content.reqs.reqIterator().map(_.createdAtOrd)
+    val groupOrds = p.content.reqCodes.groups.map(_.createdAtOrd)
+    val allOrds   = reqOrds ++ groupOrds
+    val maxOrd    = allOrds.maxOption.getOrElse(EventOrd.first)
+    if (p.history.ordAsInt < maxOrd.value) {
+      val events = VerifiedEvent.Seq.empty ++ (1 to maxOrd.value).iterator.map { i =>
+        p.history.events.find(_.ord.value ==* i).getOrElse(
+          VerifiedEvent(EventOrd(i), Event.ProjectNameSet("dummy"), UserId1, Instant.now())
+        )
+      }
+      p.copy(history = ProjectEvents(events))
+    } else
+      p
+  }
+
   def assertEventFails(p: Project, e: Event, errFrag: String = "")(implicit l: Line): Unit =
     ApplyEvent.untrusted.partialApplyUnverified(e, p.history.nextOrd)(p) match {
       case -\/(f) => assertContainsCI(f.value, errFrag)
@@ -125,7 +149,7 @@ trait WebappTestUtil extends BaseTestUtil {
     var next = firstOrd
     es.map { e =>
       val ord = next
-      next = firstOrd.next
+      next = next.next
       (e, ord)
     }
   }

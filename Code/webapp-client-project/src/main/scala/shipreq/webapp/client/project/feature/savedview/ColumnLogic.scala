@@ -30,6 +30,8 @@ object ColumnLogic {
     case Column.Code            => Some(EditorFeature.FieldKey.Code)
     case Column.Title           => Some(EditorFeature.FieldKey.CodeGroupTitle)
     case Column.ReqType
+       | Column.CreatedAt
+       | Column.CreatedBy
        | Column.AllTags
        | Column.OtherTags
        | Column.DeletionReason
@@ -53,6 +55,8 @@ object ColumnLogic {
     case Column.CustomField(id: data.CustomField.Tag        .Id) => Some(EditorFeature.FieldKey.CustomFieldTags(id))
     case Column.CustomField(id: data.CustomField.Text       .Id) => Some(EditorFeature.FieldKey.CustomTextField(id))
     case Column.Pubid
+       | Column.CreatedAt
+       | Column.CreatedBy
        | Column.CustomField(_: data.CustomField.Formula.Id)
        | Column.DeletionReason                                   => None
   } {
@@ -79,6 +83,8 @@ object ColumnLogic {
     case Column.CustomField(id: data.CustomField.Tag        .Id) => Some(EditorFeature.FieldKey.CustomFieldTags(id))
     case Column.CustomField(id: data.CustomField.Text       .Id) => Some(EditorFeature.FieldKey.CustomTextField(id))
     case Column.Pubid
+       | Column.CreatedAt
+       | Column.CreatedBy
        | Column.CustomField(_: data.CustomField.Formula.Id)
        | Column.DeletionReason
        | Column.ReqType                                          => None

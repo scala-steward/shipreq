@@ -141,7 +141,7 @@ final class ApplyEvent(implicit val trust: Trust)
       case e: ApplicableTagCreateV1    => ApplicableTagEventsV1    applyCreate                  e
       case e: ApplicableTagUpdate      => ApplicableTagEvents      applyUpdate                  e
       case e: ApplicableTagUpdateV1    => ApplicableTagEventsV1    applyUpdate                  e
-      case e: CodeGroupCreate          => CodeGroupEvents          applyCreate                  e
+      case e: CodeGroupCreate          => CodeGroupEvents         .applyCreate                 (e, ord)
       case e: CodeGroupsDelete         => CodeGroupEvents          applyDelete                  e
       case e: CodeGroupUpdate          => CodeGroupEvents          applyUpdate                  e
       case e: ContentRestore           => ContentCommon            applyRestoreContent          e
@@ -178,7 +178,7 @@ final class ApplyEvent(implicit val trust: Trust)
       case e: FieldReposition          => FieldEvents              applyReposition              e
       case e: FieldStaticAdd           => FieldEvents              applyStaticAdd               e
       case e: FieldStaticRemove        => FieldEvents              applyStaticRemove            e
-      case e: GenericReqCreate         => GenericReqEvents         applyGenericReqCreate        e
+      case e: GenericReqCreate         => GenericReqEvents        .applyGenericReqCreate       (e, ord)
       case e: GenericReqTitleSet       => GenericReqEvents         applyGenericReqTitleSet      e
       case e: GenericReqTypeSet        => GenericReqEvents         applyGenericReqTypeSet       e
       case e: ManualIssueCreate        => ManualIssueEvents        applyCreate                  e
@@ -203,7 +203,7 @@ final class ApplyEvent(implicit val trust: Trust)
       case e: TagGroupCreate           => TagGroupEvents           applyCreate                  e
       case e: TagGroupUpdate           => TagGroupEvents           applyUpdate                  e
       case e: TagRestore               => TagEvents                applyRestore                 e
-      case e: UseCaseCreate            => UseCaseEvents            applyCreate                  e
+      case e: UseCaseCreate            => UseCaseEvents           .applyCreate                 (e, ord)
       case e: UseCaseStepCreate        => UseCaseEvents            applyStepCreate              e
       case e: UseCaseStepDelete        => UseCaseEvents            applyStepDelete              e
       case e: UseCaseStepRestore       => UseCaseEvents            applyStepRestore             e

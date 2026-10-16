@@ -198,7 +198,7 @@ trait ApplyContentEvent {
     def needLiveCustomReqType(id: CustomReqTypeId): Eval[CustomReqType] =
       needCustomReqType(id).flatTap(rt => ensureLive(rt.live)(rt.mnemonic.value))
 
-    val applyGenericReqCreate: GenericReqCreate => Eval[Unit] = {
+    val applyGenericReqCreate: (GenericReqCreate, EventOrd) => Eval[Unit] = {
       val ^ = GenericReqGD
 
       def foreachValue(id: GenericReqId, vs: ^.Values): Eval[Unit] =
@@ -215,13 +215,13 @@ trait ApplyContentEvent {
       @inline def emptyTitle: Text.GenericReqTitle.OptionalText =
         Text.empty
 
-      e => for {
+      (e, ord) => for {
         rt      <- needLiveCustomReqType(e.rt)
         reqData <- Eval.gets(_.content.reqs)
         id      = e.id
         title   = ^.Title.get(e.vs).fold(emptyTitle)(_.value.whole)
         pp      = reqData.pubids.allocGR(rt.id)(id)
-        req     = GenericReq(id, pp._2, title, Live)
+        req     = GenericReq(id, pp._2, title, Live, ord)
         _       <- grIMap.create(req)
         _       <- Project.pubidRegister replace pp._1
         _       <- foreachValue(id, e.vs)
@@ -307,7 +307,7 @@ trait ApplyContentEvent {
         p.copy(content = p.content.copy(reqs = reqs2), idCeilings = ic2)
       }
 
-    val applyCreate: UseCaseCreate => Eval[Unit] = {
+    val applyCreate: (UseCaseCreate, EventOrd) => Eval[Unit] = {
       val ^ = UseCaseGD
 
       def foreachValue(id: UseCaseId, vs: ^.Values): Eval[Unit] =
@@ -326,12 +326,12 @@ trait ApplyContentEvent {
           (r, ucs) => r.copy(useCases = ucs, pubids = pr),
           (ic, i) => ic.copy(useCaseStep = i, req = ic.req max ucId))
 
-      e => for {
+      (e, ord) => for {
         _      <- ensureStepDoesntExist(e.stepId)
         id      = e.id
         title   = ^.Title.get(e.vs).fold(Text.UseCaseTitle.empty)(_.value.whole)
         pp     <- Eval.gets(_.content.reqs.pubids allocUC id)
-        uc      = UseCase.empty(id, pp._2.pos, title, e.stepId)
+        uc      = UseCase.empty(id, pp._2.pos, title, e.stepId, ord)
         _      <- ucIMap.create(uc)
         _      <- postAdd(pp._1, id, e.stepId)
         _      <- foreachValue(id, e.vs)
@@ -474,12 +474,12 @@ trait ApplyContentEvent {
     val ^ = CodeGroupGD
     val GD = GenericDataApp[ReqCodes](^)
 
-    def applyCreate(e: CodeGroupCreate): Eval[Unit] = {
+    def applyCreate(e: CodeGroupCreate, ord: EventOrd): Eval[Unit] = {
       implicit val vs = e.vs
       for {
         c <- GD.need(^.Code)
         t = GD.want(^.Title)(Text.empty)
-        g = LiveCodeGroup(e.id, t)
+        g = LiveCodeGroup(e.id, t, ord)
         _ <- addOne(AddGroup(c, Unvalidated, g))
       } yield ()
     }

@@ -52,6 +52,7 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitDataWithoutE
   implicit def webStorage = global.localStorage
 
   val pxProject       = global.pxProject
+  val pxRolodex       = global.pxRolodex
   def unsafeProject() = global.unsafeProject()
   def unsafeSupp()    = global.unsafeSupp()
 
@@ -111,7 +112,7 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitDataWithoutE
       pxProject.map(_.config).withReuse
 
     private val pxPlainText: Px[PlainText.ForProject.NoCtx] =
-      pxProject.map(PlainText.ForProject.noCtx.apply)
+      Px.apply2(pxProject, pxRolodex)(PlainText.ForProject.noCtx.apply)
 
     private val pxTextSearch: Px[TextSearch] =
       Px.apply2(pxProject, pxPlainText)(TextSearch.apply)
@@ -125,7 +126,7 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitDataWithoutE
       }
 
     private val pxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]] =
-      Reusable byRef Px.apply3(pxProject, pxPlainText, pxViewTags)(ProjectWidgets(_, _, _, routerCtlEP, webWorkerClient))
+      Reusable byRef Px.apply4(pxProject, pxRolodex, pxPlainText, pxViewTags)(ProjectWidgets(_, _, _, _, routerCtlEP, webWorkerClient))
 
     /** Whether the user has permission to change the project. */
     private val pxGlobalEditability: Px[Permission] =
@@ -393,6 +394,7 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitDataWithoutE
         editorEditability <- pxEditorEditability
         reqDetailId       <- pxReqDetailId
         project           <- pxProject
+        rolodex           <- pxRolodex
         vt                <- pxViewTags
         vrdc              <- pxViewReqDataCache
         fec               <- pxFormulaEvalCache
@@ -401,7 +403,7 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitDataWithoutE
         val aw  = editAsyncW(row).mapKey(AsyncKey.ToReqDetail)
         val ew  = editW.forReq(id)
         val ctx = ProjectText.Context.Req(id)
-        val pt  = PlainText.ForProject(project, ctx)
+        val pt  = PlainText.ForProject(project, rolodex, ctx)
         val vrc = ViewReqCache(vrdc, pt, fec, vt.forPlainTextViewReqCache)
         val rff = RenderFeature.ToText.ReqCtx.ApplicableOption.prepare(project, vrc, pt)
 

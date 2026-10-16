@@ -51,6 +51,7 @@ abstract class Global(userId          : UserId,
   final protected def unsafeSetState(s: State): Unit = {
     _state = s
     _pxProject.refresh()
+    _pxRolodex.refresh()
   }
 
   final protected def unsafeModState(f: State => State): Unit =
@@ -75,6 +76,14 @@ abstract class Global(userId          : UserId,
 
   final val pxProject: Px[Project] =
     _pxProject
+
+  final private val _pxRolodex: Px.ThunkM[Rolodex] = {
+    def f() = unsafeSupp().rolodex
+    Px(f()).withReuse.manualRefresh
+  }
+
+  final val pxRolodex: Px[Rolodex] =
+    _pxRolodex
 
   final def unsafeProject(): Project =
     pxProject.value()

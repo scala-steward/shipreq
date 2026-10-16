@@ -6,8 +6,10 @@ import japgolly.microlibs.utils.{ConciseIntSetFormat, Memo}
 import scala.collection.immutable.SortedSet
 import shipreq.base.util.SafeStringOps._
 import shipreq.base.util._
+import shipreq.webapp.base.data.Rolodex
 import shipreq.webapp.member.project.data.DataImplicits._
 import shipreq.webapp.member.project.data._
+import shipreq.webapp.member.project.event.EventOrd
 import shipreq.webapp.member.project.formula.{FormulaEvalCache, FormulaValue}
 import shipreq.webapp.member.project.text.Atom.{AnyAtom, DisplayReqRef}
 import shipreq.webapp.member.project.text.GrammarSpec.Surrounds
@@ -26,16 +28,16 @@ object PlainText {
     type AnyCtx = ForProject[ProjectText.Context]
     type NoCtx  = ForProject[ProjectText.Context.None]
 
-    def apply[Ctx <: ProjectText.Context](p: Project, ctx: Ctx): ForProject[Ctx] =
-      new ForProject(p, ctx)
+    def apply[Ctx <: ProjectText.Context](p: Project, r: Rolodex, ctx: Ctx): ForProject[Ctx] =
+      new ForProject(p, r, ctx)
 
     object noCtx {
 
-      def apply(p: Project): NoCtx =
-        ForProject(p, ProjectText.Context.none)
+      def apply(p: Project, r: Rolodex): NoCtx =
+        ForProject(p, r, ProjectText.Context.none)
 
       lazy val empty: NoCtx =
-        apply(Project.empty)
+        apply(Project.empty, Rolodex.empty)
     }
   }
 
@@ -130,7 +132,7 @@ object PlainText {
 
   // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
-  final class ForProject[+Ctx <: ProjectText.Context](p: Project, ctx: Ctx) extends ProjectText[Ctx, String](p, ctx) {
+  final class ForProject[+Ctx <: ProjectText.Context](p: Project, rolodex: Rolodex, ctx: Ctx) extends ProjectText[Ctx, String](p, ctx) {
 
     override protected def _implicationList(ids: Vector[Pubid], style: SetRenderStyle): String =
       style match {
@@ -478,6 +480,12 @@ object PlainText {
     override def reqCodeTreeItem(item: ReqCodeTreeItem): String =
       PlainText.reqCodeTreeItem(item)
 
+    override def eventAuthor(ord: EventOrd): String =
+      rolodex.need(p.history.need(ord).author).with_@
+
+    override def eventTimestamp(ord: EventOrd): String =
+      p.history.need(ord).createdAt.toString
+
     override def reqTypeShort(id: ReqTypeId): String =
       p.config.reqTypes.get(id).fold("?")(PlainText.reqTypeShort)
 
@@ -508,7 +516,7 @@ object PlainText {
       if (newCtx ==* ctx)
         this.asInstanceOf[ForProject[Ctx2]]
       else
-        ForProject(p, newCtx)
+        ForProject(p, rolodex, newCtx)
 
     def tagListWithHashtags(ids: Vector[ApplicableTagId]): String =
       ids.iterator.map(p.config.tags.needApplicableTag(_).key.with_#).mkString(" ")

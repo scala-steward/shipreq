@@ -3,6 +3,7 @@ package shipreq.webapp.member.project.formula
 import japgolly.microlibs.testutil.TestUtil._
 import shipreq.webapp.member.project.data.DataImplicits._
 import shipreq.webapp.member.project.data._
+import shipreq.webapp.member.project.event.EventOrd
 import shipreq.webapp.member.test.project.UnsafeTypes._
 import sourcecode.Line
 
@@ -36,7 +37,7 @@ object FormulaTestShared {
   )
 
   val reqId = GenericReqId(10)
-  val req = GenericReq(reqId, PubidT(CustomReqTypeId(1), ReqTypePos(1)), ∅, Live)
+  val req = GenericReq(reqId, PubidT(CustomReqTypeId(1), ReqTypePos(1)), ∅, Live, EventOrd.first)
 
   def parseOrDie(input: String)(implicit q: Line): Formula.Potential = {
     FormulaParser.parse(input) match {

@@ -10,6 +10,7 @@ import shipreq.base.util.TaggedTypes._
 import shipreq.base.util._
 import shipreq.webapp.member.project.data.DataImplicits._
 import shipreq.webapp.member.project.data.derivation.UseCaseStepLabelLookup
+import shipreq.webapp.member.project.event.EventOrd
 import shipreq.webapp.member.project.text.Text.Equality._
 import shipreq.webapp.member.project.text.{Text, UseCaseStepFlowText}
 import shipreq.webapp.member.project.util.Must._
@@ -47,6 +48,7 @@ sealed abstract class ReqT[+RT <: ReqTypeId] {
   val id: ReqIdT[RT]
   val pubid: PubidT[RT]
   val title: Text.AnyOptional
+  val createdAtOrd: EventOrd
 
   def liveExplicitly: Live
 
@@ -85,7 +87,8 @@ final case class GenericReqId(value: Int) extends ReqIdT[CustomReqTypeId] {
 final case class GenericReq(id            : GenericReqId,
                             pubid         : PubidC,
                             title         : Text.GenericReqTitle.OptionalText,
-                            liveExplicitly: Live) extends ReqT[CustomReqTypeId] {
+                            liveExplicitly: Live,
+                            createdAtOrd  : EventOrd) extends ReqT[CustomReqTypeId] {
 
   import GenericReq.ImplicitLiveStatus
 
@@ -163,7 +166,8 @@ final case class UseCase(id            : UseCaseId,
                          title         : Text.UseCaseTitle.OptionalText,
                          stepsNA       : UseCaseSteps,
                          stepsE        : UseCaseSteps,
-                         liveExplicitly: Live) extends ReqT[StaticReqType.UseCase] {
+                         liveExplicitly: Live,
+                         createdAtOrd  : EventOrd) extends ReqT[StaticReqType.UseCase] {
 
   override val pubid: PubidT[StaticReqType.UseCase] =
     PubidT(StaticReqType.UseCase, pos)
@@ -201,8 +205,8 @@ object UseCase {
   val stepsTraversal =
     Traversal.apply2[UseCase, UseCaseSteps](_.stepsNA, _.stepsE)((na, e, uc) => uc.copy(stepsNA = na, stepsE = e))
 
-  def empty(id: UseCaseId, pos: ReqTypePos, title: Text.UseCaseTitle.OptionalText, stepId: UseCaseStepId): UseCase =
-    UseCase(id, pos, title, UseCaseSteps emptyRoot stepId, UseCaseSteps.empty, Live)
+  def empty(id: UseCaseId, pos: ReqTypePos, title: Text.UseCaseTitle.OptionalText, stepId: UseCaseStepId, createdAtOrd: EventOrd): UseCase =
+    UseCase(id, pos, title, UseCaseSteps emptyRoot stepId, UseCaseSteps.empty, Live, createdAtOrd)
 
   implicit def equality: UnivEq[UseCase] = UnivEq.derive
 }

@@ -2,7 +2,7 @@ package shipreq.webapp.client.ww
 
 import japgolly.scalajs.react.{AsyncCallback, Callback, CallbackTo}
 import shipreq.webapp.base.config.AssetManifest
-import shipreq.webapp.base.data.ProjectCreator
+import shipreq.webapp.base.data.{ProjectCreator, Rolodex}
 import shipreq.webapp.base.lib.LoggerJs
 import shipreq.webapp.base.util.LruMemo
 import shipreq.webapp.client.ww.api.WebWorkerCmd
@@ -97,7 +97,8 @@ final class WorkerState(creator: ProjectCreator,
     projectLibrary.projectAt(ord)
 
   private val plainTextMemo: LruMemo[Project, PlainText.ForProject.NoCtx] =
-    LruMemo(PlainText.ForProject.noCtx.apply, 3).by(_.ordAsInt).byUnivEq
+    // It's fine to use an empty Rolodex here because this is only used for graphviz; it doesn't call eventAuthor.
+    LruMemo(PlainText.ForProject.noCtx(_, Rolodex.empty), 3).by(_.ordAsInt).byUnivEq
 
   def getPlainText(p: Project): AsyncCallback[PlainText.ForProject.NoCtx] =
     AsyncCallback.pure(plainTextMemo(p))

@@ -8,18 +8,21 @@ import scala.collection.immutable.SortedSet
 import scalacss.ScalaCssReact._
 import shipreq.base.util.SafeStringOps._
 import shipreq.base.util._
+import shipreq.webapp.base.data.Rolodex
 import shipreq.webapp.base.util.ClientUtil.{renderSeq, renderVector, sepComma, sepSpace}
 import shipreq.webapp.client.project.app.Style.{widgets => *}
 import shipreq.webapp.client.project.app.WebWorkerClient
 import shipreq.webapp.member.UiText
-import shipreq.webapp.member.jsfacade.KaTeX
+import shipreq.webapp.member.jsfacade.{KaTeX, MomentJs}
 import shipreq.webapp.member.project.data.{Contextualise, Plain, _}
+import shipreq.webapp.member.project.event.EventOrd
 import shipreq.webapp.member.project.formula.FormulaEvalCache
 import shipreq.webapp.member.project.text.Atom.DisplayReqRef
 import shipreq.webapp.member.project.text.ProjectText.SetRenderStyle
 import shipreq.webapp.member.project.text.Text.AnyOptional
 import shipreq.webapp.member.project.text.{Grammar => G, _}
 import shipreq.webapp.member.project.util.ReqCodeTreeItem
+import shipreq.webapp.member.ui.TimeAgo
 
 object ProjectWidgets {
 
@@ -27,11 +30,12 @@ object ProjectWidgets {
   type NoCtx  = ProjectWidgets[ProjectText.Context.None]
 
   def apply[Ctx <: ProjectText.Context](project    : Project,
+                                        rolodex    : Rolodex,
                                         plainText  : PlainText.ForProject[Ctx],
                                         viewTags   : ViewTags,
                                         reqDetailRC: RouterCtl[ExternalPubid],
                                         webWorker  : WebWorkerClient.Instance): ProjectWidgets[Ctx] =
-    new ProjectWidgets(project, plainText, viewTags, reqDetailRC, webWorker)
+    new ProjectWidgets(project, rolodex, plainText, viewTags, reqDetailRC, webWorker)
 
   implicit def subst1[F[_], C <: ProjectText.Context](pw: F[ProjectWidgets[C]]): F[ProjectWidgets.AnyCtx] =
     pw.asInstanceOf[F[AnyCtx]]
@@ -79,6 +83,7 @@ object ProjectWidgets {
 // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
 final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
+                                                        rolodex      : Rolodex,
                                                         val plainText: PlainText.ForProject[Ctx],
                                                         val viewTags : ViewTags,
                                                         reqDetailRC  : RouterCtl[ExternalPubid],
@@ -509,6 +514,12 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
       <.pre(*.reqCodeTreeCode, code))
   }
 
+  override def eventTimestamp(ord: EventOrd): VdomTag =
+    <.span(TimeAgo.Component(MomentJs.fromInstant(project.history.need(ord).createdAt)))
+
+  override def eventAuthor(ord: EventOrd): VdomTag =
+    <.span(rolodex.need(project.history.need(ord).author).with_@)
+
   override def reqTypeShort(id: ReqTypeId): VdomTag =
     _reqTypeShort(id)
 
@@ -556,7 +567,7 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
     if (newCtx ==* ctx)
       this.asInstanceOf[ProjectWidgets[Ctx2]]
     else
-      ProjectWidgets(project, plainText withCtx newCtx, viewTags, reqDetailRC, webWorker)
+      ProjectWidgets(project, rolodex, plainText withCtx newCtx, viewTags, reqDetailRC, webWorker)
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // Public additions not part of ProjectText

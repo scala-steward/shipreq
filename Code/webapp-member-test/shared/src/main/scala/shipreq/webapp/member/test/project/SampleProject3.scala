@@ -98,7 +98,8 @@ object SampleProject3 {
     Project.deletionReasons.replace(dr)(contentByDsl ! project0)
   }
 
-  lazy val plainText  = PlainText.ForProject.noCtx(project)
+  lazy val rolodex    = SampleProject.rolodex
+  lazy val plainText  = PlainText.ForProject.noCtx(project, rolodex)
   lazy val textSearch = TextSearch(project, plainText)
 
   // Real web workers aren't supported in tests. PhantomJS doesn't support them and until we move off PhantomJS, here

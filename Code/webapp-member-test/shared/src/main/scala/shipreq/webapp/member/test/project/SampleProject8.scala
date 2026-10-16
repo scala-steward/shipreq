@@ -25,7 +25,8 @@ object SampleProject8 {
     )
 
   def formulaEvalCache     = FormulaEvalCache.empty
-  lazy val plainText       = PlainText.ForProject.noCtx(project)
+  lazy val rolodex         = SampleProject.rolodex
+  lazy val plainText       = PlainText.ForProject.noCtx(project, rolodex)
   lazy val textSearch      = TextSearch(project, plainText)
   lazy val filterValidator = FilterAlgebra.validate(project.config)
   lazy val issues          = IssueTracker(project, formulaEvalCache).issues

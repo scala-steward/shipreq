@@ -34,6 +34,8 @@ object ContentEventTest extends TestSuite {
 
   implicit val init = testHelpInit
 
+  private val nextOrd = EventOrd(init.es.size + 1)
+
   class ScriptTester(namePrefix: String) extends EventTester {
     makeName = (i, e) => s"Step $namePrefix.$i (${e.getClass.getSimpleName})"
 
@@ -125,7 +127,7 @@ object ContentEventTest extends TestSuite {
         // Adding a new RCG should clear out .lastGroup
         val p = _assertPass(createRCG(1, "abc.def", "old"), delRCG1, createRCG(2, "abc.def", "new"))
         val d = assertSoleReqCode(p, "abc.def")
-        assertEq(d, ReqCode.ActiveGroup(LiveCodeGroup(2, "new"), ReqCode.emptyReqInactive))
+        assertEq(d, ReqCode.ActiveGroup(LiveCodeGroup(2, "new", nextOrd.next.next), ReqCode.emptyReqInactive))
       }
     }
 
@@ -141,7 +143,7 @@ object ContentEventTest extends TestSuite {
         import CodeGroupGD._
         val p = _assertPass(createRCG(1, "hehe.grr", "Ze Title"), CodeGroupUpdate(1, nev(Code("fine.then"))))
         val d = assertSoleReqCode(p, "fine.then")
-        assertEq(d, ReqCode.ActiveGroup(LiveCodeGroup(1, "Ze Title"), ReqCode.emptyReqInactive))
+        assertEq(d, ReqCode.ActiveGroup(LiveCodeGroup(1, "Ze Title", nextOrd), ReqCode.emptyReqInactive))
       }
 
       "badCode"    - assertFail("code")     (createRCG(1, "a"), updateRCGCode(1, "!!"))
@@ -611,17 +613,17 @@ object ContentEventTest extends TestSuite {
           // It's more work to check for text references to decide whether or not to retain empty RCGs. Just keep em.
           // assertEq("No CodeRefs & no title = no need to retain anything.", p.content.reqCodes.trie.isEmpty, true)
           val d = assertSoleReqCode(p, "abc.def")
-          assertEq(d, ReqCode.Data.empty.copy(deadGroup = Some(DeadCodeGroup(1, ∅))))
+          assertEq(d, ReqCode.Data.empty.copy(deadGroup = Some(DeadCodeGroup(1, ∅, nextOrd))))
         }
         "emptyTitleWithRefs" - {
           val p = _assertPass(emptyGR1, createRCG(3, "qwe.zxc"), createRefToCodeGroup3, delRCG3)
           val d = assertSoleReqCode(p, "qwe.zxc")
-          assertEq(d, ReqCode.Data.empty.copy(deadGroup = Some(DeadCodeGroup(3, ∅))))
+          assertEq(d, ReqCode.Data.empty.copy(deadGroup = Some(DeadCodeGroup(3, ∅, nextOrd.next))))
         }
         "nonEmptyTitle" - {
           val p = _assertPass(createRCG(1, "abc.def", "hehe"), delRCG1)
           val d = assertSoleReqCode(p, "abc.def")
-          assertEq(d, ReqCode.Data.empty.copy(deadGroup = Some(DeadCodeGroup(1, "hehe"))))
+          assertEq(d, ReqCode.Data.empty.copy(deadGroup = Some(DeadCodeGroup(1, "hehe", nextOrd))))
         }
       }
 

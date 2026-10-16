@@ -380,6 +380,8 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]],
         case Column.Code              => renderCodes
         case Column.Pubid             => pubidFmt(row.req)
         case Column.DeletionReason    => viewReq.deletionReason getOrElse `n/a`
+        case Column.CreatedAt         => viewReq.createdAt
+        case Column.CreatedBy         => viewReq.createdBy
       }
       c => reusabilityView.reusable((row, vi, c)).map(_ => view(c))
     }
@@ -430,6 +432,8 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]],
            | Column.DeletionReason  => reusableNA
         case c@ Column.Title        => ret(c, pw.codeGroupTitle(row.group))
         case c@ Column.Code         => ret(c, renderCodes)
+        case c@ Column.CreatedAt    => ret(c, pw.eventTimestamp(row.group.createdAtOrd))
+        case c@ Column.CreatedBy    => ret(c, pw.eventAuthor(row.group.createdAtOrd))
       }
     }
   }

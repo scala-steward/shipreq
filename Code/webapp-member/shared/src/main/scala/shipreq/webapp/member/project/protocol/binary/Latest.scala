@@ -6,14 +6,14 @@ package shipreq.webapp.member.project.protocol.binary
   */
 object Latest {
 
-  @inline implicit def picklerEvent                    = v2.Rev1.picklerEvent
-  @inline implicit def picklerProject                  = v2.Rev1.picklerProject
-  @inline implicit def picklerVerifiedEvent            = v2.Rev1.picklerVerifiedEvent
-  @inline implicit def picklerVerifiedEventSeq         = v2.Rev1.picklerVerifiedEventSeq
-  @inline implicit def picklerVerifiedEventNonEmptySeq = v2.Rev1.picklerVerifiedEventNonEmptySeq
-  @inline implicit def pickleValidFilter               = v2.Rev1.pickleValidFilter
-  @inline implicit def pickleFormulaValid              = v2.Rev1.pickleFormulaValid
+  @inline implicit def picklerEvent                    = v3.Rev0.picklerEvent
+  @inline implicit def picklerProject                  = v3.Rev0.picklerProject
+  @inline implicit def picklerVerifiedEvent            = v3.Rev0.picklerVerifiedEvent
+  @inline implicit def picklerVerifiedEventSeq         = v3.Rev0.picklerVerifiedEventSeq
+  @inline implicit def picklerVerifiedEventNonEmptySeq = v3.Rev0.picklerVerifiedEventNonEmptySeq
+  @inline implicit def pickleValidFilter               = v3.Rev0.pickleValidFilter
+  @inline implicit def pickleFormulaValid              = v3.Rev0.pickleFormulaValid
 
   val AtomPicklers      = v1.Rev6.AtomPicklers
-  val SavedViewPicklers = v2.Rev1.SavedViewPicklers
+  val SavedViewPicklers = v3.Rev0.SavedViewPicklers
 }

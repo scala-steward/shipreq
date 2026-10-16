@@ -124,7 +124,8 @@ object SampleProject7 {
     TagDelete(misc2),
   )
 
-  lazy val plainText    = PlainText.ForProject.noCtx(project)
+  lazy val rolodex      = SampleProject.rolodex
+  lazy val plainText    = PlainText.ForProject.noCtx(project, rolodex)
   lazy val textSearch   = TextSearch(project, plainText)
   lazy val filterParser = WebappTestUtil.parseFilterSuccessfully(project.config)
 }

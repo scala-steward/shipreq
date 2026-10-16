@@ -2,6 +2,7 @@ package shipreq.webapp.member.feature.autocomplete.strategies
 
 import shipreq.base.util.MTrie.Ops
 import shipreq.webapp.member.project.data._
+import shipreq.webapp.member.project.event.EventOrd
 import shipreq.webapp.member.project.text.{PlainText, TextSearch}
 import shipreq.webapp.member.test.project.SampleProject2
 
@@ -29,7 +30,7 @@ object AutoCompleteTestData {
     def tgt: ReqCode.Data = ReqCode.ActiveReq(nextApReqCodeId(), 1, None, ReqCode.emptyReqInactive)
     val t1 = codes.foldLeft(ReqCode.Trie.empty)((t, c) => t.put(c, tgt))
 
-    def tomb = ReqCode.Data.empty.copy(deadGroup = Some(DeadCodeGroup(nextReqCodeGroupId(), "asdf")))
+    def tomb = ReqCode.Data.empty.copy(deadGroup = Some(DeadCodeGroup(nextReqCodeGroupId(), "asdf", EventOrd.first)))
     val tombCodes = Set[ReqCode.Value](
       "apple.dead", "ahhdead", "dead.eggs"
     )
@@ -44,7 +45,7 @@ object AutoCompleteTestData {
       DeadReqCode("dead.group", id = Some(ReqCodeGroupId(91)))) ! p
   }
 
-  lazy val plainText2 = PlainText.ForProject.noCtx(project2)
+  lazy val plainText2 = PlainText.ForProject.noCtx(project2, SampleProject2.rolodex)
   lazy val textSearch2 = TextSearch(project2, plainText2)
 
 }

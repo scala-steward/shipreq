@@ -7,6 +7,7 @@ import japgolly.microlibs.utils.Memo
 import monocle.macros.Lenses
 import shipreq.base.util.TaggedTypes._
 import shipreq.base.util._
+import shipreq.webapp.member.project.event.EventOrd
 import shipreq.webapp.member.project.text.Text
 import shipreq.webapp.member.project.text.Text.Equality._
 import shipreq.webapp.member.project.util.Must._
@@ -208,18 +209,19 @@ sealed abstract class CodeGroup {
   val id: ReqCodeGroupId
   val title: Text.CodeGroupTitle.OptionalText
   def live: Live
+  val createdAtOrd: EventOrd
 
   final def isEmpty : Boolean = title.isEmpty
   final def nonEmpty: Boolean = !isEmpty
 }
 
 @Lenses
-final case class LiveCodeGroup(id: ReqCodeGroupId, title: Text.CodeGroupTitle.OptionalText) extends CodeGroup {
+final case class LiveCodeGroup(id: ReqCodeGroupId, title: Text.CodeGroupTitle.OptionalText, createdAtOrd: EventOrd) extends CodeGroup {
   override def live = Live
 }
 
 @Lenses
-final case class DeadCodeGroup(id: ReqCodeGroupId, title: Text.CodeGroupTitle.OptionalText) extends CodeGroup {
+final case class DeadCodeGroup(id: ReqCodeGroupId, title: Text.CodeGroupTitle.OptionalText, createdAtOrd: EventOrd) extends CodeGroup {
   override def live = Dead
 }
 
