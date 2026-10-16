@@ -32,10 +32,10 @@ import shipreq.webapp.member.project.text.Text
   * - Added Project.deletionReason
   * - Added ProjectContent.reqNums (and deps)
   * - Added ProjectMetaData.live
-  * - Added GenericReq.createdAtOrd
-  * - Added UseCase.createdAtOrd
-  * - Added LiveCodeGroup.createdAtOrd
-  * - Added DeadCodeGroup.createdAtOrd
+  * - Added GenericReq.createdAtOrd (BACKWARDS-INCOMPATIBLE)
+  * - Added UseCase.createdAtOrd (BACKWARDS-INCOMPATIBLE)
+  * - Added LiveCodeGroup.createdAtOrd (BACKWARDS-INCOMPATIBLE)
+  * - Added DeadCodeGroup.createdAtOrd (BACKWARDS-INCOMPATIBLE)
   * - Added Column.CreatedAt
   * - Added Column.CreatedBy
   */
