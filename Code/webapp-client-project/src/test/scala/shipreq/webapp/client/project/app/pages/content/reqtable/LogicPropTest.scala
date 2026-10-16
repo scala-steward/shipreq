@@ -4,15 +4,13 @@ import cats.Eq
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import nyaya.gen.Gen
 import nyaya.prop.{Logic => _, _}
-import java.time.Instant
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.client.project.app.pages.content.reqtable.LogicTestUtil._
 import shipreq.webapp.client.project.test.ClientTestSettings._
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.data.savedview._
 import shipreq.webapp.member.project.data.savedview.{Column => C, SortCriterion => SC}
-import shipreq.webapp.member.project.event.{Event, EventOrd, ProjectEvents, VerifiedEvent}
-import shipreq.webapp.member.test.WebappTestUtil.{Rolodex1, UserId1}
+import shipreq.webapp.member.test.WebappTestUtil.{Rolodex1, withDummyHistory}
 import shipreq.webapp.member.project.filter.Filter
 import shipreq.webapp.member.project.formula.FormulaEvalCache
 import shipreq.webapp.member.project.issue.IssueTracker
@@ -24,22 +22,6 @@ import utest._
 
 object LogicPropTest extends TestSuite {
   val nop = Eval.pass()
-
-  private def withDummyHistory(p: Project): Project = {
-    val reqOrds   = p.content.reqs.reqIterator().map(_.createdAtOrd)
-    val groupOrds = p.content.reqCodes.groups.map(_.createdAtOrd)
-    val allOrds   = reqOrds ++ groupOrds
-    val maxOrd    = allOrds.maxOption.getOrElse(EventOrd.first)
-    if (p.history.ordAsInt < maxOrd.value) {
-      val events = VerifiedEvent.Seq.empty ++ (1 to maxOrd.value).iterator.map { i =>
-        p.history.events.find(_.ord.value ==* i).getOrElse(
-          VerifiedEvent(EventOrd(i), Event.ProjectNameSet("dummy"), UserId1, Instant.EPOCH)
-        )
-      }
-      p.copy(history = ProjectEvents(events))
-    } else
-      p
-  }
 
   case class LogicTests(v: View, p: Project) {
     val E = EvalOver(this)

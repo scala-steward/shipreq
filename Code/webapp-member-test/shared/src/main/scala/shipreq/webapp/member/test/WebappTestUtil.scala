@@ -117,6 +117,22 @@ trait WebappTestUtil extends BaseTestUtil {
   def applyVerifiedEventsSuccessfully(p: Project, es: VerifiedEvent.Seq): Project =
     es.foldLeft(p)(applyVerifiedEventSuccessfully)
 
+  def withDummyHistory(p: Project): Project = {
+    val reqOrds   = p.content.reqs.reqIterator().map(_.createdAtOrd)
+    val groupOrds = p.content.reqCodes.groups.map(_.createdAtOrd)
+    val allOrds   = reqOrds ++ groupOrds
+    val maxOrd    = allOrds.maxOption.getOrElse(EventOrd.first)
+    if (p.history.ordAsInt < maxOrd.value) {
+      val events = VerifiedEvent.Seq.empty ++ (1 to maxOrd.value).iterator.map { i =>
+        p.history.events.find(_.ord.value ==* i).getOrElse(
+          VerifiedEvent(EventOrd(i), Event.ProjectNameSet("dummy"), UserId1, Instant.EPOCH)
+        )
+      }
+      p.copy(history = ProjectEvents(events))
+    } else
+      p
+  }
+
   def assertEventFails(p: Project, e: Event, errFrag: String = "")(implicit l: Line): Unit =
     ApplyEvent.untrusted.partialApplyUnverified(e, p.history.nextOrd)(p) match {
       case -\/(f) => assertContainsCI(f.value, errFrag)
