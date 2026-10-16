@@ -6,7 +6,6 @@ import japgolly.microlibs.stdlib_ext.StdlibExt._
 import monocle.{Lens, Optional}
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util._
-import shipreq.webapp.base.data.Rolodex
 import shipreq.webapp.base.util._
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.data.savedview._
@@ -93,7 +92,7 @@ object LogicTest extends TestSuite {
   private var _pcache: List[PCache] = Nil
   private def pcache(p: Project): PCache =
     _pcache.find(_.p eq p).getOrElse {
-      val pt = PlainText.ForProject.noCtx(p, Rolodex.empty)
+      val pt = PlainText.ForProject.noCtx(p, Rolodex1)
       val c = PCache(p, pt, TextSearch(p, pt))
       _pcache ::= c
       c
