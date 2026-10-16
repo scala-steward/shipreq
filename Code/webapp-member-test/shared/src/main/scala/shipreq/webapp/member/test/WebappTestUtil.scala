@@ -125,7 +125,7 @@ trait WebappTestUtil extends BaseTestUtil {
     if (p.history.ordAsInt < maxOrd.value) {
       val events = VerifiedEvent.Seq.empty ++ (1 to maxOrd.value).iterator.map { i =>
         p.history.events.find(_.ord.value ==* i).getOrElse(
-          VerifiedEvent(EventOrd(i), Event.ProjectNameSet("dummy"), UserId1, Instant.EPOCH)
+          VerifiedEvent(EventOrd(i), Event.ProjectNameSet("dummy"), UserId1, Instant.now())
         )
       }
       p.copy(history = ProjectEvents(events))
