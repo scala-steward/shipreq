@@ -72,8 +72,8 @@ object WebStorage {
 
     object projectLibrary {
 
-      val ver = Version.fromInts(1, 1) // Bump this when any of following imports change
-      import shipreq.webapp.member.project.protocol.binary.v2.Rev1.picklerProject
+      val ver = Version.fromInts(2, 0) // Bump this when any of following imports change
+      import shipreq.webapp.member.project.protocol.binary.v3.Rev0.picklerProject
 
       val cache = CacheJs(creator)
 

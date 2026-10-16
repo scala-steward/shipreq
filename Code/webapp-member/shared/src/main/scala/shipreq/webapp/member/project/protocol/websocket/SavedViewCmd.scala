@@ -24,8 +24,8 @@ object SavedViewCmd {
   object CodecsV5 {
     import boopickle.DefaultBasic._
     import shipreq.webapp.member.project.protocol.binary.v1.BaseMemberData1.SavedViewPicklers._
-    import shipreq.webapp.member.project.protocol.binary.v2.Rev1._
-    import shipreq.webapp.member.project.protocol.binary.v2.Rev1.SavedViewPicklers._
+    import shipreq.webapp.member.project.protocol.binary.v3.Rev0._
+    import shipreq.webapp.member.project.protocol.binary.v3.Rev0.SavedViewPicklers._
 
     private implicit val picklerCreate: Pickler[Create] =
       new Pickler[Create] {

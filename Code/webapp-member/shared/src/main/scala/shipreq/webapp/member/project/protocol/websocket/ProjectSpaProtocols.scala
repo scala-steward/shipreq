@@ -89,9 +89,9 @@ object ProjectSpaProtocols {
       picklerRolodex.xmap(Supplimentary.apply)(_.rolodex)
     }
 
-    private val picklerStateUpdate_v11: Pickler[StateUpdate] = {
+    private val picklerStateUpdate_v20: Pickler[StateUpdate] = {
       // Bump the above version when any of following changes
-      import shipreq.webapp.member.project.protocol.binary.v2.Rev1._
+      import shipreq.webapp.member.project.protocol.binary.v3.Rev0._
       @inline implicit def picklerSupp = picklerSupplimentary_v10
 
       new Pickler[StateUpdate] {
@@ -140,7 +140,7 @@ object ProjectSpaProtocols {
       // When any of the following change (import or impls), bump wsrrVersion
       import shipreq.webapp.member.project.protocol.binary.v1.BaseMemberData1._
       import shipreq.webapp.member.project.protocol.binary.v1.PostEvents._
-      import shipreq.webapp.member.project.protocol.binary.v2.Rev1._
+      import shipreq.webapp.member.project.protocol.binary.v3.Rev0._
 
       implicit val picklerOptionEventOrdLatest: Pickler[Option[EventOrd.Latest]] =
         transformPickler[Option[EventOrd.Latest], Int](
@@ -158,10 +158,10 @@ object ProjectSpaProtocols {
     }
 
     object Responses {
-      protected val responseVersion = Version.fromInts(2, 1) // Bump this when any of following imports change
-      import shipreq.webapp.member.project.protocol.binary.v2.Rev1._
+      protected val responseVersion = Version.fromInts(3, 0) // Bump this when any of following imports change
+      import shipreq.webapp.member.project.protocol.binary.v3.Rev0._
       @inline private implicit def picklerSupp = picklerSupplimentary_v10
-      @inline private implicit def picklerStateUpdate = picklerStateUpdate_v11
+      @inline private implicit def picklerStateUpdate = picklerStateUpdate_v20
 
       private implicit val picklerInitAppData: Pickler[InitAppData] =
         new Pickler[InitAppData] {
@@ -208,8 +208,8 @@ object ProjectSpaProtocols {
     }
 
     object Push {
-      protected val version = Version.fromInts(2, 1) // Bump this when any of following imports change
-      @inline private implicit def picklerStateUpdate = picklerStateUpdate_v11
+      protected val version = Version.fromInts(3, 0) // Bump this when any of following imports change
+      @inline private implicit def picklerStateUpdate = picklerStateUpdate_v20
 
       private def pickler: Pickler[WebSocket.Push] =
         picklerStateUpdate

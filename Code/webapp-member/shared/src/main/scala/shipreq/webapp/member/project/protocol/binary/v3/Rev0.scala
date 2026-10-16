@@ -1,4 +1,4 @@
-package shipreq.webapp.member.project.protocol.binary.v2
+package shipreq.webapp.member.project.protocol.binary.v3
 
 import java.time.Instant
 import shipreq.base.util.ErrorMsg
@@ -13,7 +13,7 @@ import shipreq.webapp.member.project.formula.{Formula, ValidFormula}
 import shipreq.webapp.member.project.sort.SortMethod
 import shipreq.webapp.member.project.text.Text
 
-/** v2.1
+/** v3.0
   *
   * - Added CustomField.Formula
   * - Added CustomField.Formula.Id
@@ -39,7 +39,7 @@ import shipreq.webapp.member.project.text.Text
   * - Added Column.CreatedAt
   * - Added Column.CreatedBy
   */
-object Rev1 {
+object Rev0 {
   import boopickle.ConstPickler
   import boopickle.DefaultBasic._
   import shipreq.webapp.base.protocol.binary.v1.BaseData._

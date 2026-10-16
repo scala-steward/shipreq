@@ -62,7 +62,7 @@ object UpdateContentCmd {
     import shipreq.webapp.member.project.protocol.binary.v1.Events._
     import shipreq.webapp.member.project.protocol.binary.v1.Rev6._
     import shipreq.webapp.member.project.protocol.binary.v1.Rev6.AtomPicklers.instances._
-    import shipreq.webapp.member.project.protocol.binary.v2.Rev1._
+    import shipreq.webapp.member.project.protocol.binary.v3.Rev0._
     // REMEMBER: Don't forget to increment `CodecsVn` if you change these
 
     private implicit val picklerPatchReqTags: Pickler[PatchReqTags] =
