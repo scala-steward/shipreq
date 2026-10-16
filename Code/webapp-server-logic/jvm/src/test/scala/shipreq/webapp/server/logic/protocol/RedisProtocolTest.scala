@@ -60,9 +60,9 @@ object RedisProtocolTest extends TestSuite {
         propTestRoundTrip(codec)(R.events.verifiedEvent)
       }
 
-      "v2.0" - {
+      "v3.0" - {
         "ManualIssueCreate" - {
-          val bin    = BinaryData.fromHex("020081F41C7B016C046F6D666701E0E57B8D5D00E66307")
+          val bin    = BinaryData.fromHex("030081F41C7B016C046F6D666701E0E57B8D5D00E66307")
           val expect = VerifiedEvent(500, Event.ManualIssueCreate(123, "omfg"), UserId1, Instant.ofEpochSecond(1569553381, 123987456))
           assertDecodeOk(codec)(bin, expect)
         }
@@ -84,21 +84,6 @@ object RedisProtocolTest extends TestSuite {
         propTestRoundTrip(codec)(gen)
       }
 
-      "v2.0" - {
-        "empty" - {
-          val bin    = BinaryData.fromHex("5C303D710200000000000523494E4547000000000000000000000000010101010100000000000000000000DEC22AB7")
-          val expect = ProjectSnapshot(emptyProject1, 0)
-          assertDecodeOk(codec)(bin, expect)
-        }
-      }
-
-      "v2.1" - {
-        "empty" - {
-          val bin    = BinaryData.fromHex("5C303D710201D5F5B60701000000000523494E454700000000000000000000000001010101010100000000000000000000DEC22AB7")
-          val expect = ProjectSnapshot(emptyProject1, 0)
-          assertDecodeOk(codec)(bin, expect)
-        }
-      }
     }
 
   }
