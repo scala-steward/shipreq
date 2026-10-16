@@ -26,6 +26,7 @@ object SpecialBuiltInField {
   case object ImplyForward   extends Instance("Implies")         with Always
   case object ReqType        extends Instance("Req Type")        with Always
   case object CreatedAt      extends Instance("Created At")      with Always
+  case object CreatedBy      extends Instance("Created By")      with Always
   case object DeletionReason extends Instance("Deletion Reason") with DeadOnly
 
   val implication: Direction => Instance with Always = {

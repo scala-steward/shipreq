@@ -32,6 +32,7 @@ object Column {
   case object Title                             extends BuiltIn with SortInconclusiveHasBlanks with Mandatory
   case object ReqType                           extends BuiltIn with SortInconclusiveNoBlanks
   case object CreatedAt                         extends BuiltIn with SortInconclusiveNoBlanks
+  case object CreatedBy                         extends BuiltIn with SortInconclusiveNoBlanks
   case object DeletionReason                    extends BuiltIn with SortInconclusiveHasBlanks
   final case class Implications(dir: Direction) extends BuiltIn with SortInconclusiveHasBlanks
 
@@ -66,6 +67,7 @@ object Column {
       Title,
       ReqType,
       CreatedAt,
+      CreatedBy,
       Implications(Forwards), Implications(Backwards),
       DeletionReason)
 
@@ -81,6 +83,7 @@ object Column {
     ProjectApplicability {
       case ReqType
          | CreatedAt
+         | CreatedBy
          | Pubid
          | Code
          | Title
@@ -95,7 +98,8 @@ object Column {
     ProjectApplicability {
       case Code
          | Title
-         | CreatedAt       => Applicability.always
+         | CreatedAt
+         | CreatedBy       => Applicability.always
       case ReqType
          | Pubid
          | OtherTags

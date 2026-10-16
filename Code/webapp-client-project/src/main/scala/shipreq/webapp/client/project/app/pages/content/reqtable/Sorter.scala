@@ -78,6 +78,11 @@ object Sorter {
     sort = SortFn.int
   )
 
+  val createdBySorter = sorter[String](
+    prep = setup => row => setup.normalisedText(_.eventAuthor(row.createdAtOrd)),
+    sort = SortFn.stringNonEmpty
+  )
+
   def reqCodeSorter: SorterForSMCB =
     SorterForSMCB(SorterBase.reqCodeSorter(Row.reqCodesO, _))
 
@@ -176,6 +181,7 @@ object Sorter {
   val inconclusiveIB: C.SortInconclusiveNoBlanks => SorterForSMIB = {
     case C.ReqType   => SorterForSMIB(reqTypeSorter)
     case C.CreatedAt => SorterForSMIB(createdAtSorter)
+    case C.CreatedBy => SorterForSMIB(createdBySorter)
   }
 
   val inconclusiveCB: C.SortInconclusiveHasBlanks => SorterForSMCB = {

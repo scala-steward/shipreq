@@ -2,11 +2,11 @@ package shipreq.webapp.member.project.protocol.binary.v2
 
 import java.time.Instant
 import shipreq.base.util.ErrorMsg
-import shipreq.webapp.base.data._
+import shipreq.webapp.base.data.{Live => _, _}
 import shipreq.webapp.base.util.On
 import shipreq.webapp.member.project.data.DataImplicits._
 import shipreq.webapp.member.project.data.savedview.{ImpGraphConfig, SavedView}
-import shipreq.webapp.member.project.data.{Live, Live => _, _}
+import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.event._
 import shipreq.webapp.member.project.filter.Filter
 import shipreq.webapp.member.project.formula.{Formula, ValidFormula}
@@ -37,6 +37,7 @@ import shipreq.webapp.member.project.text.Text
   * - Added LiveCodeGroup.createdAtOrd
   * - Added DeadCodeGroup.createdAtOrd
   * - Added Column.CreatedAt
+  * - Added Column.CreatedBy
   */
 object Rev1 {
   import boopickle.ConstPickler
@@ -78,6 +79,7 @@ object Rev1 {
         private[this] final val KeyTitle          = 7
         private[this] final val KeyAllTags        = 8
         private[this] final val KeyCreatedAt      = 9
+        private[this] final val KeyCreatedBy      = 10
         override def pickle(a: Column)(implicit state: PickleState): Unit =
           a match {
             case Code              => state.enc.writeByte(KeyCode          )
@@ -90,6 +92,7 @@ object Rev1 {
             case AllTags           => state.enc.writeByte(KeyAllTags       )
             case Title             => state.enc.writeByte(KeyTitle         )
             case CreatedAt         => state.enc.writeByte(KeyCreatedAt     )
+            case CreatedBy         => state.enc.writeByte(KeyCreatedBy     )
           }
         override def unpickle(implicit state: UnpickleState): Column =
           state.dec.readByte match {
@@ -103,6 +106,7 @@ object Rev1 {
             case KeyAllTags        => AllTags
             case KeyTitle          => Title
             case KeyCreatedAt      => CreatedAt
+            case KeyCreatedBy      => CreatedBy
           }
       }
 
@@ -117,6 +121,7 @@ object Rev1 {
         private[this] final val KeyTitle          = 6
         private[this] final val KeyAllTags        = 7
         private[this] final val KeyCreatedAt      = 8
+        private[this] final val KeyCreatedBy      = 9
         override def pickle(a: Column.SortInconclusive)(implicit state: PickleState): Unit =
           a match {
             case Column.Code              => state.enc.writeByte(KeyCode          )
@@ -128,6 +133,7 @@ object Rev1 {
             case Column.AllTags           => state.enc.writeByte(KeyAllTags       )
             case Column.Title             => state.enc.writeByte(KeyTitle         )
             case Column.CreatedAt         => state.enc.writeByte(KeyCreatedAt     )
+            case Column.CreatedBy         => state.enc.writeByte(KeyCreatedBy     )
           }
         override def unpickle(implicit state: UnpickleState): Column.SortInconclusive =
           state.dec.readByte match {
@@ -140,6 +146,7 @@ object Rev1 {
             case KeyAllTags        => Column.AllTags
             case KeyTitle          => Column.Title
             case KeyCreatedAt      => Column.CreatedAt
+            case KeyCreatedBy      => Column.CreatedBy
           }
       }
 
@@ -147,15 +154,18 @@ object Rev1 {
       new Pickler[Column.SortInconclusiveNoBlanks] {
         private[this] final val KeyReqType   = 0
         private[this] final val KeyCreatedAt = 1
+        private[this] final val KeyCreatedBy = 2
         override def pickle(a: Column.SortInconclusiveNoBlanks)(implicit state: PickleState): Unit =
           a match {
             case Column.ReqType   => state.enc.writeByte(KeyReqType  )
             case Column.CreatedAt => state.enc.writeByte(KeyCreatedAt)
+            case Column.CreatedBy => state.enc.writeByte(KeyCreatedBy)
           }
         override def unpickle(implicit state: UnpickleState): Column.SortInconclusiveNoBlanks =
           state.dec.readByte match {
             case KeyReqType   => Column.ReqType
             case KeyCreatedAt => Column.CreatedAt
+            case KeyCreatedBy => Column.CreatedBy
           }
       }
 
