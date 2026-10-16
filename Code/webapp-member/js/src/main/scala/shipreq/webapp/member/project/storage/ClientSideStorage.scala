@@ -23,8 +23,14 @@ object ClientSideStorage {
     def getProjectLibraryOrd: AsyncCallback[Option[EventOrd.Latest]]
     def getProjectLibrary: AsyncCallback[Option[ProjectLibrary]]
 
-    final def getProjectLibraryOrEmpty: AsyncCallback[ProjectLibrary] =
-      getProjectLibrary.map(_.getOrElse(ProjectLibrary.empty(creator, CacheJs(creator))))
+    final def getProjectLibraryOrEmpty: AsyncCallback[ProjectLibrary] = {
+      val empty = ProjectLibrary.empty(creator, CacheJs(creator))
+      getProjectLibrary.attempt.map {
+        case Right(Some(pl)) => pl
+        case Right(None)
+           | Left(_)         => empty
+      }
+    }
   }
 
   trait ReadWrite extends ReadOnly {
@@ -56,8 +62,8 @@ object ClientSideStorage {
 
           Dynamic.optionAsync(ctx.creator)(
             // highest priority
-            indexedDb.map(idb => enc.flatMap(IndexedDbStorage(idb, ctx, _))),
-            localStorage.map(ws => enc.map(new WebStorage(ws, ctx, _))),
+            indexedDb.map(idb => enc.flatMap(IndexedDbStorage(idb, ctx, _, logger))),
+            localStorage.map(ws => enc.map(new WebStorage(ws, ctx, _, logger))),
             // lowest priority
           )
         case None =>

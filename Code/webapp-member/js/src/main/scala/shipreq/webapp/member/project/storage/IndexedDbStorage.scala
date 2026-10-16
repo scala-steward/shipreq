@@ -3,6 +3,7 @@ package shipreq.webapp.member.project.storage
 import japgolly.scalajs.react.{AsyncCallback, Callback, CallbackTo}
 import shipreq.base.util.MutableRef
 import shipreq.webapp.base.data.ProjectCreator
+import shipreq.webapp.base.lib.LoggerJs
 import shipreq.webapp.base.protocol.Version
 import shipreq.webapp.base.protocol.binary.SafePickler
 import shipreq.webapp.member.project.data.Project
@@ -26,7 +27,8 @@ final class IndexedDbStorage(override protected val creator: ProjectCreator,
                              db                            : IndexedDb.Database,
                              isAvailableVar                : MutableRef[Boolean],
                              schema                        : IndexedDbStorage.Schema,
-                             plCache                       : Cache) extends ClientSideStorage.ReadWrite {
+                             plCache                       : Cache,
+                             logger                        : LoggerJs = LoggerJs.devOnly) extends ClientSideStorage.ReadWrite {
 
   import IndexedDbStorage.Internals._
   import schema.project.store
@@ -38,14 +40,25 @@ final class IndexedDbStorage(override protected val creator: ProjectCreator,
     CallbackTo(isAvailableVar.value)
 
   override val getProjectLibraryOrd: AsyncCallback[Option[EventOrd.Latest]] =
-    for {
+    (for {
       ords <- db.getAllKeys(store)
-    } yield ords.maxOption.map(_.asLatest)
+    } yield ords.maxOption.map(_.asLatest)).attempt.map {
+      case Right(o)   => o
+      case Left(_)    => None
+    }
 
   override val getProjectLibrary: AsyncCallback[Option[ProjectLibrary]] =
-    for {
+    (for {
       projects <- db.getAllValues(store)
-    } yield ProjectLibrary.load(creator, projects, plCache)
+    } yield ProjectLibrary.load(creator, projects, plCache)).attempt.flatMap {
+      case Right(pl) =>
+        AsyncCallback.pure(pl)
+      case Left(err) =>
+        for {
+          _ <- logger.async(_.warn(s"Failed to read from IndexedDb; clearing cache. Error: $err"))
+          _ <- clear.attempt
+        } yield None
+    }
 
   override def clear: AsyncCallback[Unit] =
     db.clear(store)
@@ -72,14 +85,16 @@ object IndexedDbStorage {
 
   def apply(idb         : IndexedDb,
             ctx         : ClientSideStorage.Context,
-            encryption  : Encryption): AsyncCallback[IndexedDbStorage] =
-    nonStandard(idb, ctx, encryption)
+            encryption  : Encryption,
+            logger      : LoggerJs = LoggerJs.devOnly): AsyncCallback[IndexedDbStorage] =
+    nonStandard(idb, ctx, encryption, logger = logger)
 
   private[storage] def nonStandard(idb         : IndexedDb,
                                    ctx         : ClientSideStorage.Context,
                                    encryption  : Encryption,
                                    dbNamePrefix: String = "",
                                    _plCache    : Cache = null,
+                                   logger      : LoggerJs = LoggerJs.devOnly,
                                   ): AsyncCallback[IndexedDbStorage] = {
 
     val schema = new Schema(ctx, encryption, dbNamePrefix)
@@ -95,7 +110,7 @@ object IndexedDbStorage {
     val plCache = Option(_plCache).getOrElse(CacheJs(ctx.creator))
 
     idb.open(schema.dbName, schema.dbVer)(openCallbacks)
-      .map(new IndexedDbStorage(ctx.creator, _, isAvailable, schema, plCache))
+      .map(new IndexedDbStorage(ctx.creator, _, isAvailable, schema, plCache, logger))
   }
 
   // ===================================================================================================================

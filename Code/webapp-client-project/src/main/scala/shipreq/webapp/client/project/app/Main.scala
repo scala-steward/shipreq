@@ -85,7 +85,18 @@ object Main extends ClientSideProcImpl(ProjectSpaEntryPoint.proc) {
         global.wsClient.connect.runNow()
       }
 
-    load.runNow()
+    val loadSafe: AsyncCallback[Unit] =
+      load.attempt.flatMap {
+        case Right(()) =>
+          AsyncCallback.unit
+        case Left(err) =>
+          for {
+            _ <- logger.async(_.error("Failed to load project SPA", err))
+            _ <- onFailure(i)(ErrorMsg("Failed to load: " + err.getMessage)).asAsyncCallback
+          } yield ()
+      }
+
+    loadSafe.runNow()
   }
 
   private def loadWebWorker(i: InitDataWithoutEncKey, logger: LoggerJs): WebWorkerClient.Instance = {
