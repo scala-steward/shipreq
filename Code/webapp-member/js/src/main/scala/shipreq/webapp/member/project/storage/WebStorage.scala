@@ -2,6 +2,7 @@ package shipreq.webapp.member.project.storage
 
 import japgolly.scalajs.react.{AsyncCallback, CallbackTo}
 import shipreq.webapp.base.data.ProjectCreator
+import shipreq.webapp.base.lib.LoggerJs
 import shipreq.webapp.base.protocol.Version
 import shipreq.webapp.base.protocol.binary.SafePickler
 import shipreq.webapp.base.protocol.webstorage._
@@ -23,7 +24,8 @@ import shipreq.webapp.member.protocol.webstorage.WebStorageCodecs
  */
 final class WebStorage(ws        : AbstractWebStorage,
                        ctx       : ClientSideStorage.Context,
-                       encryption: Encryption) extends ClientSideStorage.ReadWrite {
+                       encryption: Encryption,
+                       logger    : LoggerJs = LoggerJs.devOnly) extends ClientSideStorage.ReadWrite {
 
   @inline private implicit def _ws = ws
 
@@ -51,12 +53,25 @@ final class WebStorage(ws        : AbstractWebStorage,
     ws.removeItem(key).asAsyncCallback
 
   override val getProjectLibrary: AsyncCallback[Option[ProjectLibrary]] =
-    projectLibrary.get
+    projectLibrary.get.attempt.flatMap {
+      case Right(pl) =>
+        AsyncCallback.pure(pl)
+      case Left(err) =>
+        for {
+          _ <- logger.async(_.warn(s"Failed to read from WebStorage; clearing cache. Error: $err"))
+          _ <- clear.attempt
+        } yield None
+    }
 
   override val getProjectLibraryOrd: AsyncCallback[Option[EventOrd.Latest]] =
     ws.getItem(projectLibrary.key)
       .map(_.map(_.value.takeWhile(_ != ':').toInt |> EventOrd.Latest))
       .asAsyncCallback
+      .attempt
+      .map {
+        case Right(o) => o
+        case Left(_)  => None
+      }
 
   override def saveProjectLibrary(pl: ProjectLibrary): AsyncCallback[Unit] =
     for {

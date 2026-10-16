@@ -147,6 +147,28 @@ object IndexedDbStorageTest extends TestSuite {
       }
     }
 
+    "corruptedRecovery" - asyncTest {
+      val pl = newProjectLibrary(MilestonesEvery + 4)
+      for {
+        pre      <- nextIdbPrefix
+        enc1     <- TestEncryption.engine(key_u1p1.value)
+        enc2     <- TestEncryption.engine(key_u2p1.value)
+        s1       <- IndexedDbStorage.nonStandard(TestIndexedDb.instance(), u1p1, enc1, pre)
+        s2       <- IndexedDbStorage.nonStandard(TestIndexedDb.instance(), u1p1, enc2, pre)
+        _        <- s1.saveProjectLibrary(pl)
+        pl1      <- s1.getProjectLibrary
+        _        <- AsyncCallback.delay(assert(pl1.isDefined))
+        // s2 uses different encryption key, causing decryption/deserialization failure
+        pl2      <- s2.getProjectLibrary
+        pl2Ord   <- s2.getProjectLibraryOrd
+        pl2Empty <- s2.getProjectLibraryOrEmpty
+      } yield {
+        assert(pl2.isEmpty)
+        assertEq(pl2Ord, None)
+        assertEq(pl2Empty.ordAsInt, 0)
+      }
+    }
+
     "assertMilestones" - {
 
       "same" -
