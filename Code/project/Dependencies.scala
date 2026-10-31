@@ -135,7 +135,7 @@ object Dependencies {
   }
 
   object Nyaya {
-    private val mm = MultiModule.jvmAndJs("com.github.japgolly.nyaya", "1.1.0")
+    private val mm = MultiModule.jvmAndJs("com.github.japgolly.nyaya", "1.2.0")
     val gen  = mm("nyaya-gen")  ++ Cats.core
     val prop = mm("nyaya-prop") ++ Cats.core
     val test = mm("nyaya-test")
